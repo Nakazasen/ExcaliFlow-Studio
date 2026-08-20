@@ -50,6 +50,21 @@ If the inspected repository already exposes a supported local IDE Bridge, Atlas 
 
 Atlas also probes a locally running [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) server after the project bridge: `http://127.0.0.1:8081/v1/models` then `/v1/chat/completions` with `gemini-3.6-flash`. This is an optional external-processing source, not an offline model: its UI label explicitly says the question and structural scan context go through the local proxy to Gemini. Atlas does not install, start, store credentials for, or bypass authentication on this server. For safer local exposure, configure that server to bind `127.0.0.1`, keep `api_keys` empty for browser use, and use only with source context you permit to leave the machine.
 
+## Create a Bridge for any repository
+
+When a repository does not already expose an IDE Bridge, create a project-local **ExcaliFlow Atlas Bridge**. It binds only to `127.0.0.1:8788`, exposes the same health and OpenAI-compatible chat endpoints Atlas expects, and forwards only to a local Gemini Web2API server at `127.0.0.1:8081`. It never starts Gemini Web2API itself.
+
+```powershell
+# Creates .excaliflow/ide-bridge.json without overwriting an existing bridge.
+excaliflow bridge init --dir "D:\MyProject"
+
+# Starts the bridge; `start` creates the manifest first if it is missing.
+excaliflow bridge start --dir "D:\MyProject"
+
+# Or create the manifest alongside an Atlas output.
+excaliflow atlas --dir "D:\MyProject" --create-bridge --out "D:\MyProject\codebase-atlas.html"
+```
+
 ```powershell
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
 ```

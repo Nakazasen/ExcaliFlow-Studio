@@ -54,6 +54,7 @@ def _manifest_bridge(project_dir: Path) -> dict | None:
         "completion_url": completion_url,
         "model": str(raw.get("model") or "local-ide-bridge"),
         "detected_by": ".excaliflow/ide-bridge.json",
+        "external_processing": bool(raw.get("external_processing", False)),
     }
 
 

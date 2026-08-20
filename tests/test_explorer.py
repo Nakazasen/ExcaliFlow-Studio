@@ -2,14 +2,51 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 from excaliflow.atlas import build_atlas_html
 from excaliflow.bridge import discover_ide_bridge, discover_ide_bridges
+from excaliflow.bridge_server import create_bridge_server, initialize_bridge
 from excaliflow.explorer import answer_question, explain_codebase, inspect_codebase
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def create_bridge_server_for_test() -> ThreadingHTTPServer:
+    class UpstreamHandler(BaseHTTPRequestHandler):
+        def log_message(self, _format: str, *_args: object) -> None:
+            return
+
+        def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/v1/models":
+                body = b'{"object":"list","data":[{"id":"gemini-3.6-flash"}]}'
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            self.send_response(404)
+            self.end_headers()
+
+        def do_POST(self) -> None:  # noqa: N802
+            if self.path == "/v1/chat/completions":
+                body = b'{"choices":[{"message":{"content":"Bridge answer"}}]}'
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            self.send_response(404)
+            self.end_headers()
+
+    return ThreadingHTTPServer(("127.0.0.1", 0), UpstreamHandler)
 
 
 class ExplorerTests(unittest.TestCase):
@@ -129,6 +166,58 @@ class ExplorerTests(unittest.TestCase):
             self.assertEqual(gemini["health_url"], "http://127.0.0.1:8081/v1/models")
             self.assertEqual(gemini["completion_url"], "http://127.0.0.1:8081/v1/chat/completions")
             self.assertTrue(gemini["external_processing"])
+
+    def test_bridge_init_creates_a_project_local_gemini_proxy_manifest(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest = initialize_bridge(root, port=8877)
+            bridge = discover_ide_bridge(root)
+            self.assertTrue(manifest.is_file())
+            self.assertEqual(bridge["name"], "ExcaliFlow Atlas Bridge")
+            self.assertEqual(bridge["health_url"], "http://127.0.0.1:8877/health")
+            self.assertTrue(bridge["external_processing"])
+
+    def test_bridge_init_cli_creates_the_manifest_for_a_repo_without_one(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result = subprocess.run(
+                [sys.executable, "-m", "excaliflow.cli", "bridge", "init", "--dir", str(root), "--port", "8876"],
+                cwd=ROOT,
+                env={**__import__("os").environ, "PYTHONPATH": str(ROOT / "src")},
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Created Atlas Bridge manifest", result.stdout)
+            self.assertTrue((root / ".excaliflow" / "ide-bridge.json").is_file())
+
+    def test_atlas_bridge_forwards_only_to_a_local_openai_upstream(self):
+        upstream = create_bridge_server_for_test()
+        upstream_thread = Thread(target=upstream.serve_forever, daemon=True)
+        upstream_thread.start()
+        proxy = create_bridge_server(f"http://127.0.0.1:{upstream.server_port}/v1", port=0)
+        proxy_thread = Thread(target=proxy.serve_forever, daemon=True)
+        proxy_thread.start()
+        try:
+            with urlopen(f"http://127.0.0.1:{proxy.server_port}/health", timeout=2) as response:
+                self.assertEqual(response.status, 200)
+            request = Request(
+                f"http://127.0.0.1:{proxy.server_port}/v1/chat/completions",
+                data=b'{"model":"gemini-3.6-flash","messages":[{"role":"user","content":"Hello"}]}',
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urlopen(request, timeout=2) as response:
+                    self.assertIn("Bridge answer", response.read().decode("utf-8"))
+            except HTTPError as error:
+                self.fail(error.read().decode("utf-8"))
+        finally:
+            proxy.shutdown()
+            proxy.server_close()
+            upstream.shutdown()
+            upstream.server_close()
 
     def test_source_scan_prunes_runtime_and_virtual_environment_trees(self):
         with tempfile.TemporaryDirectory() as temp:
