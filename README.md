@@ -9,6 +9,41 @@ Local-first code intelligence and presentation-ready diagrams.
 - Editorial SVG/HTML plus architecture, Sankey, Wardley, journey, KPI, funnel, timeline, quadrant, process, matrix, and risk visuals.
 - Evidence-first codebase guide and Q&A for both engineers and people learning to code.
 
+## Evidence Graph for RAG answers
+
+Use Evidence Graph when a RAG answer, investigation, or knowledge model needs
+to be visual and traceable instead of a block of text. The canonical file is
+`evidence-graph.json`; Atlas HTML, Mermaid, and Excalidraw are views, not the
+source of truth.
+
+Start from a portable local `rag-trace.json`. It contains one answer, its
+retrieved chunks, documents, optional concepts, and optional claims. Every
+answer and every LLM-extracted claim must cite a known chunk. Invalid or
+uncited data fails before a graph file is written.
+
+```powershell
+# Convert retrieval output from any RAG system into the canonical graph.
+excaliflow knowledge import --trace ".\examples\rag-trace.json" --out ".\evidence-graph.json"
+
+# Create a self-contained, offline HTML Atlas.
+excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atlas.html"
+```
+
+Open `evidence-atlas.html`. It begins at **Answer & sources**; choose **Full
+knowledge graph** only when investigating relationships beyond the answer.
+Click any node or edge to see its evidence receipt: origin, confidence, review
+status, and cited source location. A dashed node and **Needs review** mean the
+relationship is a model-assisted proposal, not a verified fact.
+
+For AIOS or another RAG application, add a small export step after retrieval:
+map source documents to `documents`, retrieved passages to `chunks`, the final
+response to `answer`, and any model-extracted relationship to `claims`. To
+combine code and RAG, export `code_references` with an exact `file:line` and a
+target answer, claim, or entity; the full graph then shows the cross-link. Do not
+put free-form Mermaid in this pipeline: it cannot preserve the validation and
+provenance contract. v1 reads only local files; it does not contact a vector
+database, model, IDE Bridge, or external URL.
+
 ## Development layout
 
 ```text

@@ -1,0 +1,64 @@
+{
+  "schema_version": "rag-trace/v1",
+  "title": "Password reset investigation",
+  "query": "Why did password reset fail?",
+  "answer": {
+    "id": "answer-reset",
+    "text": "The reset service requires a verified email before creating a token.",
+    "citations": ["chunk-reset-rule"]
+  },
+  "documents": [
+    {
+      "id": "doc-runbook",
+      "title": "Reset runbook",
+      "location": "docs/reset-runbook.md"
+    }
+  ],
+  "chunks": [
+    {
+      "id": "chunk-reset-rule",
+      "document_id": "doc-runbook",
+      "text": "A password reset token is created only after email verification succeeds.",
+      "location": "docs/reset-runbook.md:12-14",
+      "score": 0.91
+    }
+  ],
+  "entities": [
+    {
+      "id": "entity-reset-service",
+      "label": "Password reset service",
+      "kind": "component"
+    },
+    {
+      "id": "entity-email-check",
+      "label": "Email verification",
+      "kind": "process"
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim-prerequisite",
+      "text": "The reset service depends on email verification.",
+      "subject_id": "entity-reset-service",
+      "object_id": "entity-email-check",
+      "relation": "depends_on",
+      "origin": "llm_extracted",
+      "confidence": 0.72,
+      "review_status": "needs_review",
+      "citations": ["chunk-reset-rule"]
+    }
+  ],
+  "code_references": [
+    {
+      "id": "code-reset-token",
+      "label": "reset_password in src/reset.py",
+      "location": "src/reset.py:42",
+      "kind": "function",
+      "target_id": "entity-reset-service",
+      "relation": "implemented_by",
+      "origin": "source_scan",
+      "confidence": 1.0,
+      "review_status": "verified"
+    }
+  ]
+}

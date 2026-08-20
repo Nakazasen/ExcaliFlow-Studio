@@ -11,7 +11,9 @@ from pathlib import Path
 from excaliflow.atlas import write_atlas
 from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, serve_bridge
 from excaliflow.explorer import inspect_codebase, serialise_answer
+from excaliflow.evidence_atlas import build_evidence_atlas_html
 from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
+from excaliflow.knowledge import EvidenceValidationError, load_evidence_graph, write_evidence_graph
 
 
 def write_console(content: str) -> None:
@@ -24,6 +26,31 @@ def write_console(content: str) -> None:
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] == "knowledge":
+        parser = argparse.ArgumentParser(prog="excaliflow knowledge", description="Create an offline evidence graph from a local RAG trace.")
+        parser.add_argument("command", choices=("import", "atlas"))
+        parser.add_argument("--trace", type=Path, help="Local rag-trace.json to validate and import.")
+        parser.add_argument("--graph", type=Path, help="Local evidence-graph.json to render.")
+        parser.add_argument("--out", type=Path, required=True, help="Output graph JSON or offline Atlas HTML.")
+        args = parser.parse_args(sys.argv[2:])
+        try:
+            if args.command == "import":
+                if args.trace is None:
+                    parser.error("knowledge import requires --trace.")
+                import json
+
+                trace = json.loads(args.trace.read_text(encoding="utf-8"))
+                print(f"Wrote Evidence Graph: {write_evidence_graph(trace, args.out)}")
+                return
+            if args.graph is None:
+                parser.error("knowledge atlas requires --graph.")
+            graph = load_evidence_graph(args.graph)
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(build_evidence_atlas_html(graph), encoding="utf-8")
+            print(f"Wrote offline Evidence Atlas: {args.out}")
+            return
+        except (EvidenceValidationError, OSError, ValueError) as error:
+            parser.error(str(error))
     if len(sys.argv) > 1 and sys.argv[1] == "open":
         parser = argparse.ArgumentParser(prog="excaliflow", description="Open a beginner-friendly Codebase Atlas for one project folder.")
         parser.add_argument("command", choices=("open",))

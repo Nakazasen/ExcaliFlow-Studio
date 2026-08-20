@@ -5,6 +5,24 @@ description: "Analyze a local codebase or knowledge graph into offline Excalidra
 
 # Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3)
 
+## Evidence Graph Atlas for RAG and investigations
+
+When a user asks to visualize a RAG answer, a knowledge system, an incident, or
+an investigation, use the Evidence Graph path rather than asking an LLM to
+invent Mermaid coordinates. First export a local `rag-trace.json` with the
+answer, retrieved chunks, document locations, and optional entity/claim data.
+Every answer and LLM-extracted claim needs a citation to a known chunk.
+
+```powershell
+excaliflow knowledge import --trace "D:\MyProject\rag-trace.json" --out "D:\MyProject\evidence-graph.json"
+excaliflow knowledge atlas --graph "D:\MyProject\evidence-graph.json" --out "D:\MyProject\evidence-atlas.html"
+```
+
+`evidence-graph.json` is the source of truth. The generated HTML is offline,
+starts with the answer and its evidence, provides an explicit full-graph view,
+and displays source location, origin, confidence, and review status for every
+relationship. A `needs_review` model claim is never presented as verified.
+
 ## Evidence-first exploration
 
 When the user asks to understand, learn, explain, or question a local codebase, use the portable explorer before making claims. It supports an engineering vocabulary and a beginner-friendly learner vocabulary, and every answer includes source-file/line evidence.
