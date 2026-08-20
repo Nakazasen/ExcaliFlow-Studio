@@ -30,6 +30,12 @@ py -3 .\scripts\build_atlas.py --dir "D:\MyProject" --audience learner --out "D:
 
 The Atlas uses a native SVG graph, module inspector, audience switch, and an evidence-backed local Q&A panel. It is offline and is not a substitute for runtime tracing.
 
+## Atlas AI Runtime: Verified Operational Playbook
+
+When a user wants conversational Atlas explanations, first run `excaliflow bridge doctor --dir <project> --port <port>`. It must distinguish the project manifest, the local Gemini Web2API upstream, and the Atlas Bridge; never claim AI is active merely because an endpoint exists.
+
+Read `docs/atlas-gemini-web2api.md` before configuring a runtime for another IDE or repository. It contains the verified Windows setup, loopback-only configuration, temporary-chat preference, start commands, verification, external-processing disclosure, and troubleshooting. Do not silently install, start, authenticate, or expose Gemini Web2API; it is a third-party external-processing source and the user must permit source context to leave the machine.
+
 ## Verified capability boundary
 
 - Python analysis uses the standard-library AST. JavaScript/TypeScript, Go, and Rust use deterministic language-aware extraction of declarations and imports; unsupported code is labelled as a structural scan.

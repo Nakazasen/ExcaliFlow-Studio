@@ -33,6 +33,15 @@ A person can create the manifest while producing an Atlas without starting a bac
 
 1. **Given** a valid unbridged repository, **when** the person asks Atlas generation to create a bridge, **then** both the Atlas output and bridge manifest are created.
 
+### User Story 4 - Reuse a verified AI runtime recipe (Priority: P2)
+
+A person or an AI host can diagnose the local Gemini runtime and follow one durable, privacy-explicit playbook instead of relying on a previous chat session.
+
+**Acceptance Scenarios**:
+
+1. **Given** an unavailable bridge or upstream, **when** the person runs the bridge diagnosis, **then** it states which local component is unavailable and the next safe action.
+2. **Given** a supported host receives the ExcaliFlow skill, **when** it needs Atlas AI questions, **then** it can read the bundled runtime playbook.
+
 ## Requirements
 
 - **FR-001**: The product MUST create a bridge manifest in the selected repository without overwriting an existing manifest.
@@ -42,6 +51,8 @@ A person can create the manifest while producing an Atlas without starting a bac
 - **FR-005**: The manifest MUST mark that requests are externally processed when it forwards to the AI source.
 - **FR-006**: The command-line workflow MUST support initialize, run, and initialize-with-Atlas flows.
 - **FR-007**: Setup documentation MUST state the local endpoints, upstream prerequisite, non-overwrite behavior, and data-boundary implication.
+- **FR-008**: The command-line workflow MUST provide a local-only diagnostic that distinguishes a missing project manifest, unavailable upstream, and unavailable Atlas Bridge.
+- **FR-009**: The portable skill MUST include an operational playbook for Gemini Web2API with loopback-only configuration, temporary-chat guidance, lifecycle commands, verification, and troubleshooting.
 
 ## Success Criteria
 
@@ -49,6 +60,7 @@ A person can create the manifest while producing an Atlas without starting a bac
 - **SC-002**: An unavailable upstream is reported as unavailable in every readiness test; no false-ready response is produced.
 - **SC-003**: Existing project bridge configuration is preserved in 100% of initialization attempts.
 - **SC-004**: The full automated suite passes after adding the feature.
+- **SC-005**: When a local runtime is unavailable, the diagnostic gives a concrete next action without suggesting that AI questions are working.
 
 ## Assumptions
 

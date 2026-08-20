@@ -20,3 +20,10 @@
 
 - [X] T008 Document the commands, boundary, and upstream prerequisite in `README.md`.
 - [X] T009 Run focused and full tests, bytecode compilation, and diff hygiene checks.
+
+## Phase 5: Operational Learning
+
+- [X] T010 Add local-only bridge diagnosis with actionable status in `src/excaliflow/bridge_server.py` and `src/excaliflow/cli.py`.
+- [X] T011 Add regression coverage for diagnosis in `tests/test_explorer.py`.
+- [X] T012 Add and package a Gemini Web2API runtime playbook in `docs/`, `SKILL.md`, `README.md`, and `src/excaliflow/installer.py`.
+- [X] T013 Run focused and full tests, bytecode compilation, and diff hygiene checks.

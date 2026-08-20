@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 from excaliflow.atlas import build_atlas_html
 from excaliflow.bridge import discover_ide_bridge, discover_ide_bridges
-from excaliflow.bridge_server import create_bridge_server, initialize_bridge
+from excaliflow.bridge_server import bridge_status, create_bridge_server, initialize_bridge
 from excaliflow.explorer import answer_question, explain_codebase, inspect_codebase
 
 
@@ -191,6 +191,19 @@ class ExplorerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("Created Atlas Bridge manifest", result.stdout)
             self.assertTrue((root / ".excaliflow" / "ide-bridge.json").is_file())
+
+    def test_bridge_doctor_distinguishes_missing_manifest_from_unavailable_runtime(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            status = bridge_status(root, port=8875, upstream_url="http://127.0.0.1:9/v1")
+            self.assertFalse(status["manifest_ready"])
+            self.assertFalse(status["upstream_ready"])
+            self.assertFalse(status["bridge_ready"])
+            self.assertIn("Create", status["next_action"])
+            initialize_bridge(root, port=8875)
+            configured = bridge_status(root, port=8875, upstream_url="http://127.0.0.1:9/v1")
+            self.assertTrue(configured["manifest_ready"])
+            self.assertIn("Start Gemini Web2API", configured["next_action"])
 
     def test_atlas_bridge_forwards_only_to_a_local_openai_upstream(self):
         upstream = create_bridge_server_for_test()

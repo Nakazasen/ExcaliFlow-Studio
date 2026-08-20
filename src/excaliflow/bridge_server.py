@@ -70,6 +70,54 @@ def _upstream_ready(upstream_url: str, timeout_seconds: float = 0.8) -> bool:
         return False
 
 
+def _endpoint_ready(url: str, timeout_seconds: float = 0.8) -> bool:
+    """Return true only for an explicit successful local HTTP health response."""
+    try:
+        with urllib.request.urlopen(_loopback_url(url), timeout=timeout_seconds) as response:
+            return response.status == 200
+    except (OSError, urllib.error.HTTPError, ValueError):
+        return False
+
+
+def bridge_status(project_dir: str | Path, *, upstream_url: str = DEFAULT_UPSTREAM, port: int = DEFAULT_PORT) -> dict:
+    """Diagnose the three local prerequisites without starting or changing processes."""
+    root = Path(project_dir).resolve()
+    manifest = root / ".excaliflow" / "ide-bridge.json"
+    manifest_ready = False
+    bridge_url = f"http://127.0.0.1:{port}/health"
+    manifest_problem = ""
+    if manifest.is_file():
+        try:
+            raw = json.loads(manifest.read_text(encoding="utf-8"))
+            bridge_url = _loopback_url(str(raw["health_url"]))
+            _loopback_url(str(raw["completion_url"]))
+            manifest_ready = True
+        except (KeyError, ValueError, json.JSONDecodeError) as error:
+            manifest_problem = str(error)
+    upstream = _loopback_url(upstream_url)
+    upstream_ready = _upstream_ready(upstream)
+    bridge_ready = _endpoint_ready(bridge_url) if manifest_ready else False
+    if not manifest_ready:
+        next_action = "Create the project manifest with: excaliflow bridge init --dir <project>."
+    elif not upstream_ready:
+        next_action = "Start Gemini Web2API on 127.0.0.1:8081, then rerun: excaliflow bridge doctor."
+    elif not bridge_ready:
+        next_action = "Start the Atlas Bridge, then rerun: excaliflow bridge doctor."
+    else:
+        next_action = "Ready: refresh Atlas and ask a question."
+    return {
+        "project": str(root),
+        "manifest": str(manifest),
+        "manifest_ready": manifest_ready,
+        "manifest_problem": manifest_problem,
+        "upstream_url": upstream,
+        "upstream_ready": upstream_ready,
+        "bridge_url": bridge_url,
+        "bridge_ready": bridge_ready,
+        "next_action": next_action,
+    }
+
+
 def create_bridge_server(upstream_url: str = DEFAULT_UPSTREAM, *, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> ThreadingHTTPServer:
     """Create, but do not start, a local Atlas Bridge HTTP server for tests or CLI."""
     if host not in {"127.0.0.1", "localhost", "::1"}:

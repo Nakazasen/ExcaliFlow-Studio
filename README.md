@@ -69,6 +69,8 @@ excaliflow atlas --dir "D:\MyProject" --create-bridge --out "D:\MyProject\codeba
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
 ```
 
+Run `excaliflow bridge doctor --dir "D:\MyProject" --port 8789` whenever setup is uncertain: it reports the project manifest, Gemini Web2API upstream, and Atlas Bridge separately, then prints the next safe action. The complete reusable setup, privacy boundary, verification, and troubleshooting procedure is in [the Atlas AI Runtime Playbook](docs/atlas-gemini-web2api.md); it is included when the skill is installed into another AI host.
+
 ## Install for an AI host
 
 After cloning and running `pip install -e .`, use a host name. The command prints the exact destination before you open the IDE:

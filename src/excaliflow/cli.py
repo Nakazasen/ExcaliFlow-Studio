@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 
 from excaliflow.atlas import write_atlas
-from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, initialize_bridge, serve_bridge
+from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, serve_bridge
 from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
 
@@ -25,13 +25,21 @@ def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
     if len(sys.argv) > 1 and sys.argv[1] == "bridge":
         parser = argparse.ArgumentParser(prog="excaliflow", description="Create or run a loopback-only Atlas Bridge for a codebase.")
-        parser.add_argument("command", choices=("init", "serve", "start"))
+        parser.add_argument("command", choices=("init", "serve", "start", "doctor"))
         parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Codebase directory that owns the bridge manifest.")
         parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Loopback port for the Atlas Bridge.")
         parser.add_argument("--upstream", default=DEFAULT_UPSTREAM, help="Loopback OpenAI-compatible upstream, usually Gemini Web2API.")
         args = parser.parse_args(sys.argv[2:])
         if args.command == "init":
             print(f"Created Atlas Bridge manifest: {initialize_bridge(args.dir, port=args.port)}")
+            return
+        if args.command == "doctor":
+            status = bridge_status(args.dir, upstream_url=args.upstream, port=args.port)
+            print("Atlas Bridge doctor")
+            print(f"- Project manifest: {'ready' if status['manifest_ready'] else 'missing or invalid'} ({status['manifest']})")
+            print(f"- Gemini Web2API: {'ready' if status['upstream_ready'] else 'not responding'} ({status['upstream_url']})")
+            print(f"- Atlas Bridge: {'ready' if status['bridge_ready'] else 'not responding'} ({status['bridge_url']})")
+            print(f"Next: {status['next_action']}")
             return
         if args.command == "start":
             manifest = args.dir / ".excaliflow" / "ide-bridge.json"

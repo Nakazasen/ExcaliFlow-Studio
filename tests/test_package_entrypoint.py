@@ -33,6 +33,7 @@ class PackageEntrypointTests(unittest.TestCase):
             self.assertTrue((target / "scripts" / "generate_diagram.py").is_file())
             self.assertTrue((target / "scripts" / "explore_codebase.py").is_file())
             self.assertTrue((target / "src" / "excaliflow" / "explorer.py").is_file())
+            self.assertTrue((target / "docs" / "atlas-gemini-web2api.md").is_file())
             self.assertFalse(any("__pycache__" in str(path) for path in target.rglob("*")))
             result = subprocess.run(
                 [sys.executable, str(target / "scripts" / "explore_codebase.py"), "ask", "--dir", str(source), "--question", "What is main?"],
