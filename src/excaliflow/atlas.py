@@ -7,6 +7,7 @@ import json
 import math
 from collections import Counter
 from pathlib import Path
+from urllib.parse import urlparse
 
 from excaliflow.bridge import discover_ide_bridge, discover_ide_bridges
 
@@ -119,6 +120,9 @@ def build_atlas_html(report: dict, audience: str = "learner") -> str:
     learning = _learning_model(report, atlas)
     bridge = discover_ide_bridge(report["root"])
     bridges = discover_ide_bridges(report["root"])
+    bridge_port = 8788
+    if bridge.get("name") == "ExcaliFlow Atlas Bridge":
+        bridge_port = urlparse(bridge["health_url"]).port or bridge_port
     payload = {"report": report, "atlas": atlas, "learning": learning, "bridge": bridge, "bridges": bridges, "defaultAudience": audience}
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     node_by_id = {node["id"]: node for node in atlas["nodes"]}
@@ -159,6 +163,14 @@ document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener
         ".graph-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 20px 12px}.graph-tools button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px 10px;cursor:pointer;color:var(--ink);font:inherit}.graph-tools button:hover{border-color:var(--accent);color:#9c3d13}.graph-zoom{min-width:48px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}.graph-hint{color:var(--muted);font-size:12px}.graph{display:block}",
     )
     template = template.replace(
+        "</style></head>",
+        """.topbar{position:sticky;top:0;z-index:10}.full-shell{align-items:start}.left,.right{position:sticky;top:72px;align-self:start;height:calc(100vh - 72px);overflow-y:auto}.ai-setup{margin:-2px -2px 18px;padding:14px;border:1px solid #edc3a9;border-radius:12px;background:#fff7f0}.ai-setup h2{margin:3px 0 7px;font-size:18px}.ai-setup p{margin:6px 0;color:#455566}.ai-setup-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ai-setup button{border:1px solid var(--accent);border-radius:8px;background:var(--accent);padding:8px 10px;color:#fff;cursor:pointer;font:inherit;font-weight:700}.ai-setup button.secondary{background:#fff;color:#9c3d13}.ai-setup pre{margin:10px 0 0;max-height:200px;overflow:auto;padding:10px;border-radius:8px;background:#17212b;color:#fff;font:12px/1.45 Consolas,monospace;white-space:pre-wrap}.ai-setup details{margin-top:10px;color:var(--muted);font-size:12px}.ai-setup summary{cursor:pointer;color:#334454;font-weight:700}@media(max-width:980px){.left,.right{position:static;height:auto;overflow:visible}}</style></head>""",
+    )
+    template = template.replace(
+        '<aside class="right"><div class="eyebrow">',
+        """<aside class="right"><section class="ai-setup" aria-live="polite"><div class="eyebrow">AI connection (optional)</div><h2>H&#7887;i Gemini v&#7873; codebase</h2><p id="ai-setup-status">&#272;ang ki&#7875;m tra AI c&#7909;c b&#7897;...</p><div class="ai-setup-actions"><button id="check-ai-connection" class="secondary" type="button">Ki&#7875;m tra l&#7841;i</button><button id="copy-ai-setup" type="button">Sao ch&#233;p h&#432;&#7899;ng d&#7851;n b&#7853;t AI</button></div><pre id="ai-setup-guide" hidden></pre><details><summary>Ri&#234;ng t&#432; v&#224; c&#225;ch ho&#7841;t &#273;&#7897;ng</summary>Atlas ch&#7881; g&#7917;i c&#226;u h&#7887;i khi b&#7841;n ch&#7911; &#273;&#7897;ng h&#7887;i. Gemini Web2API l&#224; d&#7883;ch v&#7909; b&#234;n ngo&#224;i: c&#226;u h&#7887;i v&#224; ng&#7919; c&#7843;nh c&#7845;u tr&#250;c m&#227; c&#243; th&#7875; &#273;i qua proxy c&#7909;c b&#7897; t&#7899;i Gemini.</details></section><div class="eyebrow">""",
+    )
+    template = template.replace(
         '<div class="graph-wrap"><svg class="graph" viewBox="0 0 __WIDTH__ __HEIGHT__" role="img" aria-label="Full codebase relationship graph">',
         (
             '<div class="graph-tools" aria-label="Graph zoom controls">'
@@ -190,9 +202,17 @@ document.querySelectorAll('[data-question]').forEach(button=>button.addEventList
 document.getElementById('ask-button').addEventListener('click',async()=>{const question=document.getElementById('question').value.trim();if(!question)return;const answer=document.getElementById('answer');answer.textContent='Đang trả lời…';answer.textContent=await answerWithPreferredSource(question);});
 checkBridge();
 """
+    assistance_script = r"""
+const aiSetupStatus=document.getElementById('ai-setup-status');const aiSetupGuide=document.getElementById('ai-setup-guide');const aiSetupCopy=document.getElementById('copy-ai-setup');const aiSetupCheck=document.getElementById('check-ai-connection');const bridgeSetupGuide=`B\u01b0\u1edbc 1 - Kh\u1edfi \u0111\u1ed9ng Gemini Web2API trong th\u01b0 m\u1ee5c \u0111\u00e3 c\u00e0i:\n  .\\.venv\\Scripts\\python.exe gemini_web2api.py\n\nB\u01b0\u1edbc 2 - M\u1edf terminal th\u1ee9 hai v\u00e0 b\u1eadt Atlas Bridge cho project n\u00e0y:\n  py -3 -m excaliflow.cli bridge start --dir "${DATA.report.root}" --port __BRIDGE_PORT__\n\nB\u01b0\u1edbc 3 - Quay l\u1ea1i Atlas, b\u1ea5m "Ki\u1ec3m tra l\u1ea1i", r\u1ed3i h\u1ecfi c\u00e2u h\u1ecfii.\n\nGhi ch\u00fa: n\u1ebfu project \u0111\u00e3 c\u00f3 IDE Bridge (v\u00ed d\u1ee5 AIOS Antigravity), Atlas s\u1ebd \u01b0u ti\u00ean d\u00f9ng Bridge \u0111\u00f3. Gemini Web2API ch\u1ec9 l\u00e0 ngu\u1ed3n AI t\u00f9y ch\u1ecdn.`;
+function renderAiSetup(){if(bridge){const boundary=bridge.external_processing?'C\u00e2u h\u1ecfi v\u00e0 ng\u1eef c\u1ea3nh c\u1ea5u tr\u00fac qu\u00e9t s\u1ebd \u0111i qua proxy c\u1ee5c b\u1ed9 t\u1edbi Gemini.':'C\u00e2u h\u1ecfi \u0111ang d\u00f9ng IDE Bridge c\u1ee5c b\u1ed9.';aiSetupStatus.textContent=`\u0110\u00e3 s\u1eb5n s\u00e0ng: ${bridge.name}. ${boundary}`;aiSetupCheck.textContent='Ki\u1ec3m tra l\u1ea1i';return;}aiSetupStatus.textContent='Ch\u01b0a c\u00f3 AI c\u1ee5c b\u1ed9 \u0111ang ch\u1ea1y. B\u1ea1n v\u1eabn c\u00f3 th\u1ec3 h\u1ecfi b\u1eb1ng ch\u1ee9ng t\u1eeb m\u00e3 ngu\u1ed3n ngay b\u00ean d\u01b0\u1edbi.';aiSetupCheck.textContent='Ki\u1ec3m tra l\u1ea1i';}
+const originalCheckBridge=checkBridge;checkBridge=async function(){const ready=await originalCheckBridge();renderAiSetup();return ready;};
+aiSetupCheck.addEventListener('click',async()=>{aiSetupStatus.textContent='\u0110ang ki\u1ec3m tra AI c\u1ee5c b\u1ed9...';await checkBridge();});
+aiSetupCopy.addEventListener('click',async()=>{aiSetupGuide.hidden=false;try{await navigator.clipboard.writeText(bridgeSetupGuide);aiSetupCopy.textContent='\u0110\u00e3 sao ch\u00e9p h\u01b0\u1edbng d\u1eabn';}catch(error){aiSetupCopy.textContent='H\u01b0\u1edbng d\u1eabn \u0111\u00e3 hi\u1ec7n b\u00ean d\u01b0\u1edbi';}});
+checkBridge();
+"""
     template = template.replace(
         "setMode('learner');setAudience(audience);",
-        "setMode('learner');setAudience(audience);" + graph_controls_script + bridge_script,
+        "setMode('learner');setAudience(audience);" + graph_controls_script + bridge_script + assistance_script,
     )
     return (
         template.replace("__TITLE__", title)
@@ -203,6 +223,7 @@ checkBridge();
         .replace("__EDGES__", edge_svg)
         .replace("__NODES__", node_svg)
         .replace("__DATA__", data)
+        .replace("__BRIDGE_PORT__", str(bridge_port))
     )
 
 

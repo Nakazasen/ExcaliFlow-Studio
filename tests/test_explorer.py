@@ -165,6 +165,28 @@ class ExplorerTests(unittest.TestCase):
             self.assertIn('data-graph-zoom="in"', atlas)
             self.assertIn('data-graph-zoom="out"', atlas)
 
+    def test_full_atlas_keeps_assistance_visible_and_explains_optional_ai_setup(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertIn(".right{position:sticky", atlas)
+            self.assertIn('id="ai-setup-status"', atlas)
+            self.assertIn('id="check-ai-connection"', atlas)
+            self.assertIn('id="copy-ai-setup"', atlas)
+            self.assertIn('id="ai-setup-guide"', atlas)
+            self.assertIn("bridgeSetupGuide", atlas)
+            self.assertIn("--port 8788", atlas)
+            self.assertIn("checkBridge();", atlas)
+
+    def test_atlas_activation_guide_uses_the_project_bridge_port(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            initialize_bridge(root, port=8876)
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertIn("--port 8876", atlas)
+
     def test_atlas_detects_aios_bridge_without_claiming_it_is_running(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

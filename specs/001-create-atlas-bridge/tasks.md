@@ -40,3 +40,9 @@
 - [X] T018 Keep the intrinsic Atlas SVG canvas and add local zoom, reset, and overview controls in `src/excaliflow/atlas.py`.
 - [X] T019 Add regression coverage for a large Atlas canvas and controls in `tests/test_explorer.py`.
 - [X] T020 Run focused and full tests, bytecode compilation, and diff hygiene checks.
+
+## Phase 8: Visible AI Assistance
+
+- [X] T021 Keep the Full codebase explanation panel sticky on desktop and add a visible AI connection card in `src/excaliflow/atlas.py`.
+- [X] T022 Add local recheck and copyable Gemini Web2API / Atlas Bridge activation guidance that accurately preserves the static-HTML boundary in `src/excaliflow/atlas.py`.
+- [X] T023 Add regression coverage for sticky assistance controls and run focused/full verification in `tests/test_explorer.py`.
