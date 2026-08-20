@@ -1,0 +1,7 @@
+interface:
+  display_name: "Excali-Flow"
+  short_description: "Create offline architecture and editorial business diagrams"
+  default_prompt: "Use $excaliflow to create an offline editorial architecture, Sankey, Wardley, or journey diagram from local evidence."
+
+policy:
+  allow_implicit_invocation: true
