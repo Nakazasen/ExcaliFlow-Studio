@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 
-SKILL_CONTENT = ("SKILL.md", "THIRD_PARTY_LICENSES.md", "agents", "assets", "scripts", "tests")
+SKILL_CONTENT = ("SKILL.md", "THIRD_PARTY_LICENSES.md", "agents", "assets", "scripts", "src", "tests")
 
 # Each entry is a documented, native Agent Skills destination.  Keep this map
 # intentionally small: an unknown IDE must use the explicit --target option.

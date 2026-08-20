@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +37,7 @@ class WindowsSetupTests(unittest.TestCase):
             self.assertIn(str(target), result.stdout)
             self.assertTrue((target / "SKILL.md").is_file())
             self.assertTrue((target / "scripts" / "generate_diagram.py").is_file())
+            self.assertTrue((target / "src" / "excaliflow" / "explorer.py").is_file())
 
     def test_release_builder_creates_a_double_click_bundle(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -59,3 +61,6 @@ class WindowsSetupTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             archive = Path(temp) / "ExcaliFlow-Setup-windows.zip"
             self.assertTrue(archive.is_file())
+            with ZipFile(archive) as bundle:
+                self.assertIn("ExcaliFlow-Setup/ExcaliFlow-Setup.cmd", bundle.namelist())
+                self.assertIn("ExcaliFlow-Setup/src/excaliflow/explorer.py", bundle.namelist())

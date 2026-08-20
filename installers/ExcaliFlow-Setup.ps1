@@ -10,7 +10,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$SkillContent = @("SKILL.md", "THIRD_PARTY_LICENSES.md", "agents", "assets", "scripts", "tests")
+$SkillContent = @("SKILL.md", "THIRD_PARTY_LICENSES.md", "agents", "assets", "scripts", "src", "tests")
 $RepositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $TargetConfig = Get-Content -LiteralPath (Join-Path $PSScriptRoot "host-targets.json") -Raw | ConvertFrom-Json
 

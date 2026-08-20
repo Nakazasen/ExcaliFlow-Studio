@@ -31,7 +31,17 @@ class PackageEntrypointTests(unittest.TestCase):
             install_skill(target, source=source)
             self.assertTrue((target / "SKILL.md").is_file())
             self.assertTrue((target / "scripts" / "generate_diagram.py").is_file())
+            self.assertTrue((target / "scripts" / "explore_codebase.py").is_file())
+            self.assertTrue((target / "src" / "excaliflow" / "explorer.py").is_file())
             self.assertFalse(any("__pycache__" in str(path) for path in target.rglob("*")))
+            result = subprocess.run(
+                [sys.executable, str(target / "scripts" / "explore_codebase.py"), "ask", "--dir", str(source), "--question", "What is main?"],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Source-backed answer", result.stdout)
             _, ready = doctor("agy", workspace=root)
             self.assertTrue(ready)
 

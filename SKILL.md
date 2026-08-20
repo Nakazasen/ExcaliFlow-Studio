@@ -5,6 +5,20 @@ description: "Analyze a local codebase or knowledge graph into offline Excalidra
 
 # Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3)
 
+## Evidence-first exploration
+
+When the user asks to understand, learn, explain, or question a local codebase, use the portable explorer before making claims. It supports an engineering vocabulary and a beginner-friendly learner vocabulary, and every answer includes source-file/line evidence.
+
+```powershell
+# From the installed `excaliflow` folder, explain the codebase as a learning guide.
+py -3 .\scripts\explore_codebase.py --dir "D:\MyProject" --audience learner --out "D:\MyProject\CODEBASE_GUIDE.md"
+
+# Ask a focused question. Include `ask` as the first argument.
+py -3 .\scripts\explore_codebase.py ask --dir "D:\MyProject" --audience engineer --question "What is UserService?"
+```
+
+Do not present inferred runtime behavior as fact. The explorer reports Python AST declarations/imports plus structural declarations/imports from supported non-Python files; use the existing Graphify-aware viewer for broader relationship diagrams.
+
 ## Verified capability boundary
 
 - Python analysis uses the standard-library AST. JavaScript/TypeScript, Go, and Rust use deterministic language-aware extraction of declarations and imports; unsupported code is labelled as a structural scan.

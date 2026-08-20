@@ -7,11 +7,39 @@ import sys
 import argparse
 from pathlib import Path
 
+from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
+
+
+def write_console(content: str) -> None:
+    """Write UTF-8 safely when a legacy Windows console cannot encode Vietnamese."""
+    try:
+        print(content, end="")
+    except UnicodeEncodeError:
+        sys.stdout.buffer.write(content.encode("utf-8"))
 
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] in {"explain", "ask"}:
+        parser = argparse.ArgumentParser(prog="excaliflow", description="Explain a local codebase with source-backed evidence.")
+        parser.add_argument("command", choices=("explain", "ask"))
+        parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Codebase directory to inspect.")
+        parser.add_argument("--audience", choices=("engineer", "learner"), default="engineer", help="Explanation depth and vocabulary.")
+        parser.add_argument("--question", help="Required for ask; use a symbol, file, import, dependency, or overview question.")
+        parser.add_argument("--format", choices=("markdown", "json"), default="markdown", help="Output for people or another AI tool.")
+        parser.add_argument("--out", type=Path, help="Optional file for the generated explanation or answer.")
+        args = parser.parse_args()
+        if args.command == "ask" and not args.question:
+            parser.error("ask requires --question.")
+        content = serialise_answer(inspect_codebase(args.dir), args.question, args.audience, args.format)
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(content, encoding="utf-8")
+            print(f"Wrote source-backed {args.command} output to: {args.out}")
+        else:
+            write_console(content)
+        return
     if len(sys.argv) > 1 and sys.argv[1] in {"install", "doctor", "targets"}:
         parser = argparse.ArgumentParser(prog="excaliflow", description="Install or verify the portable ExcaliFlow skill.")
         parser.add_argument("command", choices=("install", "doctor", "targets"))

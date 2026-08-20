@@ -7,6 +7,7 @@ Local-first code intelligence and presentation-ready diagrams.
 - Graphify/Understand-aware codebase diagrams.
 - Offline Mermaid + Panzoom viewer and editable `.excalidraw` export.
 - Editorial SVG/HTML plus architecture, Sankey, Wardley, journey, KPI, funnel, timeline, quadrant, process, matrix, and risk visuals.
+- Evidence-first codebase guide and Q&A for both engineers and people learning to code.
 
 ## Development layout
 
@@ -25,6 +26,21 @@ $env:PYTHONPATH = "$PWD/src"
 py -3 -m excaliflow.cli --help
 py -3 -m unittest discover -s tests -v
 ```
+
+## Explore and learn a codebase
+
+Use the existing diagram command to see relationships, then use the same local source scan to explain the project or answer a focused question. `engineer` uses implementation vocabulary; `learner` explains the same evidence in beginner-friendly language.
+
+```powershell
+# A high-level learning guide, with file and line evidence
+excaliflow explain --dir "D:\MyProject" --audience learner --out "D:\MyProject\CODEBASE_GUIDE.md"
+
+# Ask about a class, function, file, imports, dependencies, or the architecture
+excaliflow ask --dir "D:\MyProject" --audience engineer --question "What is UserService?"
+excaliflow ask --dir "D:\MyProject" --audience learner --question "How do the imports connect?"
+```
+
+The answers are deterministic and source-backed: they identify matching declarations and import statements with file/line evidence. They intentionally do not claim to understand unsupported languages or infer behavior that is not visible in the scanned source.
 
 ## Install for an AI host
 
