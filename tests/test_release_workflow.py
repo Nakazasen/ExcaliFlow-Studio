@@ -17,6 +17,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("Release tag does not match VERSION", content)
         self.assertIn("signed-exe:", content)
         self.assertIn("WINDOWS_SIGNING_PFX_BASE64", content)
+        self.assertIn("steps.signing.outputs.ready", content)
+        self.assertNotIn("if: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64", content)
         self.assertIn("build-windows-exe.ps1", content)
         self.assertIn("ExcaliFlow-Setup-windows.exe --clobber", content)
         self.assertIn("contents: write", content)

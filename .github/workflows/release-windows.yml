@@ -72,7 +72,6 @@ jobs:
 
   signed-exe:
     needs: release
-    if: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 != '' && secrets.WINDOWS_SIGNING_PFX_PASSWORD != '' && vars.WINDOWS_TIMESTAMP_URL != '' }}
     runs-on: windows-latest
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
@@ -81,22 +80,37 @@ jobs:
       SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
       SIGNING_TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL }}
     steps:
+      - name: Check whether optional EXE signing is configured
+        id: signing
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SIGNING_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:SIGNING_PFX_PASSWORD) -or [string]::IsNullOrWhiteSpace($env:SIGNING_TIMESTAMP_URL)) {
+            Write-Output "EXE signing is not configured; skipping optional EXE artifact."
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            exit 0
+          }
+          "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       - name: Check out the exact release tag
+        if: ${{ steps.signing.outputs.ready == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Restore the protected signing certificate
+        if: ${{ steps.signing.outputs.ready == 'true' }}
         shell: pwsh
         run: |
           $bytes = [Convert]::FromBase64String($env:SIGNING_PFX_BASE64)
           [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\excaliflow-signing.pfx", $bytes)
 
       - name: Build, sign, and verify the EXE
+        if: ${{ steps.signing.outputs.ready == 'true' }}
         shell: pwsh
         run: |
           .\installers\build-windows-exe.ps1 -PfxPath "$env:RUNNER_TEMP\excaliflow-signing.pfx" -PfxPassword $env:SIGNING_PFX_PASSWORD -TimestampUrl $env:SIGNING_TIMESTAMP_URL -RequireSignature
 
       - name: Upload the verified signed EXE
+        if: ${{ steps.signing.outputs.ready == 'true' }}
         shell: pwsh
         run: gh release upload $env:RELEASE_TAG .\dist\ExcaliFlow-Setup-windows.exe --clobber
