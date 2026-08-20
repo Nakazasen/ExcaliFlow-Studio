@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from excaliflow.atlas import build_atlas_html
-from excaliflow.bridge import discover_ide_bridge
+from excaliflow.bridge import discover_ide_bridge, discover_ide_bridges
 from excaliflow.explorer import answer_question, explain_codebase, inspect_codebase
 
 
@@ -120,6 +120,15 @@ class ExplorerTests(unittest.TestCase):
             bridge = discover_ide_bridge(root)
             self.assertFalse(bridge["detected"])
             self.assertIn("localhost", bridge["reason"])
+
+    def test_gemini_web2api_is_an_optional_local_runtime_candidate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bridges = discover_ide_bridges(Path(temp))
+            gemini = bridges[-1]
+            self.assertEqual(gemini["name"], "Gemini Web2API")
+            self.assertEqual(gemini["health_url"], "http://127.0.0.1:8081/v1/models")
+            self.assertEqual(gemini["completion_url"], "http://127.0.0.1:8081/v1/chat/completions")
+            self.assertTrue(gemini["external_processing"])
 
     def test_source_scan_prunes_runtime_and_virtual_environment_trees(self):
         with tempfile.TemporaryDirectory() as temp:

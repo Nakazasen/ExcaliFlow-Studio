@@ -48,6 +48,8 @@ The answers are deterministic and source-backed: they identify matching declarat
 
 If the inspected repository already exposes a supported local IDE Bridge, Atlas uses it first for questions and shows that source in the UI. AIOS WorkLens is recognised through its existing Antigravity sidecar contract (`127.0.0.1:8585`); Atlas checks `/health`, then calls its OpenAI-compatible completion endpoint only when a user asks. It never starts a sidecar, sends to a remote URL, or labels a fallback answer as AI. Other projects can opt in with `.excaliflow/ide-bridge.json` containing loopback-only `health_url`, `completion_url`, optional `name`, and optional `model`.
 
+Atlas also probes a locally running [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) server after the project bridge: `http://127.0.0.1:8081/v1/models` then `/v1/chat/completions` with `gemini-3.6-flash`. This is an optional external-processing source, not an offline model: its UI label explicitly says the question and structural scan context go through the local proxy to Gemini. Atlas does not install, start, store credentials for, or bypass authentication on this server. For safer local exposure, configure that server to bind `127.0.0.1`, keep `api_keys` empty for browser use, and use only with source context you permit to leave the machine.
+
 ```powershell
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
 ```

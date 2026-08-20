@@ -8,7 +8,7 @@ import math
 from collections import Counter
 from pathlib import Path
 
-from excaliflow.bridge import discover_ide_bridge
+from excaliflow.bridge import discover_ide_bridge, discover_ide_bridges
 
 
 def _module_keys(path: str) -> set[str]:
@@ -118,7 +118,8 @@ def build_atlas_html(report: dict, audience: str = "learner") -> str:
     atlas = _atlas_model(report)
     learning = _learning_model(report, atlas)
     bridge = discover_ide_bridge(report["root"])
-    payload = {"report": report, "atlas": atlas, "learning": learning, "bridge": bridge, "defaultAudience": audience}
+    bridges = discover_ide_bridges(report["root"])
+    payload = {"report": report, "atlas": atlas, "learning": learning, "bridge": bridge, "bridges": bridges, "defaultAudience": audience}
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     node_by_id = {node["id"]: node for node in atlas["nodes"]}
     edge_svg = "".join(
@@ -154,14 +155,15 @@ function answer(){const q=document.getElementById('question').value.trim();docum
 document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.mode)));document.querySelectorAll('[data-audience]').forEach(button=>button.addEventListener('click',()=>{setAudience(button.dataset.audience);setMode('full');}));document.querySelectorAll('[data-node]').forEach(el=>el.addEventListener('click',()=>selectNode(el.dataset.node)));document.querySelectorAll('[data-block]').forEach(button=>button.addEventListener('click',()=>{const block=DATA.learning.blocks.find(item=>item.id===button.dataset.block);document.querySelectorAll('[data-block]').forEach(item=>item.classList.toggle('active',item===button));document.getElementById('learner-answer').textContent=`${block.label}: ${block.plain_language}\n\nTệp có bằng chứng trong nhóm này: ${block.files.slice(0,10).join(', ')}${block.files.length>10?' …':''}`;}));document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{document.getElementById('learner-answer').textContent=questionAnswer(button.dataset.question);}));document.getElementById('ask-button').addEventListener('click',answer);setMode('learner');setAudience(audience);
 </script></body></html>"""
     bridge_script = r"""
-const BRIDGE=DATA.bridge;let bridgeReady=false;
+const BRIDGES=DATA.bridges||[];let bridge=null;
 const bridgeStyle=document.createElement('style');bridgeStyle.textContent='.ai-source{margin:10px 0;padding:9px 10px;border-radius:8px;background:#edf6ef;color:#245c35;font-size:13px}.ai-source.local{background:#f4f2ee;color:#5d5a53}';document.head.appendChild(bridgeStyle);
 function addAiSource(answerId){const answer=document.getElementById(answerId);const source=document.createElement('div');source.className='ai-source local';source.dataset.aiSource='';source.textContent='Nguồn trả lời: quét mã nguồn cục bộ.';answer.parentNode.insertBefore(source,answer);}
 addAiSource('learner-answer');addAiSource('answer');
 function setAiSource(message,isBridge){document.querySelectorAll('[data-ai-source]').forEach(el=>{el.textContent=message;el.classList.toggle('local',!isBridge);});}
-async function checkBridge(){if(!BRIDGE.detected){setAiSource('Nguồn trả lời: quét mã nguồn cục bộ.',false);return false;}setAiSource(`Đang kiểm tra ${BRIDGE.name}…`,false);try{const response=await fetch(BRIDGE.health_url,{method:'GET'});bridgeReady=response.ok;}catch(error){bridgeReady=false;}setAiSource(bridgeReady?`Nguồn AI: ${BRIDGE.name} (cục bộ, đang kết nối).`:`Nguồn trả lời: quét mã nguồn cục bộ. ${BRIDGE.name} chưa chạy.`,bridgeReady);return bridgeReady;}
+function bridgeSourceText(candidate){return candidate.external_processing?`Nguồn AI: ${candidate.name} (proxy cục bộ; câu hỏi và cấu trúc quét sẽ được gửi tới Gemini).`:`Nguồn AI: ${candidate.name} (cục bộ, đang kết nối).`;}
+async function checkBridge(){bridge=null;if(!BRIDGES.length){setAiSource('Nguồn trả lời: quét mã nguồn cục bộ.',false);return false;}setAiSource('Đang kiểm tra nguồn AI cục bộ…',false);for(const candidate of BRIDGES){try{const response=await fetch(candidate.health_url,{method:'GET'});if(response.ok){bridge=candidate;setAiSource(bridgeSourceText(candidate),true);return true;}}catch(error){}}setAiSource('Nguồn trả lời: quét mã nguồn cục bộ. Không có nguồn AI cục bộ đang chạy.',false);return false;}
 function bridgeContext(){const files=DATA.atlas.nodes.slice(0,100).map(node=>`${node.file} (${node.symbols} declarations)`).join('\n');const links=DATA.atlas.edges.slice(0,120).map(edge=>`${edge.source}:${edge.line} imports ${edge.target}`).join('\n');return `Codebase root: ${DATA.report.root}\nStructural scan overview: ${DATA.learning.overview}\nFiles:\n${files}\nInternal imports:\n${links}`;}
-async function answerWithPreferredSource(question){if(!bridgeReady)await checkBridge();if(!bridgeReady)return questionAnswer(question);try{const response=await fetch(BRIDGE.completion_url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:BRIDGE.model,messages:[{role:'system',content:'You are a codebase learning assistant. Answer in Vietnamese. Use only the supplied structural source evidence; state limits when evidence is insufficient. Explain simply for a learner and cite file:line when an import is available.'},{role:'user',content:`Question: ${question}\n\n${bridgeContext()}`}],temperature:0.2,stream:false})});const payload=await response.json();const text=payload&&payload.choices&&payload.choices[0]&&payload.choices[0].message&&payload.choices[0].message.content;if(!response.ok||!text)throw new Error('Bridge returned no answer.');setAiSource(`Nguồn AI: ${BRIDGE.name} (cục bộ).`,true);return text.trim();}catch(error){bridgeReady=false;setAiSource(`Nguồn trả lời: quét mã nguồn cục bộ. ${BRIDGE.name} không phản hồi.`,false);return questionAnswer(question);}}
+async function answerWithPreferredSource(question){if(!bridge)await checkBridge();if(!bridge)return questionAnswer(question);try{const response=await fetch(bridge.completion_url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:bridge.model,messages:[{role:'system',content:'You are a codebase learning assistant. Answer in Vietnamese. Use only the supplied structural source evidence; state limits when evidence is insufficient. Explain simply for a learner and cite file:line when an import is available.'},{role:'user',content:`Question: ${question}\n\n${bridgeContext()}`}],temperature:0.2,stream:false})});const payload=await response.json();const text=payload&&payload.choices&&payload.choices[0]&&payload.choices[0].message&&payload.choices[0].message.content;if(!response.ok||!text)throw new Error('Bridge returned no answer.');setAiSource(bridgeSourceText(bridge),true);return text.trim();}catch(error){const failedName=bridge.name;bridge=null;setAiSource(`Nguồn trả lời: quét mã nguồn cục bộ. ${failedName} không phản hồi.`,false);return questionAnswer(question);}}
 document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',async()=>{const answer=document.getElementById('learner-answer');answer.textContent='Đang trả lời…';answer.textContent=await answerWithPreferredSource(button.dataset.question);}));
 document.getElementById('ask-button').addEventListener('click',async()=>{const question=document.getElementById('question').value.trim();if(!question)return;const answer=document.getElementById('answer');answer.textContent='Đang trả lời…';answer.textContent=await answerWithPreferredSource(question);});
 checkBridge();

@@ -12,6 +12,15 @@ AIOS_MARKERS = (
     "src/aios_habit/antigravity_bridge.py",
     "scripts/antigravity_sidecar_daemon.py",
 )
+GEMINI_WEB2API_BRIDGE = {
+    "detected": True,
+    "name": "Gemini Web2API",
+    "health_url": "http://127.0.0.1:8081/v1/models",
+    "completion_url": "http://127.0.0.1:8081/v1/chat/completions",
+    "model": "gemini-3.6-flash",
+    "detected_by": "local runtime probe",
+    "external_processing": True,
+}
 
 
 def _local_http_url(value: object) -> str | None:
@@ -48,23 +57,43 @@ def _manifest_bridge(project_dir: Path) -> dict | None:
     }
 
 
-def discover_ide_bridge(project_dir: str | Path) -> dict:
-    """Return a safe browser bridge config, without making a network request.
+def _aios_bridge(project_dir: Path) -> dict | None:
+    if not all((project_dir / marker).is_file() for marker in AIOS_MARKERS):
+        return None
+    return {
+        "detected": True,
+        "name": "Antigravity IDE Bridge",
+        "health_url": "http://127.0.0.1:8585/health",
+        "completion_url": "http://127.0.0.1:8585/v1/chat/completions",
+        "model": "antigravity-brain-pro",
+        "detected_by": "AIOS WorkLens bridge markers",
+        "external_processing": False,
+    }
+
+
+def discover_ide_bridges(project_dir: str | Path) -> list[dict]:
+    """Return ordered local bridge candidates, without making network requests.
 
     Atlas only accepts loopback HTTP URLs. The browser performs a health check and
-    sends requests only after the user asks a question.
+    sends requests only after the user asks a question. Gemini Web2API is a local
+    runtime probe, so it is included without requiring source files in the target
+    project; it is selected only after its local model endpoint responds.
     """
     root = Path(project_dir)
     manifest = _manifest_bridge(root)
     if manifest is not None:
+        return [manifest] if manifest["detected"] else []
+    bridges = [bridge for bridge in (_aios_bridge(root),) if bridge is not None]
+    bridges.append(dict(GEMINI_WEB2API_BRIDGE))
+    return bridges
+
+
+def discover_ide_bridge(project_dir: str | Path) -> dict:
+    """Return the primary configured bridge for compatibility with earlier callers."""
+    manifest = _manifest_bridge(Path(project_dir))
+    if manifest is not None and not manifest["detected"]:
         return manifest
-    if all((root / marker).is_file() for marker in AIOS_MARKERS):
-        return {
-            "detected": True,
-            "name": "Antigravity IDE Bridge",
-            "health_url": "http://127.0.0.1:8585/health",
-            "completion_url": "http://127.0.0.1:8585/v1/chat/completions",
-            "model": "antigravity-brain-pro",
-            "detected_by": "AIOS WorkLens bridge markers",
-        }
+    bridges = discover_ide_bridges(project_dir)
+    if bridges:
+        return bridges[0]
     return {"detected": False, "reason": "No supported local IDE Bridge was detected in this codebase."}
