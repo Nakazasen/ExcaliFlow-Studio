@@ -1,7 +1,7 @@
 # Feature Specification: Evidence Graph Atlas
 
-**Feature branch**: `main`  
-**Created**: 2026-08-21  
+**Feature branch**: `main`
+**Created**: 2026-08-21
 **Status**: In progress
 
 ## Purpose
