@@ -154,6 +154,28 @@ function questionAnswer(question){const q=question.toLowerCase();if(/app.*làm g
 function answer(){const q=document.getElementById('question').value.trim();document.getElementById('answer').textContent=q?questionAnswer(q):'Hãy hỏi về tệp, class, function hoặc liên kết import.';}
 document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.mode)));document.querySelectorAll('[data-audience]').forEach(button=>button.addEventListener('click',()=>{setAudience(button.dataset.audience);setMode('full');}));document.querySelectorAll('[data-node]').forEach(el=>el.addEventListener('click',()=>selectNode(el.dataset.node)));document.querySelectorAll('[data-block]').forEach(button=>button.addEventListener('click',()=>{const block=DATA.learning.blocks.find(item=>item.id===button.dataset.block);document.querySelectorAll('[data-block]').forEach(item=>item.classList.toggle('active',item===button));document.getElementById('learner-answer').textContent=`${block.label}: ${block.plain_language}\n\nTệp có bằng chứng trong nhóm này: ${block.files.slice(0,10).join(', ')}${block.files.length>10?' …':''}`;}));document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{document.getElementById('learner-answer').textContent=questionAnswer(button.dataset.question);}));document.getElementById('ask-button').addEventListener('click',answer);setMode('learner');setAudience(audience);
 </script></body></html>"""
+    template = template.replace(
+        ".graph{min-width:720px;width:100%;display:block}",
+        ".graph-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 20px 12px}.graph-tools button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px 10px;cursor:pointer;color:var(--ink);font:inherit}.graph-tools button:hover{border-color:var(--accent);color:#9c3d13}.graph-zoom{min-width:48px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}.graph-hint{color:var(--muted);font-size:12px}.graph{display:block}",
+    )
+    template = template.replace(
+        '<div class="graph-wrap"><svg class="graph" viewBox="0 0 __WIDTH__ __HEIGHT__" role="img" aria-label="Full codebase relationship graph">',
+        (
+            '<div class="graph-tools" aria-label="Graph zoom controls">'
+            '<button data-graph-zoom="out" title="Zoom out">−</button>'
+            '<span class="graph-zoom" id="graph-zoom">100%</span>'
+            '<button data-graph-zoom="in" title="Zoom in">+</button>'
+            '<button data-graph-zoom="reset">Read clearly</button>'
+            '<button data-graph-zoom="fit">Overview</button>'
+            '<span class="graph-hint">Scroll to explore the complete map.</span>'
+            '</div><div class="graph-wrap" id="graph-wrap">'
+            '<svg id="full-graph" class="graph" width="__WIDTH__" height="__HEIGHT__" '
+            'viewBox="0 0 __WIDTH__ __HEIGHT__" role="img" aria-label="Full codebase relationship graph">'
+        ),
+    )
+    graph_controls_script = r"""
+const fullGraph=document.getElementById('full-graph');const graphWrap=document.getElementById('graph-wrap');const graphBaseWidth=DATA.atlas.width;const graphBaseHeight=DATA.atlas.height;let graphScale=1;function setGraphScale(scale){graphScale=Math.max(.15,Math.min(2.5,scale));fullGraph.setAttribute('width',String(Math.round(graphBaseWidth*graphScale)));fullGraph.setAttribute('height',String(Math.round(graphBaseHeight*graphScale)));document.getElementById('graph-zoom').textContent=`${Math.round(graphScale*100)}%`;}function fitGraph(){const scale=Math.max(.15,Math.min(1,(graphWrap.clientWidth-32)/graphBaseWidth));setGraphScale(scale);graphWrap.scrollLeft=0;graphWrap.scrollTop=0;}document.querySelectorAll('[data-graph-zoom]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.graphZoom;if(action==='in')setGraphScale(graphScale+.2);else if(action==='out')setGraphScale(graphScale-.2);else if(action==='fit')fitGraph();else setGraphScale(1);}));
+"""
     bridge_script = r"""
 const BRIDGES=DATA.bridges||[];let bridge=null;
 const bridgeStyle=document.createElement('style');bridgeStyle.textContent='.ai-source{margin:10px 0;padding:9px 10px;border-radius:8px;background:#edf6ef;color:#245c35;font-size:13px}.ai-source.local{background:#f4f2ee;color:#5d5a53}';document.head.appendChild(bridgeStyle);
@@ -168,7 +190,10 @@ document.querySelectorAll('[data-question]').forEach(button=>button.addEventList
 document.getElementById('ask-button').addEventListener('click',async()=>{const question=document.getElementById('question').value.trim();if(!question)return;const answer=document.getElementById('answer');answer.textContent='Đang trả lời…';answer.textContent=await answerWithPreferredSource(question);});
 checkBridge();
 """
-    template = template.replace("setMode('learner');setAudience(audience);", "setMode('learner');setAudience(audience);" + bridge_script)
+    template = template.replace(
+        "setMode('learner');setAudience(audience);",
+        "setMode('learner');setAudience(audience);" + graph_controls_script + bridge_script,
+    )
     return (
         template.replace("__TITLE__", title)
         .replace("__BLOCK_CARDS__", block_cards)

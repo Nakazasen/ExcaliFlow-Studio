@@ -2,6 +2,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -148,6 +149,21 @@ class ExplorerTests(unittest.TestCase):
             self.assertIn("App này làm gì?", atlas)
             self.assertIn("Tệp này dùng tệp kia", atlas)
             self.assertIn('"defaultAudience": "learner"', atlas)
+
+    def test_large_atlas_keeps_an_intrinsic_canvas_and_readability_controls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for index in range(121):
+                (root / f"module_{index}.py").write_text(f"def task_{index}():\n    return {index}\n", encoding="utf-8")
+            atlas = build_atlas_html(inspect_codebase(root))
+            match = re.search(r'<svg id="full-graph"[^>]*width="(\d+)" height="(\d+)"', atlas)
+            self.assertIsNotNone(match)
+            self.assertGreater(int(match.group(1)), 2000)
+            self.assertGreater(int(match.group(2)), 1000)
+            self.assertNotIn(".graph{min-width:720px;width:100%", atlas)
+            self.assertIn('data-graph-zoom="fit"', atlas)
+            self.assertIn('data-graph-zoom="in"', atlas)
+            self.assertIn('data-graph-zoom="out"', atlas)
 
     def test_atlas_detects_aios_bridge_without_claiming_it_is_running(self):
         with tempfile.TemporaryDirectory() as temp:

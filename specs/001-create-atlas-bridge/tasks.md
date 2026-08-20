@@ -34,3 +34,9 @@
 - [X] T015 Add a portable Windows folder-picker launcher in `scripts/Open-ExcaliFlow.cmd` and package coverage in `tests/test_package_entrypoint.py`.
 - [X] T016 Update `README.md` and `SKILL.md` so AI hosts recommend the learner-first entry point before technical commands.
 - [X] T017 Run focused and full tests, bytecode compilation, and diff hygiene checks.
+
+## Phase 7: Readable Full Graph
+
+- [X] T018 Keep the intrinsic Atlas SVG canvas and add local zoom, reset, and overview controls in `src/excaliflow/atlas.py`.
+- [X] T019 Add regression coverage for a large Atlas canvas and controls in `tests/test_explorer.py`.
+- [X] T020 Run focused and full tests, bytecode compilation, and diff hygiene checks.

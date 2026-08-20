@@ -52,6 +52,15 @@ A non-technical person can choose a project folder and immediately see a beginne
 2. **Given** Windows and a portable installed skill, **when** the person double-clicks the launcher without an argument, **then** they can choose a project folder in a standard folder picker.
 3. **Given** the optional AI service is unavailable, **when** the person opens Atlas, **then** source-backed learning remains usable and they are not asked to configure a bridge to begin.
 
+### User Story 6 - Read a full codebase map (Priority: P1)
+
+A person opening Full codebase can read file names in a large project instead of seeing the entire graph compressed into an unreadable thumbnail.
+
+**Acceptance Scenarios**:
+
+1. **Given** a graph with hundreds of files, **when** the person opens Full codebase, **then** nodes retain readable dimensions and the map scrolls rather than shrinking all nodes to fit the viewport.
+2. **Given** a large full map, **when** the person needs orientation or detail, **then** they can switch between overview, reset, zoom in, and zoom out controls.
+
 ## Requirements
 
 - **FR-001**: The product MUST create a bridge manifest in the selected repository without overwriting an existing manifest.
@@ -65,6 +74,8 @@ A non-technical person can choose a project folder and immediately see a beginne
 - **FR-009**: The portable skill MUST include an operational playbook for Gemini Web2API with loopback-only configuration, temporary-chat guidance, lifecycle commands, verification, and troubleshooting.
 - **FR-010**: The product MUST provide one simple project-opening workflow that needs only a project folder and does not create or start an AI Bridge.
 - **FR-011**: The portable Windows skill MUST include a double-click launcher with a folder picker and clear failure output.
+- **FR-012**: Full codebase rendering MUST preserve a readable physical node size for large graphs instead of forcing the full SVG to the viewport width.
+- **FR-013**: Full codebase rendering MUST provide local zoom and overview controls without a network runtime.
 
 ## Success Criteria
 
@@ -74,6 +85,7 @@ A non-technical person can choose a project folder and immediately see a beginne
 - **SC-004**: The full automated suite passes after adding the feature.
 - **SC-005**: When a local runtime is unavailable, the diagnostic gives a concrete next action without suggesting that AI questions are working.
 - **SC-006**: A person can produce and open an Atlas with one command containing only the project location.
+- **SC-007**: A graph of 100 or more files renders with an intrinsic scrollable canvas and controls for overview and readable detail.
 
 ## Assumptions
 
