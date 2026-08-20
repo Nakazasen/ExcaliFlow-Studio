@@ -55,3 +55,34 @@ jobs:
             gh release create $env:RELEASE_TAG --title "ExcaliFlow $env:RELEASE_TAG" --generate-notes
           }
           gh release upload $env:RELEASE_TAG .\dist\ExcaliFlow-Setup-windows.zip --clobber
+
+  signed-exe:
+    needs: release
+    if: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 != '' && secrets.WINDOWS_SIGNING_PFX_PASSWORD != '' && vars.WINDOWS_TIMESTAMP_URL != '' }}
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+      SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+      SIGNING_TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL }}
+    steps:
+      - name: Check out the exact release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Restore the protected signing certificate
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String($env:SIGNING_PFX_BASE64)
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\excaliflow-signing.pfx", $bytes)
+
+      - name: Build, sign, and verify the EXE
+        shell: pwsh
+        run: |
+          .\installers\build-windows-exe.ps1 -PfxPath "$env:RUNNER_TEMP\excaliflow-signing.pfx" -PfxPassword $env:SIGNING_PFX_PASSWORD -TimestampUrl $env:SIGNING_TIMESTAMP_URL -RequireSignature
+
+      - name: Upload the verified signed EXE
+        shell: pwsh
+        run: gh release upload $env:RELEASE_TAG .\dist\ExcaliFlow-Setup-windows.exe --clobber

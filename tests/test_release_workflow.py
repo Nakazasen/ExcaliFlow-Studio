@@ -14,4 +14,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("py -3 -m unittest discover -s tests -v", content)
         self.assertIn("gh release create", content)
         self.assertIn("ExcaliFlow-Setup-windows.zip --clobber", content)
+        self.assertIn("signed-exe:", content)
+        self.assertIn("WINDOWS_SIGNING_PFX_BASE64", content)
+        self.assertIn("build-windows-exe.ps1", content)
+        self.assertIn("ExcaliFlow-Setup-windows.exe --clobber", content)
         self.assertIn("contents: write", content)

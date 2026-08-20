@@ -64,3 +64,26 @@ class WindowsSetupTests(unittest.TestCase):
             with ZipFile(archive) as bundle:
                 self.assertIn("ExcaliFlow-Setup/ExcaliFlow-Setup.cmd", bundle.namelist())
                 self.assertIn("ExcaliFlow-Setup/src/excaliflow/explorer.py", bundle.namelist())
+
+    def test_exe_builder_creates_an_unsigned_local_self_extracting_installer(self):
+        with tempfile.TemporaryDirectory() as temp:
+            result = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(ROOT / "installers" / "build-windows-exe.ps1"),
+                    "-OutputDirectory",
+                    temp,
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("unsigned local EXE", result.stdout + result.stderr)
+            self.assertTrue((Path(temp) / "ExcaliFlow-Setup-windows.exe").is_file())
