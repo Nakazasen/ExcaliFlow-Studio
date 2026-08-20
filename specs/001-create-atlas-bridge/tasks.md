@@ -46,3 +46,9 @@
 - [X] T021 Keep the Full codebase explanation panel sticky on desktop and add a visible AI connection card in `src/excaliflow/atlas.py`.
 - [X] T022 Add local recheck and copyable Gemini Web2API / Atlas Bridge activation guidance that accurately preserves the static-HTML boundary in `src/excaliflow/atlas.py`.
 - [X] T023 Add regression coverage for sticky assistance controls and run focused/full verification in `tests/test_explorer.py`.
+
+## Phase 9: Compact Graph Navigation
+
+- [X] T024 Add source-backed responsibility-group connections and a compact overview SVG in `src/excaliflow/atlas.py`.
+- [X] T025 Add overview, all-files, focus-group, and local level-of-detail controls in `src/excaliflow/atlas.py`.
+- [X] T026 Add regression coverage and run focused/full verification in `tests/test_explorer.py`.

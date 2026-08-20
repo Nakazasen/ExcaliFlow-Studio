@@ -165,6 +165,26 @@ class ExplorerTests(unittest.TestCase):
             self.assertIn('data-graph-zoom="in"', atlas)
             self.assertIn('data-graph-zoom="out"', atlas)
 
+    def test_large_atlas_starts_with_a_compact_source_backed_overview(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for index in range(121):
+                category = ("ui", "models", "api", "services")[index % 4]
+                (root / f"{category}_{index}.py").write_text(
+                    f"from {category}_{(index + 1) % 121} import task_{(index + 1) % 121}\n"
+                    f"def task_{index}():\n    return {index}\n",
+                    encoding="utf-8",
+                )
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertIn('id="compact-overview"', atlas)
+            self.assertIn('data-map-mode="overview"', atlas)
+            self.assertIn('data-map-mode="files"', atlas)
+            self.assertIn('data-group-focus="processing"', atlas)
+            self.assertIn('data-category="processing"', atlas)
+            self.assertIn('class="edge" data-source-category=', atlas)
+            self.assertIn('low-detail', atlas)
+            self.assertIn('.full-shell.view.active{display:grid', atlas)
+
     def test_full_atlas_keeps_assistance_visible_and_explains_optional_ai_setup(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

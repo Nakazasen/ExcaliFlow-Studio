@@ -29,7 +29,10 @@ def _atlas_model(report: dict) -> dict:
     symbol_count = Counter(symbol["file"] for symbol in report["symbols"])
     ranked_files = sorted(report["files"], key=lambda file: (-symbol_count[file], file))
     selected = set(ranked_files)
-    nodes = [{"id": f"n{index}", "file": file, "symbols": symbol_count[file]} for index, file in enumerate(ranked_files)]
+    nodes = [
+        {"id": f"n{index}", "file": file, "symbols": symbol_count[file], "category": _learning_category(file)}
+        for index, file in enumerate(ranked_files)
+    ]
     node_id = {node["file"]: node["id"] for node in nodes}
     edges: list[dict] = []
     seen: set[tuple[str, str]] = set()
@@ -109,7 +112,52 @@ def _learning_model(report: dict, atlas: dict) -> dict:
         f"{len(report['symbols'])} thao tác/khối có tên, và {len(atlas['edges'])} liên kết nội bộ. "
         f"Loại tệp phát hiện: {', '.join(suffixes) or 'không xác định'}."
     )
-    return {"blocks": blocks, "start_file": start_file, "overview": overview}
+    category_by_file = {file: _learning_category(file) for file in report["files"]}
+    connection_counts: Counter[tuple[str, str]] = Counter()
+    for edge in atlas["edges"]:
+        source_category = category_by_file[edge["source"]]
+        target_category = category_by_file[edge["target"]]
+        if source_category != target_category:
+            connection_counts[tuple(sorted((source_category, target_category)))] += 1
+    connections = [
+        {"source": source, "target": target, "count": count}
+        for (source, target), count in sorted(connection_counts.items())
+    ]
+    return {"blocks": blocks, "connections": connections, "start_file": start_file, "overview": overview}
+
+
+def _compact_overview_svg(learning: dict) -> str:
+    """Return a small, source-backed responsibility map for the first graph level."""
+    positions = ((70, 55), (445, 55), (70, 285), (445, 285))
+    blocks = learning["blocks"]
+    by_id = {block["id"]: block for block in blocks}
+    coordinates = {block["id"]: positions[index] for index, block in enumerate(blocks)}
+    edge_svg = "".join(
+        f'<line class="overview-edge" x1="{coordinates[item["source"]][0] + 145}" y1="{coordinates[item["source"]][1] + 68}" '
+        f'x2="{coordinates[item["target"]][0] + 145}" y2="{coordinates[item["target"]][1] + 68}"/><text class="overview-edge-label" '
+        f'x="{(coordinates[item["source"]][0] + coordinates[item["target"]][0]) // 2 + 145}" '
+        f'y="{(coordinates[item["source"]][1] + coordinates[item["target"]][1]) // 2 + 61}">{item["count"]}</text>'
+        for item in learning["connections"]
+        if item["source"] in coordinates and item["target"] in coordinates
+    )
+    node_svg = "".join(
+        f'<g class="overview-node" data-group-focus="{block["id"]}" tabindex="0"><rect x="{coordinates[block["id"]][0]}" '
+        f'y="{coordinates[block["id"]][1]}" width="290" height="136" rx="16"/><text class="overview-title" '
+        f'x="{coordinates[block["id"]][0] + 20}" y="{coordinates[block["id"]][1] + 41}">{html.escape(block["label"])}</text>'
+        f'<text class="overview-count" x="{coordinates[block["id"]][0] + 20}" y="{coordinates[block["id"]][1] + 71}">'
+        f'{len(block["files"])} tệp · {block["symbols"]} khai báo</text><text class="overview-action" '
+        f'x="{coordinates[block["id"]][0] + 20}" y="{coordinates[block["id"]][1] + 108}">Mở các tệp liên quan →</text></g>'
+        for block in blocks
+    )
+    if not blocks:
+        return '<p class="meta">Không có tệp nguồn được hỗ trợ để tạo bản đồ tổng quan.</p>'
+    return (
+        '<svg class="overview-graph" viewBox="0 0 810 500" role="img" '
+        'aria-label="Source-backed responsibility overview">'
+        + edge_svg
+        + node_svg
+        + '</svg>'
+    )
 
 
 def build_atlas_html(report: dict, audience: str = "learner") -> str:
@@ -118,6 +166,7 @@ def build_atlas_html(report: dict, audience: str = "learner") -> str:
         raise ValueError("Audience must be engineer or learner.")
     atlas = _atlas_model(report)
     learning = _learning_model(report, atlas)
+    compact_overview_svg = _compact_overview_svg(learning)
     bridge = discover_ide_bridge(report["root"])
     bridges = discover_ide_bridges(report["root"])
     bridge_port = 8788
@@ -127,11 +176,11 @@ def build_atlas_html(report: dict, audience: str = "learner") -> str:
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     node_by_id = {node["id"]: node for node in atlas["nodes"]}
     edge_svg = "".join(
-        f'<line class="edge" x1="{node_by_id[edge["from"]]["x"] + 155}" y1="{node_by_id[edge["from"]]["y"] + 35}" x2="{node_by_id[edge["to"]]["x"]}" y2="{node_by_id[edge["to"]]["y"] + 35}" />'
+        f'<line class="edge" data-source-category="{node_by_id[edge["from"]]["category"]}" data-target-category="{node_by_id[edge["to"]]["category"]}" x1="{node_by_id[edge["from"]]["x"] + 155}" y1="{node_by_id[edge["from"]]["y"] + 35}" x2="{node_by_id[edge["to"]]["x"]}" y2="{node_by_id[edge["to"]]["y"] + 35}" />'
         for edge in atlas["edges"]
     )
     node_svg = "".join(
-        f'<g class="graph-node" data-node="{node["id"]}" tabindex="0"><rect x="{node["x"]}" y="{node["y"]}" width="155" height="70" rx="14"/><text x="{node["x"] + 12}" y="{node["y"] + 29}">{html.escape(Path(node["file"]).name)[:21]}</text><text class="caption" x="{node["x"] + 12}" y="{node["y"] + 52}">{node["symbols"]} declarations</text></g>'
+        f'<g class="graph-node" data-node="{node["id"]}" data-category="{node["category"]}" tabindex="0"><rect x="{node["x"]}" y="{node["y"]}" width="155" height="70" rx="14"/><text x="{node["x"] + 12}" y="{node["y"] + 29}">{html.escape(Path(node["file"]).name)[:21]}</text><text class="caption" x="{node["x"] + 12}" y="{node["y"] + 52}">{node["symbols"]} declarations</text></g>'
         for node in atlas["nodes"]
     )
     sidebar_nodes = "".join(
@@ -185,8 +234,23 @@ document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener
             'viewBox="0 0 __WIDTH__ __HEIGHT__" role="img" aria-label="Full codebase relationship graph">'
         ),
     )
+    template = template.replace(
+        '<div class="graph-tools" aria-label="Graph zoom controls">',
+        """<div class="map-mode" role="group" aria-label="Map detail level"><button data-map-mode="overview" type="button">B&#7843;n &#273;&#7891; t&#7893;ng quan</button><button data-map-mode="files" type="button">All files</button><span id="map-focus-label" class="map-focus-label"></span></div><section id="compact-overview"><p class="map-intro">B&#7843;n &#273;&#7891; n&#224;y g&#7897;p t&#7879;p theo vai tr&#242; suy ra t&#7915; t&#234;n v&#224; &#273;&#432;&#7901;ng d&#7851;n. Con s&#7889; tr&#234;n m&#361;i m&#361;i t&#234;n l&#224; l&#432;&#7907;ng import n&#7897;i b&#7897; &#273;&#227; qu&#233;t &#273;&#432;&#7907;c. B&#7845;m m&#7897;t kh&#7889;i &#273;&#7875; xem t&#7879;p li&#234;n quan.</p>__COMPACT_OVERVIEW__</section><div id="file-map-shell" hidden><div class="graph-tools" aria-label="Graph zoom controls">""",
+    )
+    template = template.replace(
+        '</svg></div></section><aside class="right">',
+        '</svg></div></div></section><aside class="right">',
+    )
+    template = template.replace(
+        "</style></head>",
+        """.full-shell.view.active{display:grid;grid-template-columns:minmax(210px,250px) minmax(0,1fr) minmax(280px,340px);width:100%;overflow:hidden}.canvas{min-width:0;width:100%;overflow:hidden}.map-mode{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 20px 12px}.map-mode button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px 10px;color:var(--ink);cursor:pointer;font:inherit}.map-mode button.active{background:var(--ink);border-color:var(--ink);color:#fff}.map-focus-label{color:var(--muted);font-size:13px}.map-intro{max-width:780px;margin:0 auto 14px;color:#455566}.overview-graph{display:block;width:min(100%,810px);height:auto;margin:auto;border:1px solid var(--line);border-radius:16px;background:#fffefa}.overview-edge{stroke:#90a0ad;stroke-width:2}.overview-edge-label{font-size:12px;fill:#536473;font-weight:700;text-anchor:middle}.overview-node{cursor:pointer}.overview-node rect{fill:#fff7f0;stroke:#e88351;stroke-width:2}.overview-node:hover rect,.overview-node:focus rect{fill:#ffe4d4;stroke:#c74918;stroke-width:3}.overview-title{font-size:21px;fill:var(--ink);font-weight:800}.overview-count{font-size:14px;fill:#455566}.overview-action{font-size:14px;fill:#9c3d13;font-weight:700}#compact-overview{margin:0 20px 25px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fffdf9}.graph-node.filtered,.edge.filtered{opacity:.08;pointer-events:none}.low-detail .edge,.low-detail .graph-node text{display:none}@media(max-width:980px){.full-shell.view.active{grid-template-columns:minmax(0,1fr) minmax(280px,340px)}.full-shell.view.active .left{display:none}.full-shell.view.active .right{grid-column:auto;position:sticky;top:72px;height:calc(100vh - 72px);overflow-y:auto}}@media(max-width:650px){.full-shell.view.active{display:block}.full-shell.view.active .right{position:static;height:auto;overflow:visible}.map-mode{margin:0 14px 10px}#compact-overview{margin:0 14px 20px;padding:12px}.overview-title{font-size:17px}.overview-count,.overview-action{font-size:12px}}</style></head>""",
+    )
     graph_controls_script = r"""
 const fullGraph=document.getElementById('full-graph');const graphWrap=document.getElementById('graph-wrap');const graphBaseWidth=DATA.atlas.width;const graphBaseHeight=DATA.atlas.height;let graphScale=1;function setGraphScale(scale){graphScale=Math.max(.15,Math.min(2.5,scale));fullGraph.setAttribute('width',String(Math.round(graphBaseWidth*graphScale)));fullGraph.setAttribute('height',String(Math.round(graphBaseHeight*graphScale)));document.getElementById('graph-zoom').textContent=`${Math.round(graphScale*100)}%`;}function fitGraph(){const scale=Math.max(.15,Math.min(1,(graphWrap.clientWidth-32)/graphBaseWidth));setGraphScale(scale);graphWrap.scrollLeft=0;graphWrap.scrollTop=0;}document.querySelectorAll('[data-graph-zoom]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.graphZoom;if(action==='in')setGraphScale(graphScale+.2);else if(action==='out')setGraphScale(graphScale-.2);else if(action==='fit')fitGraph();else setGraphScale(1);}));
+"""
+    map_navigation_script = r"""
+const compactOverview=document.getElementById('compact-overview');const fileMapShell=document.getElementById('file-map-shell');const mapFocusLabel=document.getElementById('map-focus-label');let focusedGroup=null;function updateGraphLod(){fullGraph.classList.toggle('low-detail',graphScale<.58);}const originalSetGraphScale=setGraphScale;setGraphScale=function(scale){originalSetGraphScale(scale);updateGraphLod();};function setMapMode(next){compactOverview.hidden=next==='files';fileMapShell.hidden=next!=='files';document.querySelectorAll('[data-map-mode]').forEach(button=>button.classList.toggle('active',button.dataset.mapMode===next));}function applyGroupFocus(){document.querySelectorAll('.graph-node').forEach(node=>node.classList.toggle('filtered',Boolean(focusedGroup)&&node.dataset.category!==focusedGroup));document.querySelectorAll('.edge').forEach(edge=>edge.classList.toggle('filtered',Boolean(focusedGroup)&&edge.dataset.sourceCategory!==focusedGroup&&edge.dataset.targetCategory!==focusedGroup));const block=DATA.learning.blocks.find(item=>item.id===focusedGroup);mapFocusLabel.textContent=block?`Đang focus: ${block.label}`:'';}function centerFocusedGroup(){const nodes=DATA.atlas.nodes.filter(node=>node.category===focusedGroup);if(!nodes.length)return;const minX=Math.min(...nodes.map(node=>node.x));const maxX=Math.max(...nodes.map(node=>node.x+155));const minY=Math.min(...nodes.map(node=>node.y));const maxY=Math.max(...nodes.map(node=>node.y+70));graphWrap.scrollLeft=Math.max(0,((minX+maxX)/2)*graphScale-graphWrap.clientWidth/2);graphWrap.scrollTop=Math.max(0,((minY+maxY)/2)*graphScale-graphWrap.clientHeight/2);}function focusGroup(group){focusedGroup=group;setMapMode('files');applyGroupFocus();requestAnimationFrame(centerFocusedGroup);}document.querySelectorAll('[data-map-mode]').forEach(button=>button.addEventListener('click',()=>{if(button.dataset.mapMode==='overview'){focusedGroup=null;applyGroupFocus();setMapMode('overview');}else{focusedGroup=null;applyGroupFocus();setMapMode('files');}}));document.querySelectorAll('[data-group-focus]').forEach(node=>{node.addEventListener('click',()=>focusGroup(node.dataset.groupFocus));node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();focusGroup(node.dataset.groupFocus);}});});setMapMode('overview');updateGraphLod();if(location.hash==='#full')setMode('full');
 """
     bridge_script = r"""
 const BRIDGES=DATA.bridges||[];let bridge=null;
@@ -212,7 +276,7 @@ checkBridge();
 """
     template = template.replace(
         "setMode('learner');setAudience(audience);",
-        "setMode('learner');setAudience(audience);" + graph_controls_script + bridge_script + assistance_script,
+        "setMode('learner');setAudience(audience);" + graph_controls_script + map_navigation_script + bridge_script + assistance_script,
     )
     return (
         template.replace("__TITLE__", title)
@@ -222,6 +286,7 @@ checkBridge();
         .replace("__HEIGHT__", str(atlas["height"]))
         .replace("__EDGES__", edge_svg)
         .replace("__NODES__", node_svg)
+        .replace("__COMPACT_OVERVIEW__", compact_overview_svg)
         .replace("__DATA__", data)
         .replace("__BRIDGE_PORT__", str(bridge_port))
     )

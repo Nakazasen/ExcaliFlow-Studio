@@ -15,6 +15,7 @@ The existing Atlas browser discovers `.excaliflow/ide-bridge.json` and local run
 7. Add a learner-first launcher that writes a predictable project-local Atlas and opens it, while leaving Bridge setup optional and hidden from the default path.
 8. Keep full-graph SVG dimensions intrinsic, then add local overview/detail controls instead of scaling all nodes down to fit the visible panel.
 9. Keep Full codebase side panels sticky and independently scrollable on desktop; expose the existing local Bridge discovery as a visible, copyable activation workflow rather than trying to launch a process from static browser JavaScript.
+10. Apply large-graph patterns without adding a runtime dependency: source-backed responsibility-group overview, focus-plus-context filtering, explicit All files escape hatch, and zoom-based level of detail. This borrows the interaction principles documented by Cytoscape/React Flow while retaining Atlas as one offline HTML file.
 
 ## Affected Components
 

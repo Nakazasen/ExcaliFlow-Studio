@@ -71,6 +71,17 @@ A person exploring a large Full codebase map can keep the explanation and option
 2. **Given** Gemini Web2API or a supported IDE Bridge is not running, **when** Atlas opens, **then** the panel explains that source-backed answers still work and provides a visible recheck control plus copyable, project-specific activation steps.
 3. **Given** a local AI source is ready, **when** Atlas opens or the person rechecks, **then** the panel names the active local source and states whether its questions are externally processed.
 
+### User Story 8 - Start with an intelligible graph (Priority: P1)
+
+A person opening a repository with hundreds of files first sees a compact source-backed architecture map, then deliberately expands to all files or focuses one responsibility group.
+
+**Acceptance Scenarios**:
+
+1. **Given** a Full codebase graph with many files, **when** the person opens it, **then** Atlas initially presents no more than the responsibility groups inferred from source paths, with inter-group import counts where evidence exists.
+2. **Given** the compact map, **when** the person chooses a responsibility group, **then** Atlas opens the detailed map with that group emphasized and centered.
+3. **Given** a person who needs every scanned file, **when** they choose All files, **then** Atlas shows the full intrinsic map without hiding records or inventing relationships.
+4. **Given** the file map is zoomed out, **when** labels cannot be read, **then** Atlas suppresses the labels and edges until useful scale is restored rather than rendering unreadable visual noise.
+
 ## Requirements
 
 - **FR-001**: The product MUST create a bridge manifest in the selected repository without overwriting an existing manifest.
@@ -89,6 +100,9 @@ A person exploring a large Full codebase map can keep the explanation and option
 - **FR-014**: On desktop Full codebase, the explanation, question, and optional AI connection panel MUST remain usable while the map is scrolled.
 - **FR-015**: Atlas MUST surface the optional local Gemini Web2API/IDE Bridge lifecycle in its UI without falsely claiming that a static HTML file can start a local process.
 - **FR-016**: When no local AI source responds, Atlas MUST offer a recheck action and copyable project-specific activation guidance while retaining source-backed local answers.
+- **FR-017**: Full codebase MUST provide an offline semantic overview based solely on the existing responsibility-group classification and proven inter-group import counts.
+- **FR-018**: Full codebase MUST retain an explicit All files view and support focusing a responsibility group without losing the full graph data.
+- **FR-019**: The detailed SVG MUST use local level-of-detail styling that removes unreadable labels and edges below a useful zoom threshold.
 
 ## Success Criteria
 
@@ -100,6 +114,7 @@ A person exploring a large Full codebase map can keep the explanation and option
 - **SC-006**: A person can produce and open an Atlas with one command containing only the project location.
 - **SC-007**: A graph of 100 or more files renders with an intrinsic scrollable canvas and controls for overview and readable detail.
 - **SC-008**: A generated Atlas contains a visible AI connection status, recheck control, activation-guide copy control, and sticky desktop explanation panel.
+- **SC-009**: A generated large Atlas contains a compact group overview, a one-click All files view, group focus controls, and zoom-based low-detail behavior without fetching a visualization library.
 
 ## Assumptions
 
