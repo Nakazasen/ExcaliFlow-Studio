@@ -90,7 +90,7 @@ excaliflow doctor --host custom --target "D:\MyIDE\skills\excaliflow"
 
 ## Windows one-click setup
 
-For a computer without Python, download `ExcaliFlow-Setup-windows.zip` from a release, extract it, then double-click `ExcaliFlow-Setup.cmd`. The small Windows dialog asks for the AI tool, shows the exact destination before copying anything, verifies the generator after installation, and needs neither Administrator permission nor a network download.
+For a computer without Python, download `ExcaliFlow-Setup-windows.zip` from the [latest GitHub Release](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), extract it, then double-click `ExcaliFlow-Setup.cmd`. The small Windows dialog asks for the AI tool, shows the exact destination before copying anything, verifies the generator after installation, and needs neither Administrator permission nor a network download.
 
 Maintainers create that release asset with:
 
@@ -99,6 +99,8 @@ Maintainers create that release asset with:
 ```
 
 The generated `dist\ExcaliFlow-Setup-windows.zip` contains only the portable skill and the installer; it does not bundle Python or install a background service.
+
+Every pushed version tag matching `v*` now runs the Windows release workflow: it tests the tagged commit, builds the ZIP, creates or updates its GitHub Release, and replaces the release asset. To publish the first version, tag the intended commit (for example `v0.1.0`) and push that tag.
 
 ## Migration boundary
 
