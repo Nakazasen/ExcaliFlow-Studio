@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from excaliflow.atlas import build_atlas_html
 from excaliflow.explorer import answer_question, explain_codebase, inspect_codebase
 
 
@@ -68,3 +69,14 @@ class ExplorerTests(unittest.TestCase):
             answer = answer_question(inspect_codebase(root), "What is inspect_codebase?", "engineer")
             self.assertIn("Source-backed answer", answer)
             self.assertIn("scanner.py:1", answer)
+
+    def test_atlas_is_an_offline_graph_with_explanation_and_question_controls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            atlas = build_atlas_html(inspect_codebase(root), "learner")
+            self.assertIn("Codebase Atlas", atlas)
+            self.assertIn("<svg", atlas)
+            self.assertIn("Answer from source evidence", atlas)
+            self.assertIn("app.py", atlas)
+            self.assertNotIn("https://", atlas)

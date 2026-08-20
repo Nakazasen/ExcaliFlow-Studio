@@ -19,6 +19,17 @@ py -3 .\scripts\explore_codebase.py ask --dir "D:\MyProject" --audience engineer
 
 Do not present inferred runtime behavior as fact. The explorer reports Python AST declarations/imports plus structural declarations/imports from supported non-Python files; use the existing Graphify-aware viewer for broader relationship diagrams.
 
+## Codebase Atlas workspace
+
+When the user wants to see relationships, read an explanation, and ask questions in one place, generate the offline Atlas before suggesting architectural conclusions:
+
+```powershell
+# From the installed `excaliflow` folder.
+py -3 .\scripts\build_atlas.py --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
+```
+
+The Atlas uses a native SVG graph, module inspector, audience switch, and an evidence-backed local Q&A panel. It is offline and is not a substitute for runtime tracing.
+
 ## Verified capability boundary
 
 - Python analysis uses the standard-library AST. JavaScript/TypeScript, Go, and Rust use deterministic language-aware extraction of declarations and imports; unsupported code is labelled as a structural scan.

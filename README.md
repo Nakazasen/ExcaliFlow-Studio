@@ -42,6 +42,14 @@ excaliflow ask --dir "D:\MyProject" --audience learner --question "How do the im
 
 The answers are deterministic and source-backed: they identify matching declarations and import statements with file/line evidence. They intentionally do not claim to understand unsupported languages or infer behavior that is not visible in the scanned source.
 
+## Codebase Atlas
+
+`atlas` brings graph, explanation, and focused Q&A into one offline HTML file. Select a module to see its declarations; switch between engineer and learner vocabulary; then ask about a symbol or how imports connect. The Atlas has a native SVG graph and does not depend on Mermaid or any network runtime.
+
+```powershell
+excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
+```
+
 ## Install for an AI host
 
 After cloning and running `pip install -e .`, use a host name. The command prints the exact destination before you open the IDE:

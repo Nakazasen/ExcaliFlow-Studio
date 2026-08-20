@@ -7,6 +7,7 @@ import sys
 import argparse
 from pathlib import Path
 
+from excaliflow.atlas import write_atlas
 from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
 
@@ -21,6 +22,16 @@ def write_console(content: str) -> None:
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] == "atlas":
+        parser = argparse.ArgumentParser(prog="excaliflow", description="Create an offline Codebase Atlas with graph, explanation, and local Q&A.")
+        parser.add_argument("command", choices=("atlas",))
+        parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Codebase directory to inspect.")
+        parser.add_argument("--audience", choices=("engineer", "learner"), default="engineer", help="Default explanation vocabulary in the Atlas.")
+        parser.add_argument("--out", type=Path, default=Path("codebase-atlas.html"), help="Offline HTML output path.")
+        args = parser.parse_args()
+        output = write_atlas(args.dir, args.out, args.audience)
+        print(f"Wrote offline Codebase Atlas to: {output}")
+        return
     if len(sys.argv) > 1 and sys.argv[1] in {"explain", "ask"}:
         parser = argparse.ArgumentParser(prog="excaliflow", description="Explain a local codebase with source-backed evidence.")
         parser.add_argument("command", choices=("explain", "ask"))
