@@ -36,6 +36,11 @@ jobs:
         shell: pwsh
         run: |
           git rev-parse --verify "refs/tags/$env:RELEASE_TAG"
+          $expectedVersion = $env:RELEASE_TAG.TrimStart('v')
+          $bundleVersion = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($bundleVersion -ne $expectedVersion) {
+            throw "Release tag does not match VERSION: tag=$expectedVersion VERSION=$bundleVersion"
+          }
 
       - name: Run the test suite
         shell: pwsh
@@ -54,7 +59,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:RELEASE_TAG --title "ExcaliFlow $env:RELEASE_TAG" --generate-notes
           }
-          gh release upload $env:RELEASE_TAG .\dist\ExcaliFlow-Setup-windows.zip --clobber
+          $version = $env:RELEASE_TAG.TrimStart('v')
+          $releasePage = "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$env:RELEASE_TAG"
+          $asset = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/ExcaliFlow-Setup-windows.zip"
+          @{
+            schema_version = "excaliflow-update/v1"
+            version = $version
+            release_notes_url = $releasePage
+            asset_url = $asset
+          } | ConvertTo-Json | Set-Content -LiteralPath .\dist\update.json -Encoding utf8
+          gh release upload $env:RELEASE_TAG .\dist\ExcaliFlow-Setup-windows.zip .\dist\update.json --clobber
 
   signed-exe:
     needs: release

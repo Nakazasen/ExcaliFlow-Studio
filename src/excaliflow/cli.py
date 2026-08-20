@@ -12,8 +12,9 @@ from excaliflow.atlas import write_atlas
 from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, serve_bridge
 from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.evidence_atlas import build_evidence_atlas_html
-from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
+from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, repository_root, resolve_target
 from excaliflow.knowledge import EvidenceValidationError, load_evidence_graph, write_evidence_graph
+from excaliflow.update import DEFAULT_MANIFEST_URL, check_for_update
 
 
 def write_console(content: str) -> None:
@@ -26,6 +27,28 @@ def write_console(content: str) -> None:
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] == "update":
+        parser = argparse.ArgumentParser(prog="excaliflow update", description="Check GitHub Releases for a newer ExcaliFlow skill. This never downloads or installs anything.")
+        parser.add_argument("command", choices=("check",))
+        parser.add_argument("--manifest-url", default=DEFAULT_MANIFEST_URL, help="HTTPS update.json URL; loopback HTTP is allowed only for local testing.")
+        parser.add_argument("--root", type=Path, default=repository_root(), help=argparse.SUPPRESS)
+        parser.add_argument("--timeout", type=float, default=5.0, help="Seconds to wait for the explicit update check.")
+        args = parser.parse_args(sys.argv[2:])
+        result = check_for_update(args.root, manifest_url=args.manifest_url, timeout=args.timeout)
+        print("ExcaliFlow update")
+        if result["status"] == "unavailable":
+            print(f"Update status unavailable: {result['message']}")
+            return
+        print(f"Installed: {result['current_version']}")
+        print(f"Latest: {result['latest_version']}")
+        if result["status"] == "update_available":
+            print(f"Update available: {result['latest_version']}")
+            print(f"Release notes: {result['release_notes_url']}")
+            print(f"Download: {result['asset_url']}")
+            print("Download the ZIP, run ExcaliFlow-Setup.cmd, then reload your AI tool. No files were changed by this check.")
+        else:
+            print("You are up to date.")
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "knowledge":
         parser = argparse.ArgumentParser(prog="excaliflow knowledge", description="Create an offline evidence graph from a local RAG trace.")
         parser.add_argument("command", choices=("import", "atlas"))
@@ -151,8 +174,8 @@ def main() -> None:
             if not ready:
                 raise SystemExit(1)
         return
-    repository_root = Path(__file__).resolve().parents[2]
-    legacy_script = repository_root / "scripts" / "generate_diagram.py"
+    package_root = Path(__file__).resolve().parents[2]
+    legacy_script = package_root / "scripts" / "generate_diagram.py"
     if not legacy_script.is_file():
         raise SystemExit(f"ExcaliFlow generator is missing: {legacy_script}")
     sys.argv = [str(legacy_script), *sys.argv[1:]]

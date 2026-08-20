@@ -23,6 +23,20 @@ starts with the answer and its evidence, provides an explicit full-graph view,
 and displays source location, origin, confidence, and review status for every
 relationship. A `needs_review` model claim is never presented as verified.
 
+## Check for an ExcaliFlow update
+
+When the user asks whether their installed skill is current, run this explicit,
+read-only command from the installed skill or repository:
+
+```powershell
+excaliflow update check
+```
+
+It contacts the GitHub Release manifest only for this command, reports the
+installed/latest versions and download URL, and never downloads, overwrites, or
+starts a background updater. If the manifest is unavailable, state that no
+update decision can be made instead of claiming the installation is current.
+
 ## Evidence-first exploration
 
 When the user asks to understand, learn, explain, or question a local codebase, use the portable explorer before making claims. It supports an engineering vocabulary and a beginner-friendly learner vocabulary, and every answer includes source-file/line evidence.

@@ -170,6 +170,26 @@ The generated `dist\ExcaliFlow-Setup-windows.zip` contains only the portable ski
 
 Every pushed version tag matching `v*` now runs the Windows release workflow: it tests the tagged commit, builds the ZIP, creates or updates its GitHub Release, and replaces the release asset. To publish the first version, tag the intended commit (for example `v0.1.0`) and push that tag.
 
+## Update notification
+
+Installed skills do not run in the background or modify themselves. A person or
+their AI host can explicitly check the latest stable GitHub Release:
+
+```powershell
+excaliflow update check
+```
+
+The command shows the installed version, latest version, release notes, and ZIP
+download only when a newer version exists. It does not download or install
+anything. If the network or release manifest is unavailable, it reports that
+state without changing local files.
+
+For every release, update `VERSION`, `pyproject.toml`, and
+`src/excaliflow/__init__.py` to the same `X.Y.Z`, then push tag `vX.Y.Z`. The
+release workflow rejects a tag/version mismatch and publishes an unsigned
+`update.json` next to the ZIP. The check intentionally uses HTTPS transport but
+does not use code signatures, as requested.
+
 The same workflow publishes `ExcaliFlow-Setup-windows.exe` only when signing is configured. Add `WINDOWS_SIGNING_PFX_BASE64` and `WINDOWS_SIGNING_PFX_PASSWORD` as GitHub Actions secrets, and `WINDOWS_TIMESTAMP_URL` as a repository variable. The pipeline then signs with SHA-256, RFC 3161 timestamps the EXE, verifies its Authenticode signature, and uploads it. Without all three values it deliberately publishes no EXE, rather than presenting an unsigned binary as trusted.
 
 ## Migration boundary
