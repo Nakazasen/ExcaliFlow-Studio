@@ -44,7 +44,7 @@ The answers are deterministic and source-backed: they identify matching declarat
 
 ## Codebase Atlas
 
-`atlas` brings graph, explanation, and focused Q&A into one offline HTML file. Select a module to see its declarations; switch between engineer and learner vocabulary; then ask about a symbol or how imports connect. The Atlas has a native SVG graph and does not depend on Mermaid or any network runtime.
+`atlas` now opens in **Học codebase** mode: a plain-language answer to “Ứng dụng này làm gì?”, 1→2→3 reading path, 3–4 evidence-based responsibility blocks, translated terms, and sample questions. It does not infer business behavior: responsibility blocks use only source path/name hints and say so in the UI. **Full codebase** remains one click away and shows every scanned source file plus its proven internal import relationships. `Engineer mode` is opt-in. The Atlas uses a native SVG graph and does not depend on Mermaid or any network runtime.
 
 ```powershell
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"

@@ -74,9 +74,21 @@ class ExplorerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             self.make_project(root)
-            atlas = build_atlas_html(inspect_codebase(root), "learner")
+            atlas = build_atlas_html(inspect_codebase(root))
             self.assertIn("Codebase Atlas", atlas)
             self.assertIn("<svg", atlas)
-            self.assertIn("Answer from source evidence", atlas)
+            self.assertIn("Trả lời từ bằng chứng mã nguồn", atlas)
             self.assertIn("app.py", atlas)
             self.assertNotIn("https://", atlas)
+
+    def test_atlas_is_learner_first_but_keeps_full_codebase_and_source_terms(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertIn("Ứng dụng này làm gì?", atlas)
+            self.assertIn("Học codebase", atlas)
+            self.assertIn("Full codebase", atlas)
+            self.assertIn("App này làm gì?", atlas)
+            self.assertIn("Tệp này dùng tệp kia", atlas)
+            self.assertIn('"defaultAudience": "learner"', atlas)

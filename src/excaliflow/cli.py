@@ -26,7 +26,7 @@ def main() -> None:
         parser = argparse.ArgumentParser(prog="excaliflow", description="Create an offline Codebase Atlas with graph, explanation, and local Q&A.")
         parser.add_argument("command", choices=("atlas",))
         parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Codebase directory to inspect.")
-        parser.add_argument("--audience", choices=("engineer", "learner"), default="engineer", help="Default explanation vocabulary in the Atlas.")
+        parser.add_argument("--audience", choices=("engineer", "learner"), default="learner", help="Default vocabulary when opening Full codebase; Atlas opens in learner mode.")
         parser.add_argument("--out", type=Path, default=Path("codebase-atlas.html"), help="Offline HTML output path.")
         args = parser.parse_args()
         output = write_atlas(args.dir, args.out, args.audience)
