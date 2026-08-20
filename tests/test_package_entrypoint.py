@@ -34,3 +34,33 @@ class PackageEntrypointTests(unittest.TestCase):
             self.assertFalse(any("__pycache__" in str(path) for path in target.rglob("*")))
             _, ready = doctor("agy", workspace=root)
             self.assertTrue(ready)
+
+    def test_documented_hosts_resolve_to_exact_user_and_workspace_destinations(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            expected_user = {
+                "codex": root / ".codex" / "skills" / "excaliflow",
+                "claude": root / ".claude" / "skills" / "excaliflow",
+                "copilot": root / ".copilot" / "skills" / "excaliflow",
+                "gemini": root / ".gemini" / "skills" / "excaliflow",
+                "opencode": root / ".config" / "opencode" / "skills" / "excaliflow",
+                "kiro": root / ".kiro" / "skills" / "excaliflow",
+            }
+            for host, expected in expected_user.items():
+                self.assertEqual(resolve_target(host, home=root), expected)
+            expected_workspace = {
+                "agy": root / ".agents" / "skills" / "excaliflow",
+                "claude": root / ".claude" / "skills" / "excaliflow",
+                "copilot": root / ".github" / "skills" / "excaliflow",
+                "gemini": root / ".gemini" / "skills" / "excaliflow",
+                "opencode": root / ".opencode" / "skills" / "excaliflow",
+                "kiro": root / ".kiro" / "skills" / "excaliflow",
+            }
+            for host, expected in expected_workspace.items():
+                self.assertEqual(resolve_target(host, workspace=root), expected)
+
+    def test_custom_and_unsupported_destinations_fail_closed(self):
+        with self.assertRaisesRegex(ValueError, "requires --target"):
+            resolve_target("custom")
+        with self.assertRaisesRegex(ValueError, "requires --workspace"):
+            resolve_target("agy")

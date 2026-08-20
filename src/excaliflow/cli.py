@@ -7,18 +7,28 @@ import sys
 import argparse
 from pathlib import Path
 
-from excaliflow.installer import doctor, install_skill, resolve_target
+from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, resolve_target
 
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
-    if len(sys.argv) > 1 and sys.argv[1] in {"install", "doctor"}:
+    if len(sys.argv) > 1 and sys.argv[1] in {"install", "doctor", "targets"}:
         parser = argparse.ArgumentParser(prog="excaliflow", description="Install or verify the portable ExcaliFlow skill.")
-        parser.add_argument("command", choices=("install", "doctor"))
-        parser.add_argument("--host", choices=("codex", "antigravity", "agy"), required=True)
-        parser.add_argument("--workspace", type=Path, help="Workspace used by the AGY project-skill adapter.")
-        parser.add_argument("--target", type=Path, help="Explicit target for any IDE or desktop app.")
+        parser.add_argument("command", choices=("install", "doctor", "targets"))
+        parser.add_argument("--host", choices=HOSTS, help="AI host whose documented skill destination should be used.")
+        parser.add_argument("--workspace", type=Path, help="Use the host's documented project skill destination in this workspace.")
+        parser.add_argument("--target", type=Path, help="Exact destination for an unsupported or custom IDE.")
         args = parser.parse_args()
+        if args.command == "targets":
+            print("Documented user-scope destinations:")
+            for host in USER_TARGETS:
+                print(f"  {host}: {resolve_target(host)}")
+            print("Documented workspace hosts: " + ", ".join(WORKSPACE_TARGETS))
+            print("  antigravity: uses its verified local profile, otherwise pass --target PATH")
+            print("  custom: always pass --target PATH")
+            return
+        if args.host is None:
+            parser.error("--host is required for install and doctor.")
         target = args.target or resolve_target(args.host, workspace=args.workspace)
         if args.command == "install":
             print(f"Installed ExcaliFlow skill to: {install_skill(target)}")

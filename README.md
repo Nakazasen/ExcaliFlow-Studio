@@ -28,7 +28,7 @@ py -3 -m unittest discover -s tests -v
 
 ## Install for an AI host
 
-Non-technical users need one command after cloning and running `pip install -e .`:
+After cloning and running `pip install -e .`, use a host name. The command prints the exact destination before you open the IDE:
 
 ```powershell
 excaliflow install --host codex
@@ -36,10 +36,24 @@ excaliflow install --host antigravity
 excaliflow install --host agy --workspace "D:\MyProject"
 ```
 
-`codex` installs to the user skill directory; `antigravity` installs to the desktop/IDE skill directory; `agy` installs a project-local `.agents/skills/excaliflow` copy. For any other IDE, make the destination explicit instead of relying on a guessed configuration path:
+Use `excaliflow targets` to see every built-in destination on the current computer. The supported destinations are intentionally limited to published skill locations:
+
+| Host | User destination | Workspace destination |
+| --- | --- | --- |
+| Codex | `~/.codex/skills/excaliflow` | use `--target` |
+| Claude Code | `~/.claude/skills/excaliflow` | `.claude/skills/excaliflow` |
+| GitHub Copilot / VS Code | `~/.copilot/skills/excaliflow` | `.github/skills/excaliflow` |
+| Gemini CLI | `~/.gemini/skills/excaliflow` | `.gemini/skills/excaliflow` |
+| OpenCode | `~/.config/opencode/skills/excaliflow` | `.opencode/skills/excaliflow` |
+| Kiro IDE / CLI | `~/.kiro/skills/excaliflow` | `.kiro/skills/excaliflow` |
+| AGY-compatible workspace | — | `.agents/skills/excaliflow` |
+
+Antigravity Desktop remains supported through the verified local profile already present on this machine (`~/.gemini/config/skills/excaliflow`). It has no public, stable skill-path contract, so on a new computer the installer fails closed and asks for `--target` instead of inventing a directory.
+
+For Cursor or any other IDE without a documented Agent Skills destination, make the destination explicit:
 
 ```powershell
-excaliflow install --host codex --target "D:\MyIDE\skills\excaliflow"
+excaliflow install --host custom --target "D:\MyIDE\skills\excaliflow"
 ```
 
 Verify a host after installation:
@@ -47,6 +61,7 @@ Verify a host after installation:
 ```powershell
 excaliflow doctor --host codex
 excaliflow doctor --host antigravity
+excaliflow doctor --host custom --target "D:\MyIDE\skills\excaliflow"
 ```
 
 ## Migration boundary
