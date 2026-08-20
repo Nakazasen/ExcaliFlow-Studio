@@ -1,0 +1,18 @@
+{
+  "user": {
+    "codex": [".codex", "skills"],
+    "claude": [".claude", "skills"],
+    "copilot": [".copilot", "skills"],
+    "gemini": [".gemini", "skills"],
+    "opencode": [".config", "opencode", "skills"],
+    "kiro": [".kiro", "skills"]
+  },
+  "workspace": {
+    "agy": [".agents", "skills"],
+    "claude": [".claude", "skills"],
+    "copilot": [".github", "skills"],
+    "gemini": [".gemini", "skills"],
+    "opencode": [".opencode", "skills"],
+    "kiro": [".kiro", "skills"]
+  }
+}

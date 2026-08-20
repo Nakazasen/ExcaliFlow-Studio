@@ -64,6 +64,18 @@ excaliflow doctor --host antigravity
 excaliflow doctor --host custom --target "D:\MyIDE\skills\excaliflow"
 ```
 
+## Windows one-click setup
+
+For a computer without Python, download `ExcaliFlow-Setup-windows.zip` from a release, extract it, then double-click `ExcaliFlow-Setup.cmd`. The small Windows dialog asks for the AI tool, shows the exact destination before copying anything, verifies the generator after installation, and needs neither Administrator permission nor a network download.
+
+Maintainers create that release asset with:
+
+```powershell
+.\installers\build-windows-release.ps1
+```
+
+The generated `dist\ExcaliFlow-Setup-windows.zip` contains only the portable skill and the installer; it does not bundle Python or install a background service.
+
 ## Migration boundary
 
 The package CLI deliberately calls the verified generator while the renderer and viewer are split into testable modules. This preserves existing installed-skill behavior; it is not yet a claim that the monolith has been fully removed.
