@@ -27,6 +27,18 @@ py -3 -m excaliflow.cli --help
 py -3 -m unittest discover -s tests -v
 ```
 
+## Bắt đầu cho người không viết code
+
+Không cần biết `--out`, Mermaid, Excalidraw hay AI Bridge. Sau khi cài skill, double-click `scripts\Open-ExcaliFlow.cmd`, chọn thư mục project, và Atlas sẽ mở trong trình duyệt ở chế độ **Học codebase**. Bản đồ, câu hỏi mẫu và giải thích từ mã nguồn đã hoạt động ngay cả khi chưa cấu hình AI.
+
+Người dùng thích dùng terminal hoặc AI agent chỉ cần một lệnh:
+
+```powershell
+excaliflow open --dir "D:\MyProject"
+```
+
+File tạo ra là `.excaliflow\atlas.html` trong project. Phần AI Bridge, port và Gemini chỉ dành cho lúc người dùng chủ động cần câu trả lời AI; xem `excaliflow bridge doctor` khi gặp vấn đề.
+
 ## Explore and learn a codebase
 
 Use the existing diagram command to see relationships, then use the same local source scan to explain the project or answer a focused question. `engineer` uses implementation vocabulary; `learner` explains the same evidence in beginner-friendly language.

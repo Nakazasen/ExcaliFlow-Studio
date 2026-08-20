@@ -5,6 +5,7 @@ from __future__ import annotations
 import runpy
 import sys
 import argparse
+import webbrowser
 from pathlib import Path
 
 from excaliflow.atlas import write_atlas
@@ -23,6 +24,24 @@ def write_console(content: str) -> None:
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] == "open":
+        parser = argparse.ArgumentParser(prog="excaliflow", description="Open a beginner-friendly Codebase Atlas for one project folder.")
+        parser.add_argument("command", choices=("open",))
+        parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Project folder to understand.")
+        parser.add_argument("--no-open", action="store_true", help="Create Atlas without opening a browser; useful for another AI tool or test.")
+        args = parser.parse_args()
+        project = args.dir.resolve()
+        if not project.is_dir():
+            parser.error(f"Project folder does not exist: {project}")
+        output = write_atlas(project, project / ".excaliflow" / "atlas.html", "learner")
+        print(f"Codebase Atlas is ready: {output}")
+        if args.no_open:
+            return
+        if webbrowser.open(output.resolve().as_uri()):
+            write_console("Opened Codebase Atlas in your browser. Start with: Ứng dụng này làm gì?\n")
+        else:
+            print("Open the Atlas file above in your browser. AI setup is optional; source-backed learning already works.")
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "bridge":
         parser = argparse.ArgumentParser(prog="excaliflow", description="Create or run a loopback-only Atlas Bridge for a codebase.")
         parser.add_argument("command", choices=("init", "serve", "start", "doctor"))

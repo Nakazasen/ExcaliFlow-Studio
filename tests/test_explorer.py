@@ -100,6 +100,24 @@ class ExplorerTests(unittest.TestCase):
             self.assertIn("Wrote source-backed explain output", result.stdout)
             self.assertIn('"Greeter"', output.read_text(encoding="utf-8"))
 
+    def test_open_cli_creates_a_project_local_atlas_without_technical_options(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            result = subprocess.run(
+                [sys.executable, "-m", "excaliflow.cli", "open", "--dir", str(root), "--no-open"],
+                cwd=ROOT,
+                env={**__import__("os").environ, "PYTHONPATH": str(ROOT / "src")},
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            output = root / ".excaliflow" / "atlas.html"
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(output.is_file())
+            self.assertIn("Codebase Atlas", output.read_text(encoding="utf-8"))
+            self.assertIn("Codebase Atlas is ready", result.stdout)
+
     def test_symbol_containing_codebase_is_not_mistaken_for_an_overview_question(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

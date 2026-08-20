@@ -36,6 +36,10 @@ When a user wants conversational Atlas explanations, first run `excaliflow bridg
 
 Read `docs/atlas-gemini-web2api.md` before configuring a runtime for another IDE or repository. It contains the verified Windows setup, loopback-only configuration, temporary-chat preference, start commands, verification, external-processing disclosure, and troubleshooting. Do not silently install, start, authenticate, or expose Gemini Web2API; it is a third-party external-processing source and the user must permit source context to leave the machine.
 
+## Default experience for non-technical users
+
+Start with `scripts/Open-ExcaliFlow.cmd` on Windows, or `excaliflow open --dir <project>`. This creates and opens the learner-first Codebase Atlas without requiring an output path, visual grammar, port, or AI Bridge setup. Keep bridge commands, JSON briefs, watch mode, and renderer options in an explicit technical request; do not lead a beginner with them.
+
 ## Verified capability boundary
 
 - Python analysis uses the standard-library AST. JavaScript/TypeScript, Go, and Rust use deterministic language-aware extraction of declarations and imports; unsupported code is labelled as a structural scan.

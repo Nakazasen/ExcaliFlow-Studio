@@ -42,6 +42,16 @@ A person or an AI host can diagnose the local Gemini runtime and follow one dura
 1. **Given** an unavailable bridge or upstream, **when** the person runs the bridge diagnosis, **then** it states which local component is unavailable and the next safe action.
 2. **Given** a supported host receives the ExcaliFlow skill, **when** it needs Atlas AI questions, **then** it can read the bundled runtime playbook.
 
+### User Story 5 - Open a project without technical setup (Priority: P1)
+
+A non-technical person can choose a project folder and immediately see a beginner-friendly Atlas without knowing command options, output paths, ports, or AI Bridge terms.
+
+**Acceptance Scenarios**:
+
+1. **Given** a project folder, **when** the person uses the simple open command, **then** Atlas is generated in a predictable project-local location and opened in their browser.
+2. **Given** Windows and a portable installed skill, **when** the person double-clicks the launcher without an argument, **then** they can choose a project folder in a standard folder picker.
+3. **Given** the optional AI service is unavailable, **when** the person opens Atlas, **then** source-backed learning remains usable and they are not asked to configure a bridge to begin.
+
 ## Requirements
 
 - **FR-001**: The product MUST create a bridge manifest in the selected repository without overwriting an existing manifest.
@@ -53,6 +63,8 @@ A person or an AI host can diagnose the local Gemini runtime and follow one dura
 - **FR-007**: Setup documentation MUST state the local endpoints, upstream prerequisite, non-overwrite behavior, and data-boundary implication.
 - **FR-008**: The command-line workflow MUST provide a local-only diagnostic that distinguishes a missing project manifest, unavailable upstream, and unavailable Atlas Bridge.
 - **FR-009**: The portable skill MUST include an operational playbook for Gemini Web2API with loopback-only configuration, temporary-chat guidance, lifecycle commands, verification, and troubleshooting.
+- **FR-010**: The product MUST provide one simple project-opening workflow that needs only a project folder and does not create or start an AI Bridge.
+- **FR-011**: The portable Windows skill MUST include a double-click launcher with a folder picker and clear failure output.
 
 ## Success Criteria
 
@@ -61,6 +73,7 @@ A person or an AI host can diagnose the local Gemini runtime and follow one dura
 - **SC-003**: Existing project bridge configuration is preserved in 100% of initialization attempts.
 - **SC-004**: The full automated suite passes after adding the feature.
 - **SC-005**: When a local runtime is unavailable, the diagnostic gives a concrete next action without suggesting that AI questions are working.
+- **SC-006**: A person can produce and open an Atlas with one command containing only the project location.
 
 ## Assumptions
 

@@ -12,6 +12,7 @@ The existing Atlas browser discovers `.excaliflow/ide-bridge.json` and local run
 4. Use an upstream readiness endpoint before reporting bridge health as available.
 5. Test manifest, CLI, loopback boundary, end-to-end forwarding, and existing Atlas discovery behavior with an in-process fake compatible upstream.
 6. Productize the verified runtime procedure as a portable playbook and a local-only diagnosis command; retain explicit user control over third-party installation and process startup.
+7. Add a learner-first launcher that writes a predictable project-local Atlas and opens it, while leaving Bridge setup optional and hidden from the default path.
 
 ## Affected Components
 
@@ -21,6 +22,7 @@ The existing Atlas browser discovers `.excaliflow/ide-bridge.json` and local run
 | `src/excaliflow/cli.py` | Expose clear non-technical bridge commands. |
 | `src/excaliflow/bridge.py` | Surface external-processing information from manifests. |
 | `src/excaliflow/installer.py` | Include the runtime playbook in installed skills. |
+| `scripts/Open-ExcaliFlow.cmd` | Provide a Windows folder-picker launcher shipped in portable skills. |
 | `tests/test_explorer.py` | Cover user-visible bridge scenarios. |
 | `README.md`, `SKILL.md`, `docs/` | Explain prerequisites, boundaries, operation, and troubleshooting. |
 

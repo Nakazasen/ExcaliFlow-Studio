@@ -27,3 +27,10 @@
 - [X] T011 Add regression coverage for diagnosis in `tests/test_explorer.py`.
 - [X] T012 Add and package a Gemini Web2API runtime playbook in `docs/`, `SKILL.md`, `README.md`, and `src/excaliflow/installer.py`.
 - [X] T013 Run focused and full tests, bytecode compilation, and diff hygiene checks.
+
+## Phase 6: Learner-First Launch
+
+- [X] T014 Add a no-flag project-opening command in `src/excaliflow/cli.py` and its regression test in `tests/test_explorer.py`.
+- [X] T015 Add a portable Windows folder-picker launcher in `scripts/Open-ExcaliFlow.cmd` and package coverage in `tests/test_package_entrypoint.py`.
+- [X] T016 Update `README.md` and `SKILL.md` so AI hosts recommend the learner-first entry point before technical commands.
+- [X] T017 Run focused and full tests, bytecode compilation, and diff hygiene checks.
