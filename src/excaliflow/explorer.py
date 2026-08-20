@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 from collections import Counter
 from pathlib import Path
 
 
-IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__", "dist", "graphify-out"}
+IGNORED_DIRECTORIES = {
+    ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox",
+    "__pycache__", "build", "coverage", "dist", "graphify-out", "local_cases",
+    "local_runs", "node_modules", "output", "vendor",
+}
 LANGUAGES = {
     ".py": "Python",
     ".js": "JavaScript",
@@ -32,11 +37,17 @@ def _relative(root: Path, path: Path) -> str:
 
 def _source_files(root: Path) -> list[Path]:
     files: list[Path] = []
-    for path in root.rglob("*"):
-        if any(part in IGNORED_DIRECTORIES for part in path.parts):
-            continue
-        if path.is_file() and path.suffix.lower() in LANGUAGES:
-            files.append(path)
+    for current_root, directories, names in os.walk(root, topdown=True):
+        directories[:] = [
+            directory
+            for directory in directories
+            if directory not in IGNORED_DIRECTORIES and not directory.startswith(".venv")
+        ]
+        current = Path(current_root)
+        for name in names:
+            path = current / name
+            if path.suffix.lower() in LANGUAGES:
+                files.append(path)
     return sorted(files)
 
 

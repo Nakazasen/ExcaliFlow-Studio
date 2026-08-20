@@ -46,6 +46,8 @@ The answers are deterministic and source-backed: they identify matching declarat
 
 `atlas` now opens in **Học codebase** mode: a plain-language answer to “Ứng dụng này làm gì?”, 1→2→3 reading path, 3–4 evidence-based responsibility blocks, translated terms, and sample questions. It does not infer business behavior: responsibility blocks use only source path/name hints and say so in the UI. **Full codebase** remains one click away and shows every scanned source file plus its proven internal import relationships. `Engineer mode` is opt-in. The Atlas uses a native SVG graph and does not depend on Mermaid or any network runtime.
 
+If the inspected repository already exposes a supported local IDE Bridge, Atlas uses it first for questions and shows that source in the UI. AIOS WorkLens is recognised through its existing Antigravity sidecar contract (`127.0.0.1:8585`); Atlas checks `/health`, then calls its OpenAI-compatible completion endpoint only when a user asks. It never starts a sidecar, sends to a remote URL, or labels a fallback answer as AI. Other projects can opt in with `.excaliflow/ide-bridge.json` containing loopback-only `health_url`, `completion_url`, optional `name`, and optional `model`.
+
 ```powershell
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
 ```

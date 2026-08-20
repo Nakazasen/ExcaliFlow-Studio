@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from excaliflow.atlas import build_atlas_html
+from excaliflow.bridge import discover_ide_bridge
 from excaliflow.explorer import answer_question, explain_codebase, inspect_codebase
 
 
@@ -92,3 +93,41 @@ class ExplorerTests(unittest.TestCase):
             self.assertIn("App này làm gì?", atlas)
             self.assertIn("Tệp này dùng tệp kia", atlas)
             self.assertIn('"defaultAudience": "learner"', atlas)
+
+    def test_atlas_detects_aios_bridge_without_claiming_it_is_running(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            (root / "src" / "aios_habit").mkdir(parents=True)
+            (root / "scripts").mkdir(exist_ok=True)
+            (root / "src" / "aios_habit" / "antigravity_bridge.py").write_text("", encoding="utf-8")
+            (root / "scripts" / "antigravity_sidecar_daemon.py").write_text("", encoding="utf-8")
+            bridge = discover_ide_bridge(root)
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertTrue(bridge["detected"])
+            self.assertEqual(bridge["health_url"], "http://127.0.0.1:8585/health")
+            self.assertIn("Antigravity IDE Bridge", atlas)
+            self.assertIn("checkBridge", atlas)
+
+    def test_custom_bridge_manifest_rejects_remote_urls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".excaliflow").mkdir()
+            (root / ".excaliflow" / "ide-bridge.json").write_text(
+                '{"health_url":"https://example.com/health","completion_url":"https://example.com/chat"}',
+                encoding="utf-8",
+            )
+            bridge = discover_ide_bridge(root)
+            self.assertFalse(bridge["detected"])
+            self.assertIn("localhost", bridge["reason"])
+
+    def test_source_scan_prunes_runtime_and_virtual_environment_trees(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            (root / "local_runs").mkdir()
+            (root / ".venv-rag" / "site-packages").mkdir(parents=True)
+            (root / "local_runs" / "stale.py").write_text("def stale(): pass\n", encoding="utf-8")
+            (root / ".venv-rag" / "site-packages" / "dependency.py").write_text("def dependency(): pass\n", encoding="utf-8")
+            report = inspect_codebase(root)
+            self.assertEqual(report["files"], ["app.py", "service.py"])
