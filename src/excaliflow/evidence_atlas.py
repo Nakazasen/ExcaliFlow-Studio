@@ -59,6 +59,28 @@ def _receipt_text(edge: dict) -> str:
     return f"{status}. Nguồn: {edge['origin']}; confidence {edge['confidence']:.0%}; vị trí: {locations}."
 
 
+def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
+    """Render one evidence node without version-specific nested f-strings."""
+
+    x, y = position
+    classes = "node"
+    if is_focused:
+        classes += " focus"
+    if node.get("review_status") == "needs_review":
+        classes += " needs-review"
+        review_label = f'<text class="review-label" x="{x + 14}" y="{y + 72}">Cần xem lại</text>'
+    else:
+        review_label = ""
+    return (
+        f'<g class="{classes}" data-node="{html.escape(node["id"])}" tabindex="0" role="button">'
+        f'<rect x="{x}" y="{y}" width="260" height="84" rx="14" '
+        f'style="--node-color:{TYPE_COLORS[node["type"]]}"/>'
+        f'<text class="node-type" x="{x + 14}" y="{y + 24}">{TYPE_LABELS[node["type"]]}</text>'
+        f'<text class="node-label" x="{x + 14}" y="{y + 51}">{html.escape(_display_label(node))}</text>'
+        f'{review_label}</g>'
+    )
+
+
 def build_evidence_atlas_html(graph: dict) -> str:
     """Create one standalone HTML document from a validated evidence graph."""
 
@@ -82,13 +104,7 @@ def build_evidence_atlas_html(graph: dict) -> str:
         for edge in graph["edges"]
     )
     node_svg = "".join(
-        f'<g class="node{(" focus" if node["id"] in focus_ids else "")}{(" needs-review" if node.get("review_status") == "needs_review" else "")}" '
-        f'data-node="{html.escape(node["id"])}" tabindex="0" role="button"><rect x="{positions[node["id"]][0]}" '
-        f'y="{positions[node["id"]][1]}" width="260" height="84" rx="14" style="--node-color:{TYPE_COLORS[node["type"]]}"/>'
-        f'<text class="node-type" x="{positions[node["id"]][0] + 14}" y="{positions[node["id"]][1] + 24}">{TYPE_LABELS[node["type"]]}</text>'
-        f'<text class="node-label" x="{positions[node["id"]][0] + 14}" y="{positions[node["id"]][1] + 51}">{html.escape(_display_label(node))}</text>'
-        f'{f"<text class=\"review-label\" x=\"{positions[node["id"]][0] + 14}\" y=\"{positions[node["id"]][1] + 72}\">Cần xem lại</text>" if node.get("review_status") == "needs_review" else ""}'
-        f'</g>'
+        _node_svg(node, positions[node["id"]], node["id"] in focus_ids)
         for node in graph["nodes"]
     )
     payload = json.dumps(graph, ensure_ascii=False).replace("</", "<\\/")

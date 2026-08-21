@@ -19,3 +19,4 @@
 ## Phase 4: Verification
 
 - [X] T008 Document the non-background update workflow, run verification, commit, and push.
+- [X] T009 Restore Python 3.11 compatibility required by the unsigned release workflow.
