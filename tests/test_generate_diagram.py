@@ -313,6 +313,46 @@ class ExcaliFlowTests(unittest.TestCase):
                 generator.find_knowledge_graph(root, auto_trigger=False, strict=True)
             self.assertIn("Fail-Closed", str(ctx.exception))
 
+    def test_strict_mode_fail_closed_on_stale_graph_without_graphify(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "app.py"
+            src_file.write_text("def run(): pass\n", encoding="utf-8")
+            
+            g_out = root / "graphify-out" / "graph.json"
+            g_out.parent.mkdir(parents=True, exist_ok=True)
+            g_out.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            # Make graph older than source
+            os.utime(src_file, (2000.0, 2000.0))
+            os.utime(g_out, (1000.0, 1000.0))
+            
+            with patch("shutil.which", return_value=None):
+                with self.assertRaises(RuntimeError) as ctx:
+                    generator.find_knowledge_graph(root, auto_trigger=True, strict=True)
+                self.assertIn("Fail-Closed", str(ctx.exception))
+                self.assertIn("Stale graph detected", str(ctx.exception))
+
+    def test_strict_mode_fail_closed_on_stale_graph_with_auto_trigger_disabled(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "app.py"
+            src_file.write_text("def run(): pass\n", encoding="utf-8")
+            
+            g_out = root / "graphify-out" / "graph.json"
+            g_out.parent.mkdir(parents=True, exist_ok=True)
+            g_out.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            # Make graph older than source
+            os.utime(src_file, (2000.0, 2000.0))
+            os.utime(g_out, (1000.0, 1000.0))
+            
+            with patch("shutil.which", return_value="/fake/bin/graphify"):
+                with self.assertRaises(RuntimeError) as ctx:
+                    generator.find_knowledge_graph(root, auto_trigger=False, strict=True)
+                self.assertIn("Fail-Closed", str(ctx.exception))
+                self.assertIn("Stale graph detected", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

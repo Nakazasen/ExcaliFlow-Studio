@@ -226,13 +226,21 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
     if g_out.is_file():
         graph_mtime = g_out.stat().st_mtime
         latest_src_mtime = get_latest_source_mtime(project_root)
-        if latest_src_mtime > graph_mtime and auto_trigger and graphify_bin:
-            print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
-            success = run_graphify_extract(project_root, graphify_bin)
-            if not success:
-                if strict:
-                    raise RuntimeError(f"Fail-Closed: Graphify update failed in strict mode for {project_root}")
-                print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
+        if latest_src_mtime > graph_mtime:
+            if auto_trigger and graphify_bin:
+                print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
+                success = run_graphify_extract(project_root, graphify_bin)
+                if not success:
+                    if strict:
+                        raise RuntimeError(f"Fail-Closed: Graphify update failed in strict mode for {project_root}")
+                    print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
+            elif strict:
+                if not graphify_bin:
+                    raise RuntimeError(f"Fail-Closed: Stale graph detected ({latest_src_mtime:.1f} > {graph_mtime:.1f}) but graphify executable is not available in strict mode for {project_root}")
+                else:
+                    raise RuntimeError(f"Fail-Closed: Stale graph detected ({latest_src_mtime:.1f} > {graph_mtime:.1f}) but auto_trigger is disabled in strict mode for {project_root}")
+            else:
+                print(f"[!] Canh bao: Ma nguon moi hon do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}) nhung khong the cap nhat tu dong.")
         return ("graphify", g_out)
 
     if (project_root / "graphify-out").is_dir():
@@ -2159,14 +2167,30 @@ def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
 {marker}
 set -e
 
-# Tu dong lam moi do thi tri thuc Graphify va so do ExcaliFlow cuc bo sau commit
+# 1. Tu dong lam moi do thi tri thuc Graphify cuc bo
 if command -v graphify >/dev/null 2>&1; then
     echo "[excaliflow-hook] Lam moi do thi tri thuc Graphify cuc bo..."
     graphify extract "$PWD" --code-only --out "$PWD"
 fi
 
+# 2. Tu dong tim trinh thuc thi Python va lam moi viewer ExcaliFlow cuc bo
 echo "[excaliflow-hook] Lam moi so do ExcaliFlow cuc bo..."
-py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
+if command -v excaliflow >/dev/null 2>&1; then
+    excaliflow --dir "$PWD" --out architecture_viewer.html --with-excalidraw
+else
+    REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
+    if command -v py >/dev/null 2>&1; then
+        PY_EXE="py -3"
+    elif command -v python3 >/dev/null 2>&1; then
+        PY_EXE="python3"
+    else
+        PY_EXE="python"
+    fi
+
+    if [ -f "$REPO_ROOT/scripts/generate_diagram.py" ]; then
+        $PY_EXE "$REPO_ROOT/scripts/generate_diagram.py" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
+    fi
+fi
 """
     post_commit.write_text(post_commit_content, encoding="utf-8")
     try:
