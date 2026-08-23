@@ -208,7 +208,7 @@ def run_graphify_extract(project_root: Path, graphify_bin: str) -> bool:
         return False
 
 
-def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
+def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: bool = False):
     """
     Tự động tìm kiếm file đồ thị tri thức (Graphify hoặc Understand-Anything).
     Ưu tiên:
@@ -230,6 +230,8 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
             print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
             success = run_graphify_extract(project_root, graphify_bin)
             if not success:
+                if strict:
+                    raise RuntimeError(f"Fail-Closed: Graphify update failed in strict mode for {project_root}")
                 print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
         return ("graphify", g_out)
 
@@ -245,6 +247,8 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
             if g_out.is_file():
                 print(f"[*] Da tao moi thanh cong do thi tri thuc Graphify: {g_out}")
                 return ("graphify", g_out)
+        elif strict:
+            raise RuntimeError(f"Fail-Closed: Initial Graphify extraction failed in strict mode for {project_root}")
 
     # 3. Check .understand-anything
     u_out = project_root / ".understand-anything" / "knowledge-graph.json"
@@ -260,6 +264,9 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
         return ("graphify", project_root / "graph.json")
     if (project_root / "knowledge-graph.json").is_file():
         return ("understand", project_root / "knowledge-graph.json")
+
+    if strict:
+        raise RuntimeError(f"Fail-Closed: No knowledge graph found or generated for {project_root}")
 
     return (None, None)
 
@@ -2071,12 +2078,13 @@ def generate_html_file(
     output_path: str = "architecture_viewer.html",
     excalidraw_output: str | None = None,
     auto_graphify: bool = True,
+    strict: bool = False,
 ):
     """Sinh file HTML Excalidraw Viewer chứa dữ liệu Mermaid từ dự án chỉ định"""
     proj_path = Path(project_dir).resolve()
     
     # 1. Kiểm tra xem có Đồ thị tri thức (Graphify hoặc Understand-Anything) hay không
-    kg_type, kg_path = find_knowledge_graph(proj_path, auto_trigger=auto_graphify)
+    kg_type, kg_path = find_knowledge_graph(proj_path, auto_trigger=auto_graphify, strict=strict)
     
     diagrams = {}
     if kg_type == "graphify":
@@ -2093,6 +2101,8 @@ def generate_html_file(
 
     # 2. Nếu không tìm thấy hoặc trích xuất không thành công, fallback về quét AST & Folder Tree
     if not diagrams:
+        if strict:
+            raise RuntimeError(f"Fail-Closed: Could not generate diagrams from knowledge graph in strict mode for {proj_path}")
         print("[*] Quet cau truc thu muc va phan tich ma nguon...")
         project_info = scan_project_structure(proj_path)
         ast_data = None
@@ -2128,7 +2138,7 @@ def generate_html_file(
 
 
 def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
-    """Cài đặt Git Pre-commit và Post-commit Hooks cho dự án (tự động đồng bộ Graphify & ExcaliFlow)"""
+    """Cài đặt Git Post-commit Hook để tự động làm mới sơ đồ cục bộ sau mỗi commit."""
     proj_path = Path(project_dir).resolve()
     hooks_dir = proj_path / ".git" / "hooks"
     if not hooks_dir.exists():
@@ -2138,44 +2148,24 @@ def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
     script_path = Path(__file__).resolve()
     marker = "# excaliflow-managed-hook"
 
-    # 1. Kiểm tra quyền ghi đè
-    pre_commit = hooks_dir / "pre-commit"
     post_commit = hooks_dir / "post-commit"
+    if post_commit.exists():
+        existing = post_commit.read_text(encoding="utf-8", errors="ignore")
+        if marker not in existing and not force:
+            print(f"[!] Tu choi ghi de hook hien co: {post_commit}. Dung --force-hook chi voi hook do Excali-Flow quan ly.")
+            return False
 
-    for hook_file in (pre_commit, post_commit):
-        if hook_file.exists():
-            existing = hook_file.read_text(encoding="utf-8", errors="ignore")
-            if marker not in existing and not force:
-                print(f"[!] Tu choi ghi de hook hien co: {hook_file}. Dung --force-hook chi voi hook do Excali-Flow quan ly.")
-                return False
-
-    # 2. Cài đặt pre-commit (cập nhật đồ thị và stage file trước khi commit)
-    pre_commit_content = f"""#!/bin/sh
+    post_commit_content = f"""#!/bin/sh
 {marker}
 set -e
 
-# 1. Cap nhat do thi tri thuc Graphify neu co thay doi
+# Tu dong lam moi do thi tri thuc Graphify va so do ExcaliFlow cuc bo sau commit
 if command -v graphify >/dev/null 2>&1; then
-    echo "[excaliflow-hook] Dang cap nhat do thi tri thuc Graphify..."
+    echo "[excaliflow-hook] Lam moi do thi tri thuc Graphify cuc bo..."
     graphify extract "$PWD" --code-only --out "$PWD"
-    git add graphify-out/graph.json 2>/dev/null || true
 fi
 
-# 2. Cap nhat so do kien truc ExcaliFlow va tu dong stage
-echo "[excaliflow-hook] Dang cap nhat so do ExcaliFlow..."
-py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
-git add architecture_viewer.html architecture_viewer.excalidraw 2>/dev/null || true
-"""
-    pre_commit.write_text(pre_commit_content, encoding="utf-8")
-    try:
-        pre_commit.chmod(0o755)
-    except Exception:
-        pass
-
-    # 3. Cài đặt post-commit (đảm bảo viewer luôn sẵn sàng)
-    post_commit_content = f"""#!/bin/sh
-{marker}
-echo "[excaliflow-hook] Lam moi viewer ExcaliFlow sau commit..."
+echo "[excaliflow-hook] Lam moi so do ExcaliFlow cuc bo..."
 py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
 """
     post_commit.write_text(post_commit_content, encoding="utf-8")
@@ -2184,7 +2174,17 @@ py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalid
     except Exception:
         pass
 
-    print(f"[*] Da cai dat thanh cong Git Hooks tai:\n  - {pre_commit}\n  - {post_commit}")
+    # Clean legacy pre-commit hook if managed by excaliflow
+    pre_commit = hooks_dir / "pre-commit"
+    if pre_commit.exists():
+        existing_pre = pre_commit.read_text(encoding="utf-8", errors="ignore")
+        if marker in existing_pre:
+            try:
+                pre_commit.unlink()
+            except Exception:
+                pass
+
+    print(f"[*] Da cai dat thanh cong Git Hook tai:\n  - {post_commit}")
     return True
 
 
@@ -2239,6 +2239,7 @@ def main():
     parser.add_argument("--with-excalidraw", action="store_true", help="Tao scene .excalidraw ben canh HTML")
     parser.add_argument("--offline-check", action="store_true", help="Kiem tra runtime offline va thoat")
     parser.add_argument("--no-graphify", action="store_true", help="Bo qua tu dong chay Graphify khi chua co graph.json")
+    parser.add_argument("--strict", action="store_true", help="Che do Fail-Closed: bao loi va thoat ngay neu Graphify hoac do thi that bai")
     parser.add_argument("--editorial-out", help="Xuat SVG hoac HTML editorial tu chua")
     parser.add_argument("--visual-type", choices=sorted(EDITORIAL_TYPES | REPORT_TYPES), help="Grammar cho editorial output")
     parser.add_argument("--visual-data", help="Duong dan JSON brief cho Sankey, Wardley, hoac journey")
@@ -2274,7 +2275,10 @@ def main():
     excalidraw_out = args.excalidraw_out
     if args.with_excalidraw and not excalidraw_out:
         excalidraw_out = str(Path(out_path).with_suffix(".excalidraw"))
-    full_path = generate_html_file(target_dir, out_path, excalidraw_out, auto_graphify=not args.no_graphify)
+    try:
+        full_path = generate_html_file(target_dir, out_path, excalidraw_out, auto_graphify=not args.no_graphify, strict=args.strict)
+    except RuntimeError as err:
+        parser.error(str(err))
 
     if args.open:
         print("[*] Dang mo tren trinh duyet...")

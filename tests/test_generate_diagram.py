@@ -276,7 +276,7 @@ class ExcaliFlowTests(unittest.TestCase):
                 success = generator.run_graphify_extract(root, "graphify")
                 self.assertFalse(success)
 
-    def test_git_hooks_install_pre_and_post_commit_without_swallowing_errors(self):
+    def test_git_hooks_install_post_commit_cleanly(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / ".git" / "hooks").mkdir(parents=True)
@@ -284,17 +284,34 @@ class ExcaliFlowTests(unittest.TestCase):
             installed = generator.install_git_hooks(root)
             self.assertTrue(installed)
             
-            pre_commit = root / ".git" / "hooks" / "pre-commit"
             post_commit = root / ".git" / "hooks" / "post-commit"
-            
-            self.assertTrue(pre_commit.is_file())
             self.assertTrue(post_commit.is_file())
             
-            pre_text = pre_commit.read_text(encoding="utf-8")
-            self.assertIn("set -e", pre_text)
-            self.assertIn("graphify extract", pre_text)
-            self.assertIn("git add graphify-out/graph.json", pre_text)
-            self.assertNotIn("|| true\npy", pre_text)
+            post_text = post_commit.read_text(encoding="utf-8")
+            self.assertIn("set -e", post_text)
+            self.assertIn("graphify extract", post_text)
+            self.assertNotIn("|| true", post_text)
+            self.assertNotIn("git add", post_text)
+
+    def test_strict_mode_fail_closed_on_graphify_failure(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "main.py"
+            src_file.write_text("print('hello')", encoding="utf-8")
+            
+            with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Fatal graphify extraction error")
+                with self.assertRaises(RuntimeError) as ctx:
+                    generator.find_knowledge_graph(root, auto_trigger=True, strict=True)
+                self.assertIn("Fail-Closed", str(ctx.exception))
+
+    def test_strict_mode_fail_closed_on_missing_graph(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with self.assertRaises(RuntimeError) as ctx:
+                generator.find_knowledge_graph(root, auto_trigger=False, strict=True)
+            self.assertIn("Fail-Closed", str(ctx.exception))
 
 
 if __name__ == "__main__":
