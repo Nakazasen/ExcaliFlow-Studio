@@ -1525,10 +1525,85 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </html>
 """
 
-def editorial_text(value, limit=100):
-    """Return XML-safe one-line copy with a deterministic editorial length limit."""
-    text = " ".join(str(value or "").split())
-    return xml_escape(text[:limit - 1] + "…" if len(text) > limit else text, quote=True)
+def smart_truncate_text(text: str, limit: int) -> str:
+    """Smartly truncate text at word boundaries when possible, without slicing mid-word."""
+    clean = " ".join(str(text or "").split())
+    if len(clean) <= limit:
+        return clean
+    target = clean[:limit]
+    if len(clean) > limit and clean[limit] == " ":
+        return target.rstrip() + "…"
+    last_space = target.rfind(" ")
+    if last_space > int(limit * 0.4):
+        return target[:last_space].rstrip() + "…"
+    return target[:-1].rstrip() + "…"
+
+
+def editorial_text(value, limit=200):
+    """Return XML-safe one-line copy with smart word-boundary truncation."""
+    truncated = smart_truncate_text(value, limit)
+    return xml_escape(truncated, quote=True)
+
+
+def render_editorial_multiline_svg_with_count(
+    text: str,
+    x: float,
+    y: float,
+    css_class: str = "label",
+    line_limit: int = 35,
+    max_lines: int = 3,
+    line_height: float = 18.0,
+    anchor: str = "",
+    extra_attrs: str = "",
+    include_tooltip: bool = True,
+) -> tuple[str, int]:
+    """Render smart word-wrapped multi-line SVG text using <tspan> with tooltip and line count."""
+    raw_text = " ".join(str(text or "").split())
+    if not raw_text:
+        return ("", 0)
+
+    words = raw_text.split()
+    lines = []
+    current_line = []
+    current_len = 0
+
+    for word in words:
+        added_len = len(word) if not current_line else len(word) + 1
+        if current_len + added_len <= line_limit:
+            current_line.append(word)
+            current_len += added_len
+        else:
+            if current_line:
+                lines.append(" ".join(current_line))
+            current_line = [word]
+            current_len = len(word)
+    if current_line:
+        lines.append(" ".join(current_line))
+
+    if len(lines) > max_lines:
+        reconstructed_tail = " ".join(lines[max_lines - 1 :])
+        lines = lines[: max_lines - 1]
+        lines.append(smart_truncate_text(reconstructed_tail, line_limit))
+
+    anchor_attr = f' text-anchor="{anchor}"' if anchor else ""
+    extra = f" {extra_attrs.strip()}" if extra_attrs.strip() else ""
+    tooltip = f"<title>{xml_escape(raw_text, quote=True)}</title>" if include_tooltip else ""
+
+    if len(lines) == 1:
+        return (
+            f'<text class="{css_class}"{anchor_attr} x="{x:.1f}" y="{y:.1f}"{extra}>{tooltip}{xml_escape(lines[0], quote=True)}</text>',
+            1,
+        )
+
+    tspans = []
+    for i, line in enumerate(lines):
+        dy_attr = f' dy="{line_height:.1f}"' if i > 0 else ""
+        tspans.append(f'<tspan x="{x:.1f}"{dy_attr}>{xml_escape(line, quote=True)}</tspan>')
+
+    return (
+        f'<text class="{css_class}"{anchor_attr} x="{x:.1f}" y="{y:.1f}"{extra}>{tooltip}{"".join(tspans)}</text>',
+        len(lines),
+    )
 
 
 def editorial_number(value, field_name, minimum=None, maximum=None, strict_minimum=False):
@@ -1571,10 +1646,10 @@ def validate_visual_brief(visual_type, brief):
         return None
     if not isinstance(brief, dict):
         raise EditorialValidationError(f"{visual_type} requires a JSON visual brief.")
-    title = require_editorial_string(brief.get("title"), "title", 100)
+    title = require_editorial_string(brief.get("title"), "title", 200)
     subtitle = brief.get("subtitle", "")
     if subtitle:
-        subtitle = require_editorial_string(subtitle, "subtitle", 180)
+        subtitle = require_editorial_string(subtitle, "subtitle", 300)
     if brief.get("type") != visual_type:
         raise EditorialValidationError(f"Visual brief type must be '{visual_type}'.")
     data = brief.get("data")
@@ -1591,17 +1666,17 @@ def validate_visual_brief(visual_type, brief):
         for index, node in enumerate(nodes, 1):
             if not isinstance(node, dict):
                 raise EditorialValidationError(f"Sankey node {index} must be an object.")
-            node_id = require_editorial_string(node.get("id"), f"Sankey node {index} id", 60)
+            node_id = require_editorial_string(node.get("id"), f"Sankey node {index} id", 100)
             if node_id in node_ids:
                 raise EditorialValidationError(f"Sankey node id '{node_id}' is duplicated.")
             node_ids.add(node_id)
-            clean_nodes.append({"id": node_id, "label": require_editorial_string(node.get("label"), f"Sankey node {index} label", 80)})
+            clean_nodes.append({"id": node_id, "label": require_editorial_string(node.get("label"), f"Sankey node {index} label", 160)})
         clean_links = []
         for index, link in enumerate(links, 1):
             if not isinstance(link, dict):
                 raise EditorialValidationError(f"Sankey link {index} must be an object.")
-            source = require_editorial_string(link.get("source"), f"Sankey link {index} source", 60)
-            target = require_editorial_string(link.get("target"), f"Sankey link {index} target", 60)
+            source = require_editorial_string(link.get("source"), f"Sankey link {index} source", 100)
+            target = require_editorial_string(link.get("target"), f"Sankey link {index} target", 100)
             if source == target or source not in node_ids or target not in node_ids:
                 raise EditorialValidationError(f"Sankey link {index} must join two different known nodes.")
             clean_links.append({"source": source, "target": target, "value": editorial_number(link.get("value"), f"Sankey link {index} value", 0, strict_minimum=True), "label": str(link.get("label", "")).strip()})
@@ -1615,7 +1690,7 @@ def validate_visual_brief(visual_type, brief):
         for index, component in enumerate(components, 1):
             if not isinstance(component, dict):
                 raise EditorialValidationError(f"Wardley component {index} must be an object.")
-            name = require_editorial_string(component.get("name"), f"Wardley component {index} name", 80)
+            name = require_editorial_string(component.get("name"), f"Wardley component {index} name", 160)
             if name in names:
                 raise EditorialValidationError(f"Wardley component name '{name}' is duplicated.")
             names.add(name)
@@ -1629,7 +1704,7 @@ def validate_visual_brief(visual_type, brief):
     for index, stage in enumerate(stages, 1):
         if not isinstance(stage, dict):
             raise EditorialValidationError(f"Journey stage {index} must be an object.")
-        clean_stages.append({"name": require_editorial_string(stage.get("name"), f"Journey stage {index} name", 60), "action": require_editorial_string(stage.get("action"), f"Journey stage {index} action", 100), "sentiment": editorial_number(stage.get("sentiment"), f"Journey stage {index} sentiment", -2, 2), "note": str(stage.get("note", "")).strip()})
+        clean_stages.append({"name": require_editorial_string(stage.get("name"), f"Journey stage {index} name", 120), "action": require_editorial_string(stage.get("action"), f"Journey stage {index} action", 160), "sentiment": editorial_number(stage.get("sentiment"), f"Journey stage {index} sentiment", -2, 2), "note": str(stage.get("note", "")).strip()})
     return {"title": title, "subtitle": subtitle, "type": visual_type, "data": {"stages": clean_stages}}
 
 
@@ -1638,7 +1713,7 @@ def validate_report_brief(visual_type, brief):
         raise EditorialValidationError(f"Unsupported report visual type: {visual_type}.")
     if not isinstance(brief, dict) or brief.get("type") != visual_type:
         raise EditorialValidationError(f"Report brief type must be '{visual_type}'.")
-    title = require_editorial_string(brief.get("title"), "title", 100)
+    title = require_editorial_string(brief.get("title"), "title", 200)
     items = brief.get("data", {}).get("items")
     if not isinstance(items, list) or not 1 <= len(items) <= 12:
         raise EditorialValidationError(f"{visual_type} requires 1 to 12 data items.")
@@ -1646,7 +1721,7 @@ def validate_report_brief(visual_type, brief):
     for index, item in enumerate(items, 1):
         if not isinstance(item, dict):
             raise EditorialValidationError(f"Report item {index} must be an object.")
-        label = require_editorial_string(item.get("label"), f"Report item {index} label", 60)
+        label = require_editorial_string(item.get("label"), f"Report item {index} label", 120)
         value = item.get("value")
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             value = editorial_number(value, f"Report item {index} value")
@@ -1737,8 +1812,15 @@ def render_editorial_architecture(brief, width, height):
         x, y = 96 + column * (box_width + 28), start_y + row * 148
         parts.append(f'<rect class="node" x="{x:.1f}" y="{y}" width="{box_width:.1f}" height="{box_height}" rx="14"/>')
         parts.append(f'<rect x="{x:.1f}" y="{y}" width="8" height="{box_height}" rx="4" class="accent"/>')
-        parts.append(f'<text class="label" x="{x + 26:.1f}" y="{y + 48}">{editorial_text(module["label"], 42)}</text>')
-        parts.append(f'<text class="small" x="{x + 26:.1f}" y="{y + 78}">{editorial_text(module["detail"], 52)}</text>')
+        label_svg, label_lines = render_editorial_multiline_svg_with_count(
+            module["label"], x=x + 26, y=y + 42, css_class="label", line_limit=36, max_lines=2, line_height=18
+        )
+        parts.append(label_svg)
+        detail_y = y + 42 + label_lines * 18 + 6
+        detail_svg, _ = render_editorial_multiline_svg_with_count(
+            module["detail"], x=x + 26, y=detail_y, css_class="small", line_limit=42, max_lines=2, line_height=15
+        )
+        parts.append(detail_svg)
     return "".join(parts)
 
 
@@ -1783,7 +1865,10 @@ def render_editorial_sankey(brief, width, height):
     for node in nodes:
         x, y = positions[node["id"]]
         parts.append(f'<rect class="node" x="{x - 18:.1f}" y="{y - 30:.1f}" width="36" height="60" rx="8"/>')
-        parts.append(f'<text class="label" x="{x + 30:.1f}" y="{y - 4:.1f}">{editorial_text(node["label"], 34)}</text>')
+        label_svg, _ = render_editorial_multiline_svg_with_count(
+            node["label"], x=x + 30, y=y - 4, css_class="label", line_limit=32, max_lines=2, line_height=16
+        )
+        parts.append(label_svg)
     return "".join(parts)
 
 
@@ -1802,9 +1887,19 @@ def render_editorial_wardley(brief, width, height):
         x = left + component["evolution"] * chart_width
         y = top + (1 - component["value"]) * chart_height
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="12" class="accent"/>')
-        parts.append(f'<text class="label" x="{x + 20:.1f}" y="{y + 6:.1f}">{editorial_text(component["name"], 36)}</text>')
-        if component["note"]:
-            parts.append(f'<text class="small" x="{x + 20:.1f}" y="{y + 28:.1f}">{editorial_text(component["note"], 46)}</text>')
+        align_left = component["evolution"] > 0.65
+        tx = x - 20 if align_left else x + 20
+        anchor = "end" if align_left else ""
+        name_svg, name_lines = render_editorial_multiline_svg_with_count(
+            component["name"], x=tx, y=y + 6, css_class="label", line_limit=32, max_lines=3, line_height=18, anchor=anchor
+        )
+        parts.append(name_svg)
+        if component.get("note"):
+            note_y = y + 6 + name_lines * 18 + 4
+            note_svg, _ = render_editorial_multiline_svg_with_count(
+                component["note"], x=tx, y=note_y, css_class="small", line_limit=38, max_lines=3, line_height=15, anchor=anchor
+            )
+            parts.append(note_svg)
     return "".join(parts)
 
 
@@ -1825,10 +1920,21 @@ def render_editorial_journey(brief, width, height):
     ]
     for (x, y), stage in zip(points, stages):
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="12" class="accent"/>')
-        parts.append(f'<text class="label" text-anchor="middle" x="{x:.1f}" y="{baseline + 62}">{editorial_text(stage["name"], 22)}</text>')
-        parts.append(f'<text class="small" text-anchor="middle" x="{x:.1f}" y="{baseline + 88}">{editorial_text(stage["action"], 26)}</text>')
-        if stage["note"]:
-            parts.append(f'<text class="small" text-anchor="middle" x="{x:.1f}" y="{baseline + 112}">{editorial_text(stage["note"], 24)}</text>')
+        name_svg, name_lines = render_editorial_multiline_svg_with_count(
+            stage["name"], x=x, y=baseline + 62, css_class="label", line_limit=24, max_lines=2, line_height=16, anchor="middle"
+        )
+        parts.append(name_svg)
+        action_y = baseline + 62 + name_lines * 16 + 8
+        action_svg, action_lines = render_editorial_multiline_svg_with_count(
+            stage["action"], x=x, y=action_y, css_class="small", line_limit=28, max_lines=2, line_height=14, anchor="middle"
+        )
+        parts.append(action_svg)
+        if stage.get("note"):
+            note_y = action_y + action_lines * 14 + 6
+            note_svg, _ = render_editorial_multiline_svg_with_count(
+                stage["note"], x=x, y=note_y, css_class="small", line_limit=28, max_lines=2, line_height=14, anchor="middle"
+            )
+            parts.append(note_svg)
     return "".join(parts)
 
 

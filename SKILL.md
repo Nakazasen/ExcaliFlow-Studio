@@ -1,224 +1,85 @@
 ---
 name: excaliflow
-description: "Analyze a local codebase or knowledge graph into offline Excalidraw-style architecture views, editable Excalidraw scenes, and original editorial SVG/HTML diagrams for slides, blogs, whitepapers, and pitches. Use for architecture, Sankey, Wardley, or journey visualizations."
+description: "Trung tâm điều khiển trực quan hóa kiến trúc ExcaliFlow Studio: Phân tích codebase/Graphify thành sơ đồ Excalidraw, Codebase Atlas, sơ đồ Editorial (Wardley, Sankey, Journey, Architecture), và Evidence Graph cho RAG."
 ---
 
-# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3)
+# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.1)
 
-## Evidence Graph Atlas for RAG and investigations
-
-When a user asks to visualize a RAG answer, a knowledge system, an incident, or
-an investigation, use the Evidence Graph path rather than asking an LLM to
-invent Mermaid coordinates. First export a local `rag-trace.json` with the
-answer, retrieved chunks, document locations, and optional entity/claim data.
-Every answer and LLM-extracted claim needs a citation to a known chunk.
-
-```powershell
-excaliflow knowledge import --trace "D:\MyProject\rag-trace.json" --out "D:\MyProject\evidence-graph.json"
-excaliflow knowledge atlas --graph "D:\MyProject\evidence-graph.json" --out "D:\MyProject\evidence-atlas.html"
-```
-
-`evidence-graph.json` is the source of truth. The generated HTML is offline,
-starts with the answer and its evidence, provides an explicit full-graph view,
-and displays source location, origin, confidence, and review status for every
-relationship. A `needs_review` model claim is never presented as verified.
-
-## Check for an ExcaliFlow update
-
-When the user asks whether their installed skill is current, run this explicit,
-read-only command from the installed skill or repository:
-
-```powershell
-excaliflow update check
-```
-
-It contacts the GitHub Release manifest only for this command, reports the
-installed/latest versions and download URL, and never downloads, overwrites, or
-starts a background updater. If the manifest is unavailable, state that no
-update decision can be made instead of claiming the installation is current.
-
-## Evidence-first exploration
-
-When the user asks to understand, learn, explain, or question a local codebase, use the portable explorer before making claims. It supports an engineering vocabulary and a beginner-friendly learner vocabulary, and every answer includes source-file/line evidence.
-
-```powershell
-# From the installed `excaliflow` folder, explain the codebase as a learning guide.
-py -3 .\scripts\explore_codebase.py --dir "D:\MyProject" --audience learner --out "D:\MyProject\CODEBASE_GUIDE.md"
-
-# Ask a focused question. Include `ask` as the first argument.
-py -3 .\scripts\explore_codebase.py ask --dir "D:\MyProject" --audience engineer --question "What is UserService?"
-```
-
-Do not present inferred runtime behavior as fact. The explorer reports Python AST declarations/imports plus structural declarations/imports from supported non-Python files; use the existing Graphify-aware viewer for broader relationship diagrams.
-
-## Codebase Atlas workspace
-
-When the user wants to see relationships, read an explanation, and ask questions in one place, generate the offline Atlas before suggesting architectural conclusions:
-
-```powershell
-# From the installed `excaliflow` folder.
-py -3 .\scripts\build_atlas.py --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
-```
-
-The Atlas uses a native SVG graph, module inspector, audience switch, and an evidence-backed local Q&A panel. It is offline and is not a substitute for runtime tracing.
-
-## Atlas AI Runtime: Verified Operational Playbook
-
-When a user wants conversational Atlas explanations, first run `excaliflow bridge doctor --dir <project> --port <port>`. It must distinguish the project manifest, the local Gemini Web2API upstream, and the Atlas Bridge; never claim AI is active merely because an endpoint exists.
-
-Read `docs/atlas-gemini-web2api.md` before configuring a runtime for another IDE or repository. It contains the verified Windows setup, loopback-only configuration, temporary-chat preference, start commands, verification, external-processing disclosure, and troubleshooting. Do not silently install, start, authenticate, or expose Gemini Web2API; it is a third-party external-processing source and the user must permit source context to leave the machine.
-
-## Default experience for non-technical users
-
-Start with `scripts/Open-ExcaliFlow.cmd` on Windows, or `excaliflow open --dir <project>`. This creates and opens the learner-first Codebase Atlas without requiring an output path, visual grammar, port, or AI Bridge setup. Keep bridge commands, JSON briefs, watch mode, and renderer options in an explicit technical request; do not lead a beginner with them.
-
-## Verified capability boundary
-
-- Python analysis uses the standard-library AST. JavaScript/TypeScript, Go, and Rust use deterministic language-aware extraction of declarations and imports; unsupported code is labelled as a structural scan.
-- Generated HTML embeds packaged Mermaid 11.12.2 and Panzoom 4.5.1, so rendering and pan/zoom do not require a browser network connection.
-- The HTML viewer is **Excalidraw-style**. Use `--excalidraw-out <file>` or `--with-excalidraw` to also create an editable native `.excalidraw` scene.
-- `--watch` excludes generated HTML and companion scene files. `--install-hook` preserves existing hooks and requires `--force-hook` only to replace a hook already marked as Excali-Flow-managed.
-- Editorial SVG/HTML is an original local implementation, independent of diagram-design. Use `--editorial-out` with `--visual-type architecture|sankey|wardley|journey` and `--canvas document|slide|social`.
-- Sankey, Wardley, and journey outputs require a factual JSON brief via `--visual-data`. The generator validates the brief and fails before writing an artifact when values, references, ranges, or density are invalid.
-
-## Editorial output for publication
-
-Use the editorial path when the final artifact is for a slide, blog, whitepaper, or pitch. It uses a restrained paper/ink/accent system, compact title/subtitle hierarchy, generous whitespace, and a fidelity receipt. It does not use remote fonts, scripts, images, stylesheets, or material from diagram-design.
-
-```powershell
-# Architecture from a local codebase, ready for a 16:9 slide
-py -3 .agents\skills\excaliflow\scripts\generate_diagram.py --dir . --editorial-out architecture.svg --visual-type architecture --canvas slide
-
-# Sankey, Wardley, or journey from a factual JSON brief
-py -3 .agents\skills\excaliflow\scripts\generate_diagram.py --editorial-out journey.html --visual-type journey --visual-data journey.json --canvas document
-```
-
-Brief rules: Sankey has 2-12 nodes and positive links between known nodes; Wardley positions use `evolution` and `value` from 0 to 1; journey has 2-12 ordered stages with `name`, `action`, and `sentiment` from -2 to 2. The generated receipt declares whether its source was local analysis or a supplied brief.
-
-Skill này biến Antigravity IDE thành một chuyên gia kiến trúc hình ảnh (**Visual Software Architect**), có khả năng tự động phân tích cấu trúc mã nguồn bất kỳ (Python, Node.js, Go, Rust, v.v.) hoặc nạp trực tiếp đồ thị tri thức nâng cao (**Graphify Knowledge Graph** `graphify-out/graph.json` / Understand Knowledge Graph), tạo các sơ đồ Mermaid theo phong cách vẽ tay phác thảo (**Hand-Drawn / Excalidraw Style** với Rough.js) và xuất ra giao diện Web tương tác độc lập (**Single-File HTML**) không phụ thuộc server.
+> **MỤC TIÊU CỐT LÕI**: Khi người dùng gõ `/excaliflow` (hoặc gọi skill này mà chưa chỉ định cụ thể tham số phức tạp), Agent **BẮT BUỘC** hiển thị ngay **BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard)** để người dùng chọn nhanh tính năng mong muốn (bằng số hoặc mô tả) thay vì phải tự nhớ lệnh.
 
 ---
 
-## 🎯 Khi Nào Kích Hoạt Skill Này?
+## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard)
 
-1. Khi người dùng yêu cầu:
-   - *"Vẽ sơ đồ kiến trúc cho dự án"*
-   - *"Trực quan hóa đồ thị tri thức / cộng đồng kiến trúc Graphify"*
-   - *"Trực quan hóa luồng dữ liệu / quan hệ giữa các hàm và class"*
-   - *"Chuyển đổi Mermaid sang giao diện vẽ tay đẹp như Excalidraw có Zoom/Pan và Sidebar thu gọn"*
-   - *"Tự động hóa xuất sơ đồ HTML kiến trúc cho codebase"*
-2. Khi tuân thủ **Điều luật 8 (.antigravityrules - Visual Architecture & Diagramming Protocol)** trước khi code tính năng mới hoặc refactor.
+Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hiển thị ngay bảng tính năng sau:
 
----
-
-## 🚀 1. Công Cụ Tự Động Hóa (Universal CLI Generator)
-
-Script sinh sơ đồ toàn năng được đặt sẵn tại:
-`C:\Users\Admin\.codex\skills\excaliflow\scripts\generate_diagram.py` (hoặc `C:\Users\Admin\.gemini\config\skills\excaliflow\scripts\generate_diagram.py`)
-
-### Thứ tự ưu tiên phân tích (Analysis Pipeline):
-1. **Knowledge Graph Ingestion (Ưu tiên cao nhất)**:
-   - Tự động phát hiện `graphify-out/graph.json` (hoặc `.understand-anything/knowledge-graph.json`).
-   - Trích xuất cộng đồng kiến trúc (Architectural Communities & Hyperedges), các nút trung tâm (God nodes / High-degree components), và các liên kết phụ thuộc/luồng dữ liệu để dựng biểu đồ Mermaid độ chính xác cao nhất.
-2. **AST & Project Tree Scanner (Fallback)**:
-   - Nếu không có đồ thị tri thức sẵn có, tự động quét AST (Python `ast`), cấu trúc thư mục và tập tin để tạo sơ đồ tổng thể và sơ đồ quan hệ hàm/class.
-
-### Các lệnh chạy phổ biến trên bất kỳ dự án nào:
-
-```powershell
-# 1. Quét dự án hiện tại và mở giao diện xem ngay trên trình duyệt:
-python "C:\Users\Admin\.codex\skills\excaliflow\scripts\generate_diagram.py" --open
-
-# 2. Quét một dự án ở thư mục bất kỳ và chỉ định file đầu ra:
-python "C:\Users\Admin\.codex\skills\excaliflow\scripts\generate_diagram.py" --dir "D:\MyProject" --out "D:\MyProject\architecture_viewer.html" --open
-
-# 3. Bật chế độ Watch Mode (tự động cập nhật sơ đồ mỗi khi lưu file Ctrl+S):
-python "C:\Users\Admin\.codex\skills\excaliflow\scripts\generate_diagram.py" --watch
-
-# 4. Tự động cài đặt Git Pre-commit / Post-commit Hook vào dự án:
-python "C:\Users\Admin\.codex\skills\excaliflow\scripts\generate_diagram.py" --install-hook
-```
+| STT | Nhóm Tính Năng | Mô Tả & Sản Phẩm Đầu Ra | Hành Động CLI / Lệnh Mẫu |
+| :---: | :--- | :--- | :--- |
+| **1** | 🏢 **Sơ Đồ Kiến Trúc & Excalidraw** | Quét Graphify/AST $\to$ Xuất HTML Panzoom offline + file `.excalidraw` chỉnh sửa tay | `excaliflow --dir . --with-excalidraw --open` |
+| **2** | 🗺️ **Codebase Atlas (Học Codebase)** | Giao diện tương tác đọc hiểu codebase, giải thích ứng dụng, đọc sơ đồ SVG native | `excaliflow open --dir .` |
+| **3** | 📊 **Sơ Đồ Editorial (Slide 16:9 / Doc)** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Architecture Slide | `excaliflow --editorial-out <out> --visual-type <type>` |
+| **4** | 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng** | Phân tích AST và trả lời câu hỏi về hàm/class/import kèm file:line dẫn chứng | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **5** | 🔗 **Evidence Graph Cho RAG & Điều Tra** | Chuyển đổi `rag-trace.json` $\to$ Bản đồ tương tác xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
+| **6** | 🩺 **Atlas AI Bridge Doctor** | Kiểm tra trạng thái kết nối Sidecar Daemon (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
+| **7** | 🔄 **Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
 
 ---
 
-## 🎨 2. Cấu Hình Mermaid Chuẩn Phong Cách Excalidraw (Hand-Drawn)
+## 🛠️ Hướng Dẫn Thực Thi Chi Tiết Từng Nhóm
 
-Khi viết hoặc sinh mã Mermaid, AI **BẮT BUỘC** khai báo khối cấu hình `look: 'handDrawn'` ở đầu biểu đồ để kích hoạt engine **Rough.js** và font vẽ tay:
+### Nhóm 1: Sơ Đồ Kiến Trúc Toàn Diện & Scene Excalidraw
+- **Mục đích**: Phân tích cấu trúc thư mục hoặc đồ thị tri thức `graphify-out/graph.json` thành sơ đồ tương tác.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow --dir "<project_path>" --with-excalidraw --out "<project_path>\architecture_viewer.html" --open
+  ```
 
-### Header Cấu Hình Tiêu Chuẩn:
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e0f2fe', 'primaryBorderColor': '#0284c7', 'primaryTextColor': '#0f172a', 'secondaryColor': '#fef3c7', 'secondaryBorderColor': '#d97706', 'secondaryTextColor': '#0f172a', 'tertiaryColor': '#f3e8ff', 'tertiaryBorderColor': '#9333ea', 'tertiaryTextColor': '#0f172a', 'lineColor': '#334155', 'fontSize': '15px' }, 'look': 'handDrawn'}}%%
-```
+### Nhóm 2: Codebase Atlas (Khám Phá & Học Code Cho Người Mới)
+- **Mục đích**: Tạo trang web giải thích ứng dụng làm gì, 1-2-3 reading path, trách nhiệm từng module.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow open --dir "<project_path>"
+  ```
 
----
+### Nhóm 3: Sơ Đồ Xuất Bản Editorial (Slide 16:9, Báo Cáo, Sách Trắng)
+- **Mục đích**: Vẽ các sơ đồ trừu tượng chất lượng cao, không phụ thuộc font mạng.
+- **Các loại sơ đồ hỗ trợ (`--visual-type`)**:
+  1. `architecture`: Sơ đồ kiến trúc tối giản cho slide thuyết trình.
+  2. `wardley`: Bản đồ tiến hóa công nghệ (Genesis $\to$ Custom $\to$ Product $\to$ Commodity) kèm chuỗi giá trị.
+  3. `sankey`: Biểu đồ dòng chảy dữ liệu / luân chuyển giá trị giữa các node.
+  4. `journey`: Bản đồ trải nghiệm người dùng / các giai đoạn phát triển theo thời gian.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow --dir . --editorial-out "diagram.svg" --visual-type wardley --visual-data "brief.json" --canvas slide
+  ```
 
-## 📐 3. Bộ Mẫu Sơ Đồ Mermaid Chuẩn Excali-Flow
+### Nhóm 4: Hỏi Đáp Codebase Có Dẫn Chứng (Evidence-First Q&A)
+- **Mục đích**: Hỏi về một biểu tượng, class, hàm hoặc kiến trúc với cam kết dẫn chứng chính xác `file:line`.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow ask --dir "<project_path>" --audience engineer --question "<câu hỏi>"
+  # Hoặc cho người mới học code:
+  excaliflow ask --dir "<project_path>" --audience learner --question "<câu hỏi>"
+  ```
 
-### Mẫu 1: Sơ đồ Kiến trúc Phân tầng (Architecture Flowchart)
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e0f2fe', 'primaryBorderColor': '#0284c7', 'primaryTextColor': '#0f172a', 'secondaryColor': '#fef3c7', 'secondaryBorderColor': '#d97706', 'lineColor': '#334155', 'fontSize': '15px' }, 'look': 'handDrawn'}}%%
-flowchart TD
-    subgraph UI["🖥️ Giao Diện (Presentation Layer)"]
-        APP["App View / Controller"]
-    end
+### Nhóm 5: Evidence Graph Cho RAG (Bản Đồ Bằng Chứng Trích Dẫn)
+- **Mục đích**: Trực quan hóa đường đi bằng chứng từ câu trả lời RAG, tránh bịa đặt thông tin.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow knowledge import --trace "<project>\rag-trace.json" --out "<project>\evidence-graph.json"
+  excaliflow knowledge atlas --graph "<project>\evidence-graph.json" --out "<project>\evidence-atlas.html"
+  ```
 
-    subgraph CORE["⚙️ Nghiệp Vụ Cốt Lõi (Core Engine)"]
-        PROC["Processor / Service"]
-        HANDLER["Logic Handler"]
-    end
+### Nhóm 6: Atlas AI Bridge Doctor
+- **Mục đích**: Chẩn đoán kết nối backend AI cục bộ cho Atlas.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow bridge doctor --dir "<project_path>"
+  ```
 
-    subgraph DATA["💾 Dữ Liệu & I/O (Data Layer)"]
-        REPO["Repository / File I/O"]
-        DB[("Database / Storage")]
-    end
-
-    APP -->|Kích hoạt tác vụ| PROC
-    PROC --> HANDLER
-    HANDLER --> REPO
-    REPO --> DB
-```
-
-### Mẫu 2: Sơ đồ Luồng Dữ liệu (Data Pipeline)
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#dcfce7', 'primaryBorderColor': '#16a34a', 'primaryTextColor': '#0f172a', 'secondaryColor': '#fef9c3', 'secondaryBorderColor': '#ca8a04', 'tertiaryColor': '#fee2e2', 'tertiaryBorderColor': '#dc2626', 'lineColor': '#334155', 'fontSize': '15px' }, 'look': 'handDrawn'}}%%
-flowchart LR
-    RAW["📥 Dữ liệu thô"] --> VALIDATE{"🔍 Kiểm tra"}
-    VALIDATE -->|Hợp lệ| TRANSFORM["⚙️ Chuyển đổi & Xử lý"]
-    VALIDATE -->|Lỗi| LOG["❌ Ghi log lỗi"]
-    TRANSFORM --> EXPORT["📤 Xuất kết quả"]
-```
-
-### Mẫu 3: Sơ đồ Tuần tự (Sequence Diagram)
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#fee2e2', 'primaryBorderColor': '#dc2626', 'primaryTextColor': '#0f172a', 'secondaryColor': '#e0f2fe', 'secondaryBorderColor': '#0284c7', 'lineColor': '#334155', 'fontSize': '14px' }, 'look': 'handDrawn'}}%%
-sequenceDiagram
-    autonumber
-    actor User as 👤 Người Dùng
-    participant UI as 🖥️ Giao Diện
-    participant Core as ⚙️ Bộ Xử Lý
-    participant DB as 💾 Cơ Sở Dữ Liệu
-
-    User->>UI: 1. Gửi yêu cầu
-    UI->>Core: 2. Gọi hàm xử lý
-    Core->>DB: 3. Đọc dữ liệu
-    DB-->>Core: 4. Trả về dữ liệu
-    Core-->>UI: 5. Kết quả hoàn thành
-    UI-->>User: 6. Hiển thị thông báo
-```
-
----
-
-## 🌟 4. Tính Năng Giao Diện Web Độc Lập Được Tạo Ra (v2):
-* **Nền giấy nhám chuẩn Excalidraw**: Phông nền canvas ấm áp đặc trưng (`#fdfbf7` với họa tiết chấm bi chấm mờ).
-* **Đồ thị nét vẽ tay (Rough strokes)**: Tích hợp Mermaid v11 Hand-Drawn look kết hợp font chữ vẽ tay (Shantell Sans / Caveat / Virgil).
-* **Zoom & Pan mượt mà (@panzoom/panzoom v4.5.1)**:
-  - Hỗ trợ cuộn chuột phóng to / thu nhỏ linh hoạt.
-  - Kéo thả (drag-to-pan) toàn bộ không gian vẽ.
-  - Thanh công cụ Floating Toolbar: Nút Phóng to (`➕`), Thu nhỏ (`➖`), Về mặc định (`🎯`), Vừa khung hình (`📐 Fit to Screen`), cùng hiển thị tỷ lệ phần trăm trực tiếp (`100% badge`).
-* **Sidebar Thu Gọn Linh Hoạt (Collapsible Sidebar)**:
-  - Nút chuyển đổi ẩn/hiện bảng mã nguồn (`#toggle-sidebar` và `#btn-collapse-sidebar`).
-  - Phím tắt tiện lợi `Ctrl+B` (hoặc `Cmd+B`) để mở rộng tối đa 100% diện tích màn hình hiển thị sơ đồ.
-  - Chuyển động hoạt họa mượt mà bằng CSS transitions (`cubic-bezier`).
-* **Live Editor & Export Đa Dạng**:
-  - Biên tập trực tiếp mã Mermaid với phản hồi tức thì (`⚡ Cập Nhật Sơ Đồ`).
-  - Nút xuất file **PNG chất lượng cao (2x Retina)** và **SVG Vector**.
+### Nhóm 7: Kiểm Tra Cập Nhật
+- **Mục đích**: Kiểm tra phiên bản mới nhất từ kho GitHub ExcaliFlow-Studio.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow update check
+  ```

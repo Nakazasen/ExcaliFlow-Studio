@@ -168,6 +168,57 @@ class ExcaliFlowTests(unittest.TestCase):
             with self.assertRaises(generator.EditorialValidationError):
                 generator.generate_editorial_file(root, root / "bad.svg", visual_type="risk", visual_data=invalid)
 
+    def test_smart_multiline_text_rendering(self):
+        # 1. Test smart truncation preserves word boundaries
+        vietnamese_text = "Hệ thống xác thực và phân quyền người dùng tập trung"
+        truncated = generator.smart_truncate_text(vietnamese_text, 30)
+        self.assertFalse(truncated.endswith("quyề…"))
+        self.assertTrue(truncated.endswith("…"))
+        self.assertLessEqual(len(truncated), 31)
+
+        # 2. Test multi-line SVG rendering with <title> tooltip
+        svg_chunk, count = generator.render_editorial_multiline_svg_with_count(
+            "Cổng kết nối thanh toán trực tuyến đa kênh an toàn",
+            x=100.0, y=200.0, line_limit=25, max_lines=3, line_height=18.0, anchor="end"
+        )
+        self.assertGreater(count, 1)
+        self.assertIn("<title>Cổng kết nối thanh toán trực tuyến đa kênh an toàn</title>", svg_chunk)
+        self.assertIn("<tspan", svg_chunk)
+        self.assertIn('text-anchor="end"', svg_chunk)
+
+        # 3. Test end-to-end Wardley map with long Vietnamese names and notes
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            wardley_brief = {
+                "title": "Bản đồ tiến hóa kiến trúc hệ thống thương mại điện tử đa quốc gia",
+                "type": "wardley",
+                "data": {
+                    "components": [
+                        {
+                            "name": "Hạ tầng máy chủ đám mây & Kubernetes Cluster tự động co giãn",
+                            "evolution": 0.85,
+                            "value": 0.2,
+                            "note": "Cung cấp nền tảng container hóa chuẩn quốc tế với độ sẵn sàng cao 99.99%",
+                        },
+                        {
+                            "name": "Thuật toán gợi ý sản phẩm cá nhân hóa bằng học máy chuyên sâu",
+                            "evolution": 0.25,
+                            "value": 0.9,
+                            "note": "Mô hình transformer phân tích thói quen thời gian thực",
+                        },
+                    ]
+                },
+            }
+            output = root / "wardley_vn.svg"
+            generator.generate_editorial_file(root, output, visual_type="wardley", visual_data=wardley_brief, canvas="slide")
+            svg_content = output.read_text(encoding="utf-8")
+            ET.fromstring(svg_content)
+            self.assertIn("Hạ tầng máy chủ", svg_content)
+            self.assertIn("Kubernetes Cluster", svg_content)
+            self.assertIn("text-anchor=\"end\"", svg_content)
+            self.assertIn("<title>Hạ tầng máy chủ đám mây", svg_content)
+
 
 if __name__ == "__main__":
     unittest.main()
+
