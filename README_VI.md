@@ -1,4 +1,4 @@
-﻿# ExcaliFlow Studio
+# ExcaliFlow Studio
 
 <p align="center">
   <strong>Bộ Công Cụ Trực Quan Hóa Kiến Trúc & Khám Phá Codebase Cục Bộ Tối Thượng</strong>
@@ -62,6 +62,41 @@ pip install -e .
 ### Cách 3: Bộ Cài Đặt 1-Click Cho Windows (Không Cần Cài Python Trước)
 
 Tải tệp `ExcaliFlow-Setup-windows.zip` từ [Bản Phát Hành GitHub Mới Nhất](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), giải nén và nhấp đúp vào `ExcaliFlow-Setup.cmd`.
+
+---
+
+## ⚡ Cách Dùng Đơn Giản & Nhanh Nhất: Skill AI `/excaliflow`
+
+**Kỹ năng Agent Skill (`SKILL.md`) đã được đóng gói sẵn 100%** trong tất cả các bộ cài đặt. Sau khi cài vào môi trường AI (Antigravity, Claude Code, Cursor, GitHub Copilot, Gemini CLI...):
+
+1. Bạn chỉ cần gõ lệnh `/excaliflow` trong khung chat AI.
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển (Dashboard v3.1)** gồm 7 nhóm tính năng:
+   - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw**
+   - `2` 🗺️ **Codebase Atlas (Khám Phá & Học Code)**
+   - `3` 📊 **Sơ Đồ Xuất Bản Editorial (Wardley, Sankey, Journey, Slide)**
+   - `4` 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng**
+   - `5` 🔗 **Evidence Graph Cho RAG**
+   - `6` 🩺 **Atlas AI Bridge Doctor**
+   - `7` 🔄 **Kiểm Tra Bản Cập Nhật**
+3. Bạn chỉ cần trả lời bằng số (vd: gõ `1` hoặc `2`)—**không cần nhớ bất kỳ cờ lệnh CLI phức tạp nào!**
+
+---
+
+## 🔗 Bộ Đôi Hoàn Hảo: Kết Hợp Cực Mạnh Với `/graphify`
+
+> [!TIP]
+> **ExcaliFlow có cần kết hợp với `/graphify` không?**
+> **CHÍNH XÁC!** Mặc dù ExcaliFlow có thể tự quét mã nguồn độc lập (AST), nhưng khi kết hợp với `/graphify`, bạn sẽ có được **quy trình phân tích & trực quan hóa mạnh mẽ nhất hiện nay**:
+>
+> 1. **Bước 1 (`/graphify`)**: Phân tích toàn bộ codebase thành Đồ thị tri thức (Knowledge Graph) với phát hiện God-nodes, gom cụm cộng đồng (hyperedges) tại `graphify-out/graph.json`.
+> 2. **Bước 2 (`/excaliflow`)**: Tự động nhận diện `graphify-out/graph.json` và chuyển đổi toàn bộ cụm tri thức đa chiều thành **Trình xem HTML Panzoom** và **Bản vẽ Excalidraw trực quan**!
+
+```text
+┌─────────────────┐       ┌───────────────────────┐       ┌──────────────────────────────┐
+│ Mã Nguồn Dự Án  │ ────> │ /graphify (Tri Thức)  │ ────> │ /excaliflow (Giao Diện Vẽ)   │
+│  (Source Code)  │       │ graphify-out/graph.json│       │ Interactive HTML + Excalidraw│
+└─────────────────┘       └───────────────────────┘       └──────────────────────────────┘
+```
 
 ---
 

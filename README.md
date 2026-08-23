@@ -65,6 +65,41 @@ Download `ExcaliFlow-Setup-windows.zip` from the [Latest GitHub Release](https:/
 
 ---
 
+## ⚡ Fastest Way to Use: The `/excaliflow` AI Skill Dashboard
+
+The **ExcaliFlow Agent Skill (`SKILL.md`) is bundled directly** in all installations. Once installed in your AI IDE (Antigravity, Claude Code, Cursor, GitHub Copilot, Gemini CLI, etc.):
+
+1. Just type `/excaliflow` in the chat window.
+2. The agent automatically presents the **Interactive Feature Dashboard Menu (v3.1)**:
+   - `1` 🏢 **Architecture & Excalidraw**
+   - `2` 🗺️ **Codebase Atlas (Explore & Learn Code)**
+   - `3` 📊 **Editorial Diagrams (Wardley, Sankey, Journey, Slide)**
+   - `4` 🔍 **Source-Backed Codebase Q&A**
+   - `5` 🔗 **Evidence Graph for RAG**
+   - `6` 🩺 **Atlas AI Bridge Doctor**
+   - `7` 🔄 **Check for Updates**
+3. Reply with a number (e.g. `1` or `2`) or a short description—**no need to memorize complex CLI flags!**
+
+---
+
+## 🔗 The Golden Workflow: Synergy with `/graphify`
+
+> [!TIP]
+> **Does ExcaliFlow work best with `/graphify`?**
+> **YES!** While ExcaliFlow can scan raw source code AST on its own, pairing `/graphify` with `/excaliflow` forms the ultimate architectural visualization pipeline:
+>
+> 1. **Step 1 (`/graphify`)**: Analyzes the codebase to construct high-dimensional knowledge graphs with God-node detection, community clustering, and hyperedges (`graphify-out/graph.json`).
+> 2. **Step 2 (`/excaliflow`)**: Automatically detects `graphify-out/graph.json`, parses semantic communities, and renders them into an interactive **Panzoom HTML Viewer** and an editable **Excalidraw canvas**!
+
+```text
+┌─────────────────┐       ┌───────────────────────┐       ┌──────────────────────────────┐
+│  Your Codebase  │ ────> │ /graphify (Knowledge) │ ────> │ /excaliflow (Visual Studio)  │
+│  (Source Files) │       │ graphify-out/graph.json│       │ Interactive HTML + Excalidraw│
+└─────────────────┘       └───────────────────────┘       └──────────────────────────────┘
+```
+
+---
+
 ## 🛠️ Feature Modules & CLI Guide
 
 | Feature Group | Description & Output | CLI Command |
