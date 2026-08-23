@@ -222,16 +222,20 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
     graphify_bin = shutil.which("graphify") if auto_trigger else None
     latest_src_mtime = get_latest_source_mtime(project_root)
 
-    # 1. Gom tất cả ứng viên Graphify độc lập (tránh lỗi elif khi thư mục rỗng)
-    graphify_candidates = []
-    if g_out.is_file():
-        graphify_candidates.append(g_out)
-    if (project_root / "graphify-out").is_dir():
-        for p in (project_root / "graphify-out").glob("**/graph.json"):
-            if p.is_file() and p not in graphify_candidates:
-                graphify_candidates.append(p)
-    if (project_root / "graph.json").is_file() and (project_root / "graph.json") not in graphify_candidates:
-        graphify_candidates.append(project_root / "graph.json")
+    # Helper gom tất cả ứng viên Graphify độc lập (tránh lỗi elif khi thư mục rỗng)
+    def collect_graphify_candidates():
+        candidates = []
+        if g_out.is_file():
+            candidates.append(g_out)
+        if (project_root / "graphify-out").is_dir():
+            for p in (project_root / "graphify-out").glob("**/graph.json"):
+                if p.is_file() and p not in candidates:
+                    candidates.append(p)
+        if (project_root / "graph.json").is_file() and (project_root / "graph.json") not in candidates:
+            candidates.append(project_root / "graph.json")
+        return candidates
+
+    graphify_candidates = collect_graphify_candidates()
 
     # Nếu tìm thấy đồ thị Graphify: Kiểm tra tính mới so với mã nguồn
     if graphify_candidates:
@@ -245,8 +249,17 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
                     if strict:
                         raise RuntimeError(f"Fail-Closed: Graphify update failed in strict mode for {project_root}")
                     print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
-                elif g_out.is_file():
-                    selected_graph = g_out
+                else:
+                    # Quét lại sau khi Graphify hoàn tất để xác nhận tệp đồ thị thực sự mới hơn mã nguồn
+                    new_candidates = collect_graphify_candidates()
+                    if new_candidates:
+                        new_selected = max(new_candidates, key=lambda p: p.stat().st_mtime)
+                        if new_selected.stat().st_mtime >= latest_src_mtime:
+                            selected_graph = new_selected
+                        elif strict:
+                            raise RuntimeError(f"Fail-Closed: Graphify reported success but output graph is still stale ({latest_src_mtime:.1f} > {new_selected.stat().st_mtime:.1f}) in strict mode for {project_root}")
+                    elif strict:
+                        raise RuntimeError(f"Fail-Closed: Graphify reported success but no output graph was found in strict mode for {project_root}")
             elif strict:
                 if not graphify_bin:
                     raise RuntimeError(f"Fail-Closed: Stale graph detected ({latest_src_mtime:.1f} > {graph_mtime:.1f}) but graphify executable is not available in strict mode for {project_root}")
@@ -260,9 +273,16 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
     if auto_trigger and graphify_bin:
         print(f"[*] Chua tim thay do thi tri thuc. Tu dong kich hoat Graphify cho: {project_root}...")
         if run_graphify_extract(project_root, graphify_bin):
-            if g_out.is_file():
-                print(f"[*] Da tao moi thanh cong do thi tri thuc Graphify: {g_out}")
-                return ("graphify", g_out)
+            new_candidates = collect_graphify_candidates()
+            if new_candidates:
+                new_selected = max(new_candidates, key=lambda p: p.stat().st_mtime)
+                if new_selected.stat().st_mtime >= latest_src_mtime:
+                    print(f"[*] Da tao moi thanh cong do thi tri thuc Graphify: {new_selected}")
+                    return ("graphify", new_selected)
+                elif strict:
+                    raise RuntimeError(f"Fail-Closed: Initial Graphify extraction created stale graph ({latest_src_mtime:.1f} > {new_selected.stat().st_mtime:.1f}) in strict mode for {project_root}")
+            elif strict:
+                raise RuntimeError(f"Fail-Closed: Initial Graphify extraction reported success but no output graph was found in strict mode for {project_root}")
         elif strict:
             raise RuntimeError(f"Fail-Closed: Initial Graphify extraction failed in strict mode for {project_root}")
 
