@@ -39,38 +39,53 @@
 
 ---
 
-## 📦 Installation
+## ⚡ 5-Second Quickstart (For Newcomers — Zero Setup!)
 
-### Option 1: Via `uv` (Recommended)
+You **do not need any external tools or complex configuration** to visualize your codebase. ExcaliFlow works 100% standalone right out of the box:
 
-```powershell
-# Install directly as a global tool from the local directory
-uv tool install --editable "D:\Sandbox\ExcaliFlow Studio"
-
-# Verify offline runtime
-excaliflow --offline-check
-```
-
-### Option 2: Via `pip`
-
-```powershell
-git clone https://github.com/Nakazasen/ExcaliFlow-Studio.git
-cd ExcaliFlow-Studio
+### 1. Install ExcaliFlow
+```bash
 pip install -e .
+# or via uv:
+uv tool install --editable .
 ```
 
-### Option 3: Windows One-Click Setup (Zero-Python)
+### 2. Run in any project directory
+```bash
+# Navigate to your project folder
+cd /path/to/your/project
 
-Download `ExcaliFlow-Setup-windows.zip` from the [Latest GitHub Release](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), extract it, and double-click `ExcaliFlow-Setup.cmd`.
+# Generate and instantly open your architecture diagram
+excaliflow --open --with-excalidraw
+```
+🎉 **Boom!** Your browser opens immediately with an interactive Panzoom HTML architecture viewer and an editable `.excalidraw` canvas right beside your code!
 
 ---
 
-## ⚡ Fastest Way to Use: The `/excaliflow` AI Skill Dashboard
+## 💡 Standalone vs. Supercharged: Do I Need `/graphify`?
 
-The **ExcaliFlow Agent Skill (`SKILL.md`) is bundled directly** in all installations. Once installed in your AI IDE (Antigravity, Claude Code, Cursor, GitHub Copilot, Gemini CLI, etc.):
+| Mode | How it Works | When to Use |
+| :--- | :--- | :--- |
+| 🚀 **Standalone Mode** *(Default — Zero Setup)* | ExcaliFlow automatically scans your code AST, directory structure, and import relations on its own. | You want an instant, beautiful architecture diagram of any project in 5 seconds without installing anything else. |
+| ⚡ **Supercharged with `/graphify`** *(Optional Power-Up)* | **What is Graphify?** An open-source tool that extracts semantic knowledge graphs, detects central God-nodes, and clusters community hyperedges. If `graphify` is installed on your system, ExcaliFlow **automatically detects it** and renders deep multidimensional knowledge graphs without any extra configuration! | You have large, complex codebases and want AI-powered community detection and God-node structural analysis. |
 
-1. Just type `/excaliflow` in the chat window.
-2. The agent automatically presents the **Interactive Feature Dashboard Menu (v3.1)**:
+```text
+┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
+│  Your Codebase          │ ────> │  ExcaliFlow Standalone (AST / Code)  │ ────> │  Interactive HTML Viewer     │
+│  (Python, JS, TS, etc.) │   │   └──────────────────────────────────────┘   │   │  + Editable .excalidraw Scene│
+│                         │   │   ┌──────────────────────────────────────┐   │   │  + Presentation SVG Slide    │
+│                         │   └──>│  Optional: /graphify Knowledge Graph │───┘   └──────────────────────────────┘
+└─────────────────────────┘       └──────────────────────────────────────┘
+```
+
+---
+
+## 🤖 Fastest Way for AI Agents: The `/excaliflow` Skill Dashboard
+
+If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
+
+1. Type `/excaliflow` in your AI chat window.
+2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.1)**:
    - `1` 🏢 **Architecture & Excalidraw**
    - `2` 🗺️ **Codebase Atlas (Explore & Learn Code)**
    - `3` 📊 **Editorial Diagrams (Wardley, Sankey, Journey, Slide)**
@@ -79,24 +94,6 @@ The **ExcaliFlow Agent Skill (`SKILL.md`) is bundled directly** in all installat
    - `6` 🩺 **Atlas AI Bridge Doctor**
    - `7` 🔄 **Check for Updates**
 3. Reply with a number (e.g. `1` or `2`) or a short description—**no need to memorize complex CLI flags!**
-
----
-
-## 🔗 The Golden Workflow: Synergy with `/graphify`
-
-> [!TIP]
-> **Does ExcaliFlow work best with `/graphify`?**
-> **YES!** While ExcaliFlow can scan raw source code AST on its own, pairing `/graphify` with `/excaliflow` forms the ultimate architectural visualization pipeline:
->
-> 1. **Step 1 (`/graphify`)**: Analyzes the codebase to construct high-dimensional knowledge graphs with God-node detection, community clustering, and hyperedges (`graphify-out/graph.json`).
-> 2. **Step 2 (`/excaliflow`)**: Automatically detects `graphify-out/graph.json`, parses semantic communities, and renders them into an interactive **Panzoom HTML Viewer** and an editable **Excalidraw canvas**!
-
-```text
-┌─────────────────┐       ┌───────────────────────┐       ┌──────────────────────────────┐
-│  Your Codebase  │ ────> │ /graphify (Knowledge) │ ────> │ /excaliflow (Visual Studio)  │
-│  (Source Files) │       │ graphify-out/graph.json│       │ Interactive HTML + Excalidraw│
-└─────────────────┘       └───────────────────────┘       └──────────────────────────────┘
-```
 
 ---
 

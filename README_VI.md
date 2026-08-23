@@ -39,38 +39,53 @@
 
 ---
 
-## 📦 Hướng Dẫn Cài Đặt
+## ⚡ Bắt Đầu Nhanh Trong 5 Giây (Dành Cho Người Mới — Không Cần Cài Đặt Phức Tạp!)
 
-### Cách 1: Qua `uv` (Khuyên dùng)
+Bạn **không cần bất kỳ công cụ phụ trợ hay cấu hình phức tạp nào** để vẽ sơ đồ dự án. ExcaliFlow hoạt động hoàn toàn độc lập ngay sau khi cài:
 
-```powershell
-# Cài đặt công cụ CLI trực tiếp từ thư mục mã nguồn
-uv tool install --editable "D:\Sandbox\ExcaliFlow Studio"
-
-# Kiểm tra runtime offline
-excaliflow --offline-check
-```
-
-### Cách 2: Qua `pip`
-
-```powershell
-git clone https://github.com/Nakazasen/ExcaliFlow-Studio.git
-cd ExcaliFlow-Studio
+### 1. Cài đặt ExcaliFlow
+```bash
 pip install -e .
+# hoặc qua uv:
+uv tool install --editable .
 ```
 
-### Cách 3: Bộ Cài Đặt 1-Click Cho Windows (Không Cần Cài Python Trước)
+### 2. Chạy ngay tại thư mục dự án của bạn
+```bash
+# Di chuyển đến thư mục code cần vẽ
+cd /duong/dan/toi/du/an
 
-Tải tệp `ExcaliFlow-Setup-windows.zip` từ [Bản Phát Hành GitHub Mới Nhất](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), giải nén và nhấp đúp vào `ExcaliFlow-Setup.cmd`.
+# Tạo và tự động mở sơ đồ ngay lập tức
+excaliflow --open --with-excalidraw
+```
+🎉 **Xong ngay!** Trình duyệt web sẽ tự động bật lên với giao diện phóng to/thu nhỏ (Panzoom) toàn cảnh kiến trúc dự án và file `.excalidraw` sẵn sàng để vẽ tay hoặc thuyết trình!
 
 ---
 
-## ⚡ Cách Dùng Đơn Giản & Nhanh Nhất: Skill AI `/excaliflow`
+## 💡 Chế Độ Độc Lập vs. Siêu Cấp: Tôi Có Bắt Buộc Cần `/graphify` Không?
 
-**Kỹ năng Agent Skill (`SKILL.md`) đã được đóng gói sẵn 100%** trong tất cả các bộ cài đặt. Sau khi cài vào môi trường AI (Antigravity, Claude Code, Cursor, GitHub Copilot, Gemini CLI...):
+| Chế Độ | Cơ Chế Hoạt Động | Khi Nào Nên Dùng |
+| :--- | :--- | :--- |
+| 🚀 **Chế Độ Độc Lập (Standalone)** *(Mặc định — Không cần cài thêm gì)* | ExcaliFlow tự động quét cấu trúc cây thư mục (AST), đọc các quan hệ import và tạo sơ đồ kiến trúc ngay tức thì. | Bạn muốn có ngay một sơ đồ kiến trúc đẹp, trực quan cho dự án chỉ trong 5 giây mà không cần cài thêm công cụ ngoài. |
+| ⚡ **Chế Độ Siêu Cấp (Supercharged with `/graphify`)** *(Tùy chọn nâng cao)* | **Graphify là gì?** Là công cụ AI mã nguồn mở giúp biến toàn bộ codebase thành Đồ thị tri thức (Knowledge Graph), tự phát hiện các file trung tâm cốt lõi (God-nodes) và gom cụm đa chiều. Nếu máy bạn đã có `graphify`, ExcaliFlow sẽ **tự động kích hoạt** để vẽ đồ thị sâu hơn gấp 10 lần mà bạn không cần gõ thêm lệnh nào! | Dự án lớn, cấu trúc phức tạp và bạn muốn phân tích sâu cấu trúc cộng đồng mã nguồn bằng đồ thị tri thức. |
 
-1. Bạn chỉ cần gõ lệnh `/excaliflow` trong khung chat AI.
-2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển (Dashboard v3.1)** gồm 7 nhóm tính năng:
+```text
+┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
+│  Mã Nguồn Codebase      │ ────> │  ExcaliFlow Độc Lập (AST / Code)     │ ────> │  Trình Xem HTML Tương Tác    │
+│  (Python, JS, TS, v.v.) │   │   └──────────────────────────────────────┘   │   │  + Bản Vẽ Tay .excalidraw    │
+│                         │   │   ┌──────────────────────────────────────┐   │   │  + Slide Thuyết Trình SVG    │
+│                         │   └──>│  Tùy chọn: /graphify Đồ Thị Tri Thức │───┘   └──────────────────────────────┘
+└─────────────────────────┘       └──────────────────────────────────────┘
+```
+
+---
+
+## 🤖 Cách Dùng Nhanh Cho AI Agent: Bảng Điều Khiển Skill `/excaliflow`
+
+Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
+
+1. Chỉ cần gõ `/excaliflow` trong khung chat AI.
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.1)**:
    - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw**
    - `2` 🗺️ **Codebase Atlas (Khám Phá & Học Code)**
    - `3` 📊 **Sơ Đồ Xuất Bản Editorial (Wardley, Sankey, Journey, Slide)**
@@ -78,25 +93,7 @@ Tải tệp `ExcaliFlow-Setup-windows.zip` từ [Bản Phát Hành GitHub Mới 
    - `5` 🔗 **Evidence Graph Cho RAG**
    - `6` 🩺 **Atlas AI Bridge Doctor**
    - `7` 🔄 **Kiểm Tra Bản Cập Nhật**
-3. Bạn chỉ cần trả lời bằng số (vd: gõ `1` hoặc `2`)—**không cần nhớ bất kỳ cờ lệnh CLI phức tạp nào!**
-
----
-
-## 🔗 Bộ Đôi Hoàn Hảo: Kết Hợp Cực Mạnh Với `/graphify`
-
-> [!TIP]
-> **ExcaliFlow có cần kết hợp với `/graphify` không?**
-> **CHÍNH XÁC!** Mặc dù ExcaliFlow có thể tự quét mã nguồn độc lập (AST), nhưng khi kết hợp với `/graphify`, bạn sẽ có được **quy trình phân tích & trực quan hóa mạnh mẽ nhất hiện nay**:
->
-> 1. **Bước 1 (`/graphify`)**: Phân tích toàn bộ codebase thành Đồ thị tri thức (Knowledge Graph) với phát hiện God-nodes, gom cụm cộng đồng (hyperedges) tại `graphify-out/graph.json`.
-> 2. **Bước 2 (`/excaliflow`)**: Tự động nhận diện `graphify-out/graph.json` và chuyển đổi toàn bộ cụm tri thức đa chiều thành **Trình xem HTML Panzoom** và **Bản vẽ Excalidraw trực quan**!
-
-```text
-┌─────────────────┐       ┌───────────────────────┐       ┌──────────────────────────────┐
-│ Mã Nguồn Dự Án  │ ────> │ /graphify (Tri Thức)  │ ────> │ /excaliflow (Giao Diện Vẽ)   │
-│  (Source Code)  │       │ graphify-out/graph.json│       │ Interactive HTML + Excalidraw│
-└─────────────────┘       └───────────────────────┘       └──────────────────────────────┘
-```
+3. Bạn chỉ cần gõ số (vd: `1` hoặc `2`)—**không cần nhớ bất kỳ cờ lệnh CLI phức tạp nào!**
 
 ---
 
