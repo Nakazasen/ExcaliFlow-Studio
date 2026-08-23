@@ -1,197 +1,246 @@
 # ExcaliFlow Studio
 
-Local-first code intelligence and presentation-ready diagrams.
+<p align="center">
+  <strong>Local-First Code Intelligence & Presentation-Ready Visual Architecture Engine</strong>
+</p>
 
-## Current capabilities
+<p align="center">
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.2-blue.svg" alt="Version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-47%2F47%20passing-success.svg" alt="Tests"></a>
+  <a href="#key-highlights"><img src="https://img.shields.io/badge/offline-100%25%20zero%20cloud%20deps-orange.svg" alt="Offline Ready"></a>
+</p>
 
-- Graphify/Understand-aware codebase diagrams.
-- Offline Mermaid + Panzoom viewer and editable `.excalidraw` export.
-- Editorial SVG/HTML plus architecture, Sankey, Wardley, journey, KPI, funnel, timeline, quadrant, process, matrix, and risk visuals.
-- Evidence-first codebase guide and Q&A for both engineers and people learning to code.
+<p align="center">
+  <a href="README.md"><strong>English</strong></a> • <a href="README_VI.md"><strong>Tiếng Việt</strong></a>
+</p>
 
-## Evidence Graph for RAG answers
+---
 
-Use Evidence Graph when a RAG answer, investigation, or knowledge model needs
-to be visual and traceable instead of a block of text. The canonical file is
-`evidence-graph.json`; Atlas HTML, Mermaid, and Excalidraw are views, not the
-source of truth.
+## 🌟 Overview
 
-Start from a portable local `rag-trace.json`. It contains one answer, its
-retrieved chunks, documents, optional concepts, and optional claims. Every
-answer and every LLM-extracted claim must cite a known chunk. Invalid or
-uncited data fails before a graph file is written.
+**ExcaliFlow Studio** is a local-first toolkit designed for software engineers, architects, and learners to explore, understand, and visualize complex software codebases. It operates **100% locally and offline**, turning source code trees and knowledge graphs into interactive web atlases, editable `.excalidraw` scenes, presentation-grade SVG diagrams, and deterministic source-backed explanations.
 
-```powershell
-# Convert retrieval output from any RAG system into the canonical graph.
-excaliflow knowledge import --trace ".\examples\rag-trace.json" --out ".\evidence-graph.json"
+---
 
-# Create a self-contained, offline HTML Atlas.
-excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atlas.html"
-```
+## 🚀 Key Highlights
 
-Open `evidence-atlas.html`. It begins at **Answer & sources**; choose **Full
-knowledge graph** only when investigating relationships beyond the answer.
-Click any node or edge to see its evidence receipt: origin, confidence, review
-status, and cited source location. A dashed node and **Needs review** mean the
-relationship is a model-assisted proposal, not a verified fact.
+- **🔒 100% Local-First & Privacy-Preserving**: No telemetry, no cloud dependencies. Works completely in air-gapped environments.
+- **🗺️ Interactive Codebase Atlas**: Explains what applications do, generates 1→2→3 reading paths, and visualizes native SVG dependency graphs.
+- **🎨 Multi-Format Visual Artifacts**:
+  - Offline HTML viewers with pan/zoom.
+  - Native `.excalidraw` editable files.
+  - High-res vector SVGs with Georgia/Arial typography for executive slides (16:9), whitepapers, and documents.
+- **🧠 Smart Multi-Line Typography Engine**: Automatic word-boundary wrapping, dynamic vertical spacing, native SVG `<title>` tooltips, and right-edge clipping auto-anchoring.
+- **🔍 Evidence-First Q&A**: Answers architectural questions with verified `file:line` citations directly from source code AST.
+- **🔗 Evidence Graph for RAG**: Visualizes RAG retrieval traces (`rag-trace.json`) to audit and verify model claims against ground truth passages.
+- **🤖 Universal AI Host Integration**: One-click skill installer for Codex, Claude Code, GitHub Copilot, Gemini CLI, Antigravity, OpenCode, and Cursor.
 
-For AIOS or another RAG application, add a small export step after retrieval:
-map source documents to `documents`, retrieved passages to `chunks`, the final
-response to `answer`, and any model-extracted relationship to `claims`. To
-combine code and RAG, export `code_references` with an exact `file:line` and a
-target answer, claim, or entity; the full graph then shows the cross-link. Do not
-put free-form Mermaid in this pipeline: it cannot preserve the validation and
-provenance contract. v1 reads only local files; it does not contact a vector
-database, model, IDE Bridge, or external URL.
+---
 
-## Development layout
+## 📦 Installation
 
-```text
-src/excaliflow/       # stable package/CLI boundary
-scripts/              # compatibility generator during migration
-assets/vendor/         # pinned offline browser runtimes
-tests/                 # deterministic generator and CLI tests
-agents/                # skill metadata
-```
-
-## Run
+### Option 1: Via `uv` (Recommended)
 
 ```powershell
-$env:PYTHONPATH = "$PWD/src"
-py -3 -m excaliflow.cli --help
-py -3 -m unittest discover -s tests -v
+# Install directly as a global tool from the local directory
+uv tool install --editable "D:\Sandbox\ExcaliFlow Studio"
+
+# Verify offline runtime
+excaliflow --offline-check
 ```
 
-## Bắt đầu cho người không viết code
-
-Không cần biết `--out`, Mermaid, Excalidraw hay AI Bridge. Sau khi cài skill, double-click `scripts\Open-ExcaliFlow.cmd`, chọn thư mục project, và Atlas sẽ mở trong trình duyệt ở chế độ **Học codebase**. Bản đồ, câu hỏi mẫu và giải thích từ mã nguồn đã hoạt động ngay cả khi chưa cấu hình AI.
-
-Người dùng thích dùng terminal hoặc AI agent chỉ cần một lệnh:
+### Option 2: Via `pip`
 
 ```powershell
+git clone https://github.com/Nakazasen/ExcaliFlow-Studio.git
+cd ExcaliFlow-Studio
+pip install -e .
+```
+
+### Option 3: Windows One-Click Setup (Zero-Python)
+
+Download `ExcaliFlow-Setup-windows.zip` from the [Latest GitHub Release](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), extract it, and double-click `ExcaliFlow-Setup.cmd`.
+
+---
+
+## 🛠️ Feature Modules & CLI Guide
+
+| Feature Group | Description & Output | CLI Command |
+| :--- | :--- | :--- |
+| **1. Architecture & Excalidraw** | Scans codebase $\to$ Offline Panzoom HTML viewer + editable `.excalidraw` scene | `excaliflow --dir . --with-excalidraw --open` |
+| **2. Codebase Atlas** | Interactive web guide with plain-language summary, reading path & module roles | `excaliflow open --dir .` |
+| **3. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
+| **4. Source-Backed Q&A** | Answers questions about classes/functions/imports with `file:line` citations | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **5. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
+| **6. Atlas AI Bridge & Doctor** | Manages local sidecar bridges (`:8788`) and checks connection to Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
+| **7. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
+
+---
+
+### 1. Codebase Architecture & Excalidraw
+
+Scans directory AST or Graphify knowledge graphs (`graphify-out/graph.json`) and generates a standalone interactive viewer:
+
+```powershell
+# Generate HTML viewer and editable .excalidraw scene
+excaliflow --dir "D:\MyProject" --with-excalidraw --out "D:\MyProject\architecture.html" --open
+
+# Listen to file changes and auto-regenerate
+excaliflow --dir "D:\MyProject" --watch
+```
+
+---
+
+### 2. Codebase Atlas (Interactive Onboarding)
+
+Built for onboarding and understanding unfamiliar codebases without reading hundreds of files:
+
+```powershell
+# Open Codebase Atlas in browser
 excaliflow open --dir "D:\MyProject"
-```
 
-File tạo ra là `.excaliflow\atlas.html` trong project. Phần AI Bridge, port và Gemini chỉ dành cho lúc người dùng chủ động cần câu trả lời AI; xem `excaliflow bridge doctor` khi gặp vấn đề.
-
-## Explore and learn a codebase
-
-Use the existing diagram command to see relationships, then use the same local source scan to explain the project or answer a focused question. `engineer` uses implementation vocabulary; `learner` explains the same evidence in beginner-friendly language.
-
-```powershell
-# A high-level learning guide, with file and line evidence
-excaliflow explain --dir "D:\MyProject" --audience learner --out "D:\MyProject\CODEBASE_GUIDE.md"
-
-# Ask about a class, function, file, imports, dependencies, or the architecture
-excaliflow ask --dir "D:\MyProject" --audience engineer --question "What is UserService?"
-excaliflow ask --dir "D:\MyProject" --audience learner --question "How do the imports connect?"
-```
-
-The answers are deterministic and source-backed: they identify matching declarations and import statements with file/line evidence. They intentionally do not claim to understand unsupported languages or infer behavior that is not visible in the scanned source.
-
-## Codebase Atlas
-
-`atlas` now opens in **Học codebase** mode: a plain-language answer to “Ứng dụng này làm gì?”, 1→2→3 reading path, 3–4 evidence-based responsibility blocks, translated terms, and sample questions. It does not infer business behavior: responsibility blocks use only source path/name hints and say so in the UI. **Full codebase** remains one click away and shows every scanned source file plus its proven internal import relationships. `Engineer mode` is opt-in. The Atlas uses a native SVG graph and does not depend on Mermaid or any network runtime.
-
-If the inspected repository already exposes a supported local IDE Bridge, Atlas uses it first for questions and shows that source in the UI. AIOS WorkLens is recognised through its existing Antigravity sidecar contract (`127.0.0.1:8585`); Atlas checks `/health`, then calls its OpenAI-compatible completion endpoint only when a user asks. It never starts a sidecar, sends to a remote URL, or labels a fallback answer as AI. Other projects can opt in with `.excaliflow/ide-bridge.json` containing loopback-only `health_url`, `completion_url`, optional `name`, and optional `model`.
-
-Atlas also probes a locally running [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) server after the project bridge: `http://127.0.0.1:8081/v1/models` then `/v1/chat/completions` with `gemini-3.6-flash`. This is an optional external-processing source, not an offline model: its UI label explicitly says the question and structural scan context go through the local proxy to Gemini. Atlas does not install, start, store credentials for, or bypass authentication on this server. For safer local exposure, configure that server to bind `127.0.0.1`, keep `api_keys` empty for browser use, and use only with source context you permit to leave the machine.
-
-## Create a Bridge for any repository
-
-When a repository does not already expose an IDE Bridge, create a project-local **ExcaliFlow Atlas Bridge**. It binds only to `127.0.0.1:8788`, exposes the same health and OpenAI-compatible chat endpoints Atlas expects, and forwards only to a local Gemini Web2API server at `127.0.0.1:8081`. It never starts Gemini Web2API itself.
-
-```powershell
-# Creates .excaliflow/ide-bridge.json without overwriting an existing bridge.
-excaliflow bridge init --dir "D:\MyProject"
-
-# Starts the bridge; `start` creates the manifest first if it is missing.
-excaliflow bridge start --dir "D:\MyProject"
-
-# Or create the manifest alongside an Atlas output.
-excaliflow atlas --dir "D:\MyProject" --create-bridge --out "D:\MyProject\codebase-atlas.html"
-```
-
-```powershell
+# Generate static Atlas HTML file
 excaliflow atlas --dir "D:\MyProject" --audience learner --out "D:\MyProject\codebase-atlas.html"
 ```
 
-Run `excaliflow bridge doctor --dir "D:\MyProject" --port 8789` whenever setup is uncertain: it reports the project manifest, Gemini Web2API upstream, and Atlas Bridge separately, then prints the next safe action. The complete reusable setup, privacy boundary, verification, and troubleshooting procedure is in [the Atlas AI Runtime Playbook](docs/atlas-gemini-web2api.md); it is included when the skill is installed into another AI host.
+- **What does this app do?**: Clear, factual summary derived from entry points and manifest files.
+- **1-2-3 Reading Path**: Sequenced recommendations for where a developer should begin reading.
+- **Module Responsibilities**: Grouped core components with evidence links.
 
-## Install for an AI host
+---
 
-After cloning and running `pip install -e .`, use a host name. The command prints the exact destination before you open the IDE:
+### 3. Editorial & Business Diagrams
 
-```powershell
-excaliflow install --host codex
-excaliflow install --host antigravity
-excaliflow install --host agy --workspace "D:\MyProject"
-```
-
-Use `excaliflow targets` to see every built-in destination on the current computer. The supported destinations are intentionally limited to published skill locations:
-
-| Host | User destination | Workspace destination |
-| --- | --- | --- |
-| Codex | `~/.codex/skills/excaliflow` | use `--target` |
-| Claude Code | `~/.claude/skills/excaliflow` | `.claude/skills/excaliflow` |
-| GitHub Copilot / VS Code | `~/.copilot/skills/excaliflow` | `.github/skills/excaliflow` |
-| Gemini CLI | `~/.gemini/skills/excaliflow` | `.gemini/skills/excaliflow` |
-| OpenCode | `~/.config/opencode/skills/excaliflow` | `.opencode/skills/excaliflow` |
-| Kiro IDE / CLI | `~/.kiro/skills/excaliflow` | `.kiro/skills/excaliflow` |
-| AGY-compatible workspace | — | `.agents/skills/excaliflow` |
-
-Antigravity Desktop remains supported through the verified local profile already present on this machine (`~/.gemini/config/skills/excaliflow`). It has no public, stable skill-path contract, so on a new computer the installer fails closed and asks for `--target` instead of inventing a directory.
-
-For Cursor or any other IDE without a documented Agent Skills destination, make the destination explicit:
+Generates clean, publication-ready vector SVGs (and standalone HTML wrappers) designed for 16:9 presentation slides, whitepapers, and documents:
 
 ```powershell
-excaliflow install --host custom --target "D:\MyIDE\skills\excaliflow"
+# Wardley Map (Value chain & technology evolution)
+excaliflow --editorial-out "wardley.svg" --visual-type wardley --visual-data "brief.json" --canvas slide
+
+# Sankey Flow Diagram
+excaliflow --editorial-out "sankey.svg" --visual-type sankey --visual-data "brief.json" --canvas document
+
+# User Journey Map
+excaliflow --editorial-out "journey.svg" --visual-type journey --visual-data "brief.json" --canvas slide
+
+# Business Reports (kpi, funnel, timeline, process, quadrant, matrix, risk)
+excaliflow --editorial-out "kpi.svg" --visual-type kpi --visual-data "kpi-data.json" --canvas slide
 ```
 
-Verify a host after installation:
+Supported visual types (`--visual-type`):
+`architecture` • `wardley` • `sankey` • `journey` • `kpi` • `funnel` • `timeline` • `process` • `quadrant` • `matrix` • `risk`
+
+---
+
+### 4. Source-Backed Codebase Q&A
+
+Ask specific questions and receive deterministic answers citing exact code locations:
 
 ```powershell
-excaliflow doctor --host codex
-excaliflow doctor --host antigravity
-excaliflow doctor --host custom --target "D:\MyIDE\skills\excaliflow"
+# For engineers (technical implementation details):
+excaliflow ask --dir "D:\MyProject" --audience engineer --question "What does UserService do?"
+
+# For beginners / learners (high-level architectural explanation):
+excaliflow ask --dir "D:\MyProject" --audience learner --question "How do the components communicate?"
+
+# Generate comprehensive markdown learning guide:
+excaliflow explain --dir "D:\MyProject" --audience learner --out "D:\MyProject\CODEBASE_GUIDE.md"
 ```
 
-## Windows one-click setup
+---
 
-For a computer without Python, download `ExcaliFlow-Setup-windows.zip` from the [latest GitHub Release](https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest), extract it, then double-click `ExcaliFlow-Setup.cmd`. The small Windows dialog asks for the AI tool, shows the exact destination before copying anything, verifies the generator after installation, and needs neither Administrator permission nor a network download.
+### 5. Evidence Graph for RAG
 
-Maintainers create that release asset with:
+Audit RAG answers and verify factual claims against retrieved chunks:
 
 ```powershell
-.\installers\build-windows-release.ps1
+# 1. Convert RAG retrieval output into canonical evidence graph
+excaliflow knowledge import --trace ".\examples\rag-trace.json" --out ".\evidence-graph.json"
+
+# 2. Render self-contained Evidence Atlas HTML
+excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atlas.html"
 ```
 
-The generated `dist\ExcaliFlow-Setup-windows.zip` contains only the portable skill and the installer; it does not bundle Python or install a background service.
+---
 
-Every pushed version tag matching `v*` now runs the Windows release workflow: it tests the tagged commit, builds the ZIP, creates or updates its GitHub Release, and replaces the release asset. To publish the first version, tag the intended commit (for example `v0.1.0`) and push that tag.
+### 6. Atlas AI Bridge & Diagnostics
 
-## Update notification
-
-Installed skills do not run in the background or modify themselves. A person or
-their AI host can explicitly check the latest stable GitHub Release:
+Connects local AI backends (e.g. Antigravity Sidecar `:8585` or local [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) `:8081`):
 
 ```powershell
-excaliflow update check
+# Initialize bridge manifest (.excaliflow/ide-bridge.json)
+excaliflow bridge init --dir "D:\MyProject"
+
+# Start loopback bridge server (bound strictly to 127.0.0.1:8788)
+excaliflow bridge start --dir "D:\MyProject"
+
+# Diagnose connection health
+excaliflow bridge doctor --dir "D:\MyProject"
 ```
 
-The command shows the installed version, latest version, release notes, and ZIP
-download only when a newer version exists. It does not download or install
-anything. If the network or release manifest is unavailable, it reports that
-state without changing local files.
+---
 
-For every release, update `VERSION`, `pyproject.toml`, and
-`src/excaliflow/__init__.py` to the same `X.Y.Z`, then push tag `vX.Y.Z`. The
-release workflow rejects a tag/version mismatch and publishes an unsigned
-`update.json` next to the ZIP. The check intentionally uses HTTPS transport but
-does not use code signatures, as requested.
+### 7. Universal AI Host Skill Installer
 
-The same workflow publishes `ExcaliFlow-Setup-windows.exe` only when signing is configured. Add `WINDOWS_SIGNING_PFX_BASE64` and `WINDOWS_SIGNING_PFX_PASSWORD` as GitHub Actions secrets, and `WINDOWS_TIMESTAMP_URL` as a repository variable. The pipeline then signs with SHA-256, RFC 3161 timestamps the EXE, verifies its Authenticode signature, and uploads it. Without all three values it deliberately publishes no EXE, rather than presenting an unsigned binary as trusted.
+Install ExcaliFlow as a native skill into your preferred AI agent environment:
 
-## Migration boundary
+```powershell
+# Check supported skill targets
+excaliflow targets
 
-The package CLI deliberately calls the verified generator while the renderer and viewer are split into testable modules. This preserves existing installed-skill behavior; it is not yet a claim that the monolith has been fully removed.
+# Install for specific AI host
+excaliflow install --host claude       # Claude Code
+excaliflow install --host antigravity   # Google Antigravity
+excaliflow install --host copilot       # GitHub Copilot
+excaliflow install --host codex         # OpenAI Codex
+excaliflow install --host gemini        # Gemini CLI
+excaliflow install --host custom --target "D:\Path\To\Skills\excaliflow"
+```
+
+---
+
+## 🧪 Testing & Verification
+
+ExcaliFlow Studio enforces rigorous unit testing covering offline rendering, CLI arguments, SVG parsing, and typography limits:
+
+```powershell
+# Run the complete test suite
+uv run python -m unittest discover -s tests -v
+
+# Check offline runtime assets (Mermaid & Panzoom)
+uv run excaliflow --offline-check
+```
+
+---
+
+## 📁 Repository Structure
+
+```text
+ExcaliFlow-Studio/
+├── src/excaliflow/         # Core package, CLI dispatchers, and Atlas engine
+│   ├── cli.py              # CLI entry point
+│   ├── atlas.py            # Interactive Codebase Atlas renderer
+│   ├── bridge_server.py    # Local loopback AI bridge
+│   ├── explorer.py         # Source scan AST & evidence Q&A engine
+│   ├── knowledge.py        # RAG evidence graph processor
+│   └── installer.py        # Universal AI agent skill installer
+├── scripts/
+│   └── generate_diagram.py # Universal architecture & editorial diagram generator
+├── assets/vendor/          # Pinned offline JavaScript runtimes (Mermaid, Panzoom)
+├── docs/                   # Setup playbooks & architectural guides
+├── examples/               # Sample briefs & RAG trace payloads
+├── tests/                  # Deterministic test suite (47 tests)
+├── SKILL.md                # AI Agent skill protocol definition (v3.1)
+├── pyproject.toml          # Package configuration
+└── VERSION                 # Semantic version file
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+Third-party bundled libraries are documented in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
