@@ -212,32 +212,31 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
     """
     Tự động tìm kiếm file đồ thị tri thức (Graphify hoặc Understand-Anything).
     Ưu tiên:
-    1. graphify-out/graph.json (hoặc graphify-out/**/graph.json / graph.json)
+    1. Graphify graphs (canonical graphify-out/graph.json, lồng trong graphify-out/, hoặc graph.json ở root)
     2. Nếu chưa có và auto_trigger=True: tự động kích hoạt graphify extract --code-only để tạo graphify-out/graph.json.
-    3. .understand-anything/knowledge-graph.json
-    4. .understand/knowledge-graph.json
-    5. knowledge-graph.json ở root
-    Áp dụng kiểm tra tính mới (staleness check) và cơ chế Fail-Closed nghiêm ngặt trên mọi đồ thị tìm thấy.
+    3. Understand graphs (.understand-anything/knowledge-graph.json, .understand/knowledge-graph.json, knowledge-graph.json ở root)
+    Áp dụng kiểm tra tính mới (staleness check) và cơ chế Fail-Closed nghiêm ngặt trên TOÀN BỘ các loại đồ thị tìm thấy.
     """
     project_root = project_root.resolve()
     g_out = project_root / "graphify-out" / "graph.json"
     graphify_bin = shutil.which("graphify") if auto_trigger else None
+    latest_src_mtime = get_latest_source_mtime(project_root)
 
-    # 1. Tìm ứng viên đồ thị Graphify (canonical, lồng trong graphify-out/, hoặc ở root)
-    candidate_graph = None
+    # 1. Gom tất cả ứng viên Graphify độc lập (tránh lỗi elif khi thư mục rỗng)
+    graphify_candidates = []
     if g_out.is_file():
-        candidate_graph = g_out
-    elif (project_root / "graphify-out").is_dir():
-        nested = [p for p in (project_root / "graphify-out").glob("**/graph.json") if p.is_file()]
-        if nested:
-            candidate_graph = max(nested, key=lambda p: p.stat().st_mtime)
-    elif (project_root / "graph.json").is_file():
-        candidate_graph = project_root / "graph.json"
+        graphify_candidates.append(g_out)
+    if (project_root / "graphify-out").is_dir():
+        for p in (project_root / "graphify-out").glob("**/graph.json"):
+            if p.is_file() and p not in graphify_candidates:
+                graphify_candidates.append(p)
+    if (project_root / "graph.json").is_file() and (project_root / "graph.json") not in graphify_candidates:
+        graphify_candidates.append(project_root / "graph.json")
 
     # Nếu tìm thấy đồ thị Graphify: Kiểm tra tính mới so với mã nguồn
-    if candidate_graph is not None:
-        graph_mtime = candidate_graph.stat().st_mtime
-        latest_src_mtime = get_latest_source_mtime(project_root)
+    if graphify_candidates:
+        selected_graph = max(graphify_candidates, key=lambda p: p.stat().st_mtime)
+        graph_mtime = selected_graph.stat().st_mtime
         if latest_src_mtime > graph_mtime:
             if auto_trigger and graphify_bin:
                 print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
@@ -247,7 +246,7 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
                         raise RuntimeError(f"Fail-Closed: Graphify update failed in strict mode for {project_root}")
                     print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
                 elif g_out.is_file():
-                    candidate_graph = g_out
+                    selected_graph = g_out
             elif strict:
                 if not graphify_bin:
                     raise RuntimeError(f"Fail-Closed: Stale graph detected ({latest_src_mtime:.1f} > {graph_mtime:.1f}) but graphify executable is not available in strict mode for {project_root}")
@@ -255,9 +254,9 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
                     raise RuntimeError(f"Fail-Closed: Stale graph detected ({latest_src_mtime:.1f} > {graph_mtime:.1f}) but auto_trigger is disabled in strict mode for {project_root}")
             else:
                 print(f"[!] Canh bao: Ma nguon moi hon do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}) nhung khong the cap nhat tu dong.")
-        return ("graphify", candidate_graph)
+        return ("graphify", selected_graph)
 
-    # 2. Nếu chưa có đồ thị và auto_trigger=True: Kích hoạt Graphify để tạo mới lần đầu
+    # 2. Nếu chưa có đồ thị Graphify và auto_trigger=True: Kích hoạt Graphify để tạo mới lần đầu
     if auto_trigger and graphify_bin:
         print(f"[*] Chua tim thay do thi tri thuc. Tu dong kich hoat Graphify cho: {project_root}...")
         if run_graphify_extract(project_root, graphify_bin):
@@ -267,18 +266,25 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
         elif strict:
             raise RuntimeError(f"Fail-Closed: Initial Graphify extraction failed in strict mode for {project_root}")
 
-    # 3. Check .understand-anything
-    u_out = project_root / ".understand-anything" / "knowledge-graph.json"
-    if u_out.is_file():
-        return ("understand", u_out)
-        
-    u_out2 = project_root / ".understand" / "knowledge-graph.json"
-    if u_out2.is_file():
-        return ("understand", u_out2)
+    # 3. Gom tất cả ứng viên Understand-Anything độc lập
+    understand_candidates = []
+    for u_path in [
+        project_root / ".understand-anything" / "knowledge-graph.json",
+        project_root / ".understand" / "knowledge-graph.json",
+        project_root / "knowledge-graph.json"
+    ]:
+        if u_path.is_file() and u_path not in understand_candidates:
+            understand_candidates.append(u_path)
 
-    # 4. Check root knowledge-graph.json
-    if (project_root / "knowledge-graph.json").is_file():
-        return ("understand", project_root / "knowledge-graph.json")
+    if understand_candidates:
+        selected_u = max(understand_candidates, key=lambda p: p.stat().st_mtime)
+        u_mtime = selected_u.stat().st_mtime
+        if latest_src_mtime > u_mtime:
+            if strict:
+                raise RuntimeError(f"Fail-Closed: Stale Understand knowledge graph detected ({latest_src_mtime:.1f} > {u_mtime:.1f}) and cannot be automatically updated in strict mode for {project_root}")
+            else:
+                print(f"[!] Canh bao: Ma nguon moi hon do thi Understand ({latest_src_mtime:.1f} > {u_mtime:.1f}).")
+        return ("understand", selected_u)
 
     if strict:
         raise RuntimeError(f"Fail-Closed: No knowledge graph found or generated for {project_root}")

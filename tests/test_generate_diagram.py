@@ -392,6 +392,39 @@ class ExcaliFlowTests(unittest.TestCase):
                 self.assertIn("Fail-Closed", str(ctx.exception))
                 self.assertIn("Stale graph detected", str(ctx.exception))
 
+    def test_empty_graphify_out_directory_does_not_mask_root_graph(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            # Create an empty graphify-out folder
+            (root / "graphify-out").mkdir()
+            
+            # Create valid graph.json at root
+            root_g = root / "graph.json"
+            root_g.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            kg_type, kg_path = generator.find_knowledge_graph(root, auto_trigger=False, strict=True)
+            self.assertEqual(kg_type, "graphify")
+            self.assertEqual(kg_path, root_g)
+
+    def test_strict_mode_fail_closed_on_stale_understand_graph(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "service.py"
+            src_file.write_text("class Auth: pass\n", encoding="utf-8")
+            
+            u_dir = root / ".understand"
+            u_dir.mkdir()
+            u_graph = u_dir / "knowledge-graph.json"
+            u_graph.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            # Set understand graph older than source
+            os.utime(src_file, (2000.0, 2000.0))
+            os.utime(u_graph, (1000.0, 1000.0))
+            
+            with self.assertRaises(RuntimeError) as ctx:
+                generator.find_knowledge_graph(root, auto_trigger=False, strict=True)
+            self.assertIn("Fail-Closed: Stale Understand knowledge graph detected", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
