@@ -30,9 +30,9 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 ### Nhóm 1: Sơ Đồ Kiến Trúc Toàn Diện & Scene Excalidraw (Tích Hợp Graphify)
 - **Mục đích**: Phân tích đồ thị tri thức `graphify-out/graph.json` thành sơ đồ tương tác & bản vẽ Excalidraw.
 - **Quy trình thực thi bắt buộc**:
-  1. *Đồng bộ tri thức*: Nếu có `graphify`, chạy cập nhật đồ thị trước:
+  1. *Đồng bộ tri thức*: Nếu có `graphify`, chạy cập nhật/trích xuất đồ thị:
      ```powershell
-     graphify "<project_path>" --update
+     graphify extract "<project_path>" --code-only --out "<project_path>"
      ```
   2. *Vẽ sơ đồ Excalidraw*: Tự động đọc đồ thị và tạo viewer HTML + file `.excalidraw`:
      ```powershell

@@ -159,47 +159,92 @@ def generate_mermaid_from_language_analysis(project_info: dict, analysis: dict) 
 
 
 
+def get_latest_source_mtime(project_root: Path) -> float:
+    """Tra cuu thoi diem sua doi moi nhat cua cac tap tin ma nguon trong du an."""
+    latest_mtime = 0.0
+    excluded_dirs = {
+        ".git", "node_modules", "graphify-out", ".understand-anything", ".understand",
+        "dist", "build", "__pycache__", ".venv", "venv", ".pytest_cache", ".ruff_cache",
+        ".mypy_cache", ".excaliflow"
+    }
+    excluded_exts = {".html", ".excalidraw", ".svg", ".png", ".jpg", ".jpeg", ".zip", ".tar", ".gz", ".log"}
+    try:
+        for p in project_root.rglob("*"):
+            if any(part in excluded_dirs or part.startswith(".") for part in p.parts):
+                continue
+            if p.is_file() and p.suffix.lower() not in excluded_exts:
+                try:
+                    mtime = p.stat().st_mtime
+                    if mtime > latest_mtime:
+                        latest_mtime = mtime
+                except OSError:
+                    pass
+    except Exception:
+        pass
+    return latest_mtime
+
+
+def run_graphify_extract(project_root: Path, graphify_bin: str) -> bool:
+    """Kich hoat Graphify headless extraction va bao cao ket qua ro rang, khong giau loi."""
+    try:
+        print(f"[*] Dang chay Graphify de trich xuat/cap nhat do thi tri thuc tai: {project_root}...")
+        proc = subprocess.run(
+            [graphify_bin, "extract", str(project_root), "--code-only", "--out", str(project_root)],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False
+        )
+        if proc.returncode == 0:
+            print("[*] Graphify da hoan tat trich xuat/cap nhat do thi thanh cong.")
+            return True
+        else:
+            err_msg = proc.stderr.strip() or proc.stdout.strip() or f"Exit code {proc.returncode}"
+            print(f"[!] Canh bao: Graphify that bai voi ma loi {proc.returncode}:\n{err_msg}")
+            return False
+    except Exception as e:
+        print(f"[!] Khong the thuc thi Graphify ({e}). Chuyen sang bo quet AST noi bo.")
+        return False
+
+
 def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
     """
     Tự động tìm kiếm file đồ thị tri thức (Graphify hoặc Understand-Anything).
     Ưu tiên:
-    1. graphify-out/graph.json (hoặc trong thư mục con của graphify-out)
-    2. Nếu chưa có và auto_trigger=True: tự động kích hoạt graphify extract --code-only để tạo graphify-out/graph.json
+    1. graphify-out/graph.json: Kiểm tra tính mới (staleness check). Nếu mã nguồn mới hơn graph.json -> tự động chạy graphify extract để cập nhật.
+    2. Nếu chưa có và auto_trigger=True: tự động kích hoạt graphify extract --code-only để tạo graphify-out/graph.json.
     3. .understand-anything/knowledge-graph.json
     4. .understand/knowledge-graph.json
     5. graph.json / knowledge-graph.json ở root
     """
     project_root = project_root.resolve()
-    
-    # 1. Check graphify-out
     g_out = project_root / "graphify-out" / "graph.json"
+    graphify_bin = shutil.which("graphify") if auto_trigger else None
+
+    # 1. Kiểm tra graphify-out/graph.json và kiểm tra độ mới
     if g_out.is_file():
+        graph_mtime = g_out.stat().st_mtime
+        latest_src_mtime = get_latest_source_mtime(project_root)
+        if latest_src_mtime > graph_mtime and auto_trigger and graphify_bin:
+            print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
+            success = run_graphify_extract(project_root, graphify_bin)
+            if not success:
+                print(f"[!] Graphify cap nhat that bai; su dung do thi hien co.")
         return ("graphify", g_out)
-    
+
     if (project_root / "graphify-out").is_dir():
         for p in (project_root / "graphify-out").glob("**/graph.json"):
             if p.is_file():
                 return ("graphify", p)
 
-    # 2. Auto-trigger Graphify if available in PATH
-    if auto_trigger:
-        graphify_bin = shutil.which("graphify")
-        if graphify_bin:
-            try:
-                print(f"[*] Tu dong kich hoat Graphify de xay dung do thi tri thuc cho: {project_root}...")
-                subprocess.run(
-                    [graphify_bin, "extract", str(project_root), "--code-only", "--out", str(project_root)],
-                    cwd=str(project_root),
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                    check=False
-                )
-                if g_out.is_file():
-                    print(f"[*] Da tao thanh cong do thi tri thuc Graphify: {g_out}")
-                    return ("graphify", g_out)
-            except Exception as e:
-                print(f"[!] Khong the tu dong chay Graphify: {e}. Chuyen sang bo quet AST noi bo.")
+    # 2. Nếu chưa có đồ thị và auto_trigger=True: Kích hoạt Graphify để tạo mới lần đầu
+    if auto_trigger and graphify_bin:
+        print(f"[*] Chua tim thay do thi tri thuc. Tu dong kich hoat Graphify cho: {project_root}...")
+        if run_graphify_extract(project_root, graphify_bin):
+            if g_out.is_file():
+                print(f"[*] Da tao moi thanh cong do thi tri thuc Graphify: {g_out}")
+                return ("graphify", g_out)
 
     # 3. Check .understand-anything
     u_out = project_root / ".understand-anything" / "knowledge-graph.json"
@@ -2089,16 +2134,57 @@ def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
     if not hooks_dir.exists():
         print(f"[!] Khong tim thay thu muc {hooks_dir}. Hay dam bao ban dang o trong git repository.")
         return False
-    post_commit = hooks_dir / "post-commit"
+
+    script_path = Path(__file__).resolve()
     marker = "# excaliflow-managed-hook"
-    if post_commit.exists():
-        existing = post_commit.read_text(encoding="utf-8", errors="ignore")
-        if marker not in existing or not force:
-            print(f"[!] Tu choi ghi de hook hien co: {post_commit}. Dung --force-hook chi voi hook do Excali-Flow quan ly.")
-            return False
-    command = f'command -v graphify >/dev/null 2>&1 && graphify extract "$PWD" --code-only --out "$PWD" >/dev/null 2>&1 || true\npy -3 "{Path(__file__).resolve()}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw'
-    post_commit.write_text(f"#!/bin/sh\n{marker}\n{command}\n", encoding="utf-8")
-    print(f"[*] Da cai dat hook an toan tai {post_commit}")
+
+    # 1. Kiểm tra quyền ghi đè
+    pre_commit = hooks_dir / "pre-commit"
+    post_commit = hooks_dir / "post-commit"
+
+    for hook_file in (pre_commit, post_commit):
+        if hook_file.exists():
+            existing = hook_file.read_text(encoding="utf-8", errors="ignore")
+            if marker not in existing and not force:
+                print(f"[!] Tu choi ghi de hook hien co: {hook_file}. Dung --force-hook chi voi hook do Excali-Flow quan ly.")
+                return False
+
+    # 2. Cài đặt pre-commit (cập nhật đồ thị và stage file trước khi commit)
+    pre_commit_content = f"""#!/bin/sh
+{marker}
+set -e
+
+# 1. Cap nhat do thi tri thuc Graphify neu co thay doi
+if command -v graphify >/dev/null 2>&1; then
+    echo "[excaliflow-hook] Dang cap nhat do thi tri thuc Graphify..."
+    graphify extract "$PWD" --code-only --out "$PWD"
+    git add graphify-out/graph.json 2>/dev/null || true
+fi
+
+# 2. Cap nhat so do kien truc ExcaliFlow va tu dong stage
+echo "[excaliflow-hook] Dang cap nhat so do ExcaliFlow..."
+py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
+git add architecture_viewer.html architecture_viewer.excalidraw 2>/dev/null || true
+"""
+    pre_commit.write_text(pre_commit_content, encoding="utf-8")
+    try:
+        pre_commit.chmod(0o755)
+    except Exception:
+        pass
+
+    # 3. Cài đặt post-commit (đảm bảo viewer luôn sẵn sàng)
+    post_commit_content = f"""#!/bin/sh
+{marker}
+echo "[excaliflow-hook] Lam moi viewer ExcaliFlow sau commit..."
+py -3 "{script_path}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw
+"""
+    post_commit.write_text(post_commit_content, encoding="utf-8")
+    try:
+        post_commit.chmod(0o755)
+    except Exception:
+        pass
+
+    print(f"[*] Da cai dat thanh cong Git Hooks tai:\n  - {pre_commit}\n  - {post_commit}")
     return True
 
 

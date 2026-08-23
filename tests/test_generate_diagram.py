@@ -1,11 +1,13 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "generate_diagram.py"
@@ -217,6 +219,82 @@ class ExcaliFlowTests(unittest.TestCase):
             self.assertIn("Kubernetes Cluster", svg_content)
             self.assertIn("text-anchor=\"end\"", svg_content)
             self.assertIn("<title>Hạ tầng máy chủ đám mây", svg_content)
+
+    def test_stale_graph_detection_triggers_graphify_update(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "service.py"
+            src_file.write_text("class PaymentProcessor:\n    def process(self): pass\n", encoding="utf-8")
+            
+            g_out = root / "graphify-out" / "graph.json"
+            g_out.parent.mkdir(parents=True, exist_ok=True)
+            g_out.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            # Set graph.json mtime in the past, and src_file mtime in the future (staleness)
+            os.utime(g_out, (1000.0, 1000.0))
+            os.utime(src_file, (2000.0, 2000.0))
+            
+            with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=0, stdout="OK", stderr="")
+                kg_type, kg_path = generator.find_knowledge_graph(root, auto_trigger=True)
+                
+                self.assertEqual(kg_type, "graphify")
+                mock_run.assert_called_once()
+                call_args = mock_run.call_args[0][0]
+                self.assertEqual(call_args[0], "/fake/bin/graphify")
+                self.assertEqual(call_args[1], "extract")
+                self.assertIn("--code-only", call_args)
+
+    def test_fresh_graph_does_not_retrigger_graphify(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            src_file = root / "service.py"
+            src_file.write_text("class PaymentProcessor:\n    def process(self): pass\n", encoding="utf-8")
+            
+            g_out = root / "graphify-out" / "graph.json"
+            g_out.parent.mkdir(parents=True, exist_ok=True)
+            g_out.write_text(json.dumps({"nodes": [], "edges": []}), encoding="utf-8")
+            
+            # Set graph.json newer than src_file (fresh)
+            os.utime(src_file, (1000.0, 1000.0))
+            os.utime(g_out, (2000.0, 2000.0))
+            
+            with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch("subprocess.run") as mock_run:
+                kg_type, kg_path = generator.find_knowledge_graph(root, auto_trigger=True)
+                
+                self.assertEqual(kg_type, "graphify")
+                self.assertEqual(kg_path, g_out)
+                mock_run.assert_not_called()
+
+    def test_graphify_error_reporting_not_silenced(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Graphify syntax extraction error")
+                success = generator.run_graphify_extract(root, "graphify")
+                self.assertFalse(success)
+
+    def test_git_hooks_install_pre_and_post_commit_without_swallowing_errors(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".git" / "hooks").mkdir(parents=True)
+            
+            installed = generator.install_git_hooks(root)
+            self.assertTrue(installed)
+            
+            pre_commit = root / ".git" / "hooks" / "pre-commit"
+            post_commit = root / ".git" / "hooks" / "post-commit"
+            
+            self.assertTrue(pre_commit.is_file())
+            self.assertTrue(post_commit.is_file())
+            
+            pre_text = pre_commit.read_text(encoding="utf-8")
+            self.assertIn("set -e", pre_text)
+            self.assertIn("graphify extract", pre_text)
+            self.assertIn("git add graphify-out/graph.json", pre_text)
+            self.assertNotIn("|| true\npy", pre_text)
 
 
 if __name__ == "__main__":
