@@ -27,12 +27,17 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 
 ## 🛠️ Hướng Dẫn Thực Thi Chi Tiết Từng Nhóm
 
-### Nhóm 1: Sơ Đồ Kiến Trúc Toàn Diện & Scene Excalidraw
-- **Mục đích**: Phân tích cấu trúc thư mục hoặc đồ thị tri thức `graphify-out/graph.json` thành sơ đồ tương tác.
-- **Lệnh thực thi**:
-  ```powershell
-  excaliflow --dir "<project_path>" --with-excalidraw --out "<project_path>\architecture_viewer.html" --open
-  ```
+### Nhóm 1: Sơ Đồ Kiến Trúc Toàn Diện & Scene Excalidraw (Tích Hợp Graphify)
+- **Mục đích**: Phân tích đồ thị tri thức `graphify-out/graph.json` thành sơ đồ tương tác & bản vẽ Excalidraw.
+- **Quy trình thực thi bắt buộc**:
+  1. *Đồng bộ tri thức*: Nếu có `graphify`, chạy cập nhật đồ thị trước:
+     ```powershell
+     graphify "<project_path>" --update
+     ```
+  2. *Vẽ sơ đồ Excalidraw*: Tự động đọc đồ thị và tạo viewer HTML + file `.excalidraw`:
+     ```powershell
+     excaliflow --dir "<project_path>" --with-excalidraw --out "<project_path>\architecture_viewer.html" --open
+     ```
 
 ### Nhóm 2: Codebase Atlas (Khám Phá & Học Code Cho Người Mới)
 - **Mục đích**: Tạo trang web giải thích ứng dụng làm gì, 1-2-3 reading path, trách nhiệm từng module.

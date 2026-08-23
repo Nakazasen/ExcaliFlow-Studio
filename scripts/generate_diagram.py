@@ -22,6 +22,8 @@ import argparse
 import hashlib
 import uuid
 import math
+import subprocess
+import shutil
 from html import escape as xml_escape
 from pathlib import Path
 
@@ -157,14 +159,15 @@ def generate_mermaid_from_language_analysis(project_info: dict, analysis: dict) 
 
 
 
-def find_knowledge_graph(project_root: Path):
+def find_knowledge_graph(project_root: Path, auto_trigger: bool = True):
     """
     Tự động tìm kiếm file đồ thị tri thức (Graphify hoặc Understand-Anything).
     Ưu tiên:
     1. graphify-out/graph.json (hoặc trong thư mục con của graphify-out)
-    2. .understand-anything/knowledge-graph.json
-    3. .understand/knowledge-graph.json
-    4. graph.json / knowledge-graph.json ở root
+    2. Nếu chưa có và auto_trigger=True: tự động kích hoạt graphify extract --code-only để tạo graphify-out/graph.json
+    3. .understand-anything/knowledge-graph.json
+    4. .understand/knowledge-graph.json
+    5. graph.json / knowledge-graph.json ở root
     """
     project_root = project_root.resolve()
     
@@ -178,7 +181,27 @@ def find_knowledge_graph(project_root: Path):
             if p.is_file():
                 return ("graphify", p)
 
-    # 2. Check .understand-anything
+    # 2. Auto-trigger Graphify if available in PATH
+    if auto_trigger:
+        graphify_bin = shutil.which("graphify")
+        if graphify_bin:
+            try:
+                print(f"[*] Tu dong kich hoat Graphify de xay dung do thi tri thuc cho: {project_root}...")
+                subprocess.run(
+                    [graphify_bin, "extract", str(project_root), "--code-only", "--out", str(project_root)],
+                    cwd=str(project_root),
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    check=False
+                )
+                if g_out.is_file():
+                    print(f"[*] Da tao thanh cong do thi tri thuc Graphify: {g_out}")
+                    return ("graphify", g_out)
+            except Exception as e:
+                print(f"[!] Khong the tu dong chay Graphify: {e}. Chuyen sang bo quet AST noi bo.")
+
+    # 3. Check .understand-anything
     u_out = project_root / ".understand-anything" / "knowledge-graph.json"
     if u_out.is_file():
         return ("understand", u_out)
@@ -187,7 +210,7 @@ def find_knowledge_graph(project_root: Path):
     if u_out2.is_file():
         return ("understand", u_out2)
 
-    # 3. Check root
+    # 4. Check root
     if (project_root / "graph.json").is_file():
         return ("graphify", project_root / "graph.json")
     if (project_root / "knowledge-graph.json").is_file():
@@ -1998,12 +2021,17 @@ def build_excalidraw_scene(diagrams: dict) -> dict:
     return {"type": "excalidraw", "version": 2, "source": "https://excaliflow.local", "elements": elements, "appState": {"viewBackgroundColor": "#fdfbf7", "gridSize": 20}, "files": {}}
 
 
-def generate_html_file(project_dir: str = ".", output_path: str = "architecture_viewer.html", excalidraw_output: str | None = None):
+def generate_html_file(
+    project_dir: str = ".",
+    output_path: str = "architecture_viewer.html",
+    excalidraw_output: str | None = None,
+    auto_graphify: bool = True,
+):
     """Sinh file HTML Excalidraw Viewer chứa dữ liệu Mermaid từ dự án chỉ định"""
     proj_path = Path(project_dir).resolve()
     
     # 1. Kiểm tra xem có Đồ thị tri thức (Graphify hoặc Understand-Anything) hay không
-    kg_type, kg_path = find_knowledge_graph(proj_path)
+    kg_type, kg_path = find_knowledge_graph(proj_path, auto_trigger=auto_graphify)
     
     diagrams = {}
     if kg_type == "graphify":
@@ -2055,7 +2083,7 @@ def generate_html_file(project_dir: str = ".", output_path: str = "architecture_
 
 
 def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
-    """Cài đặt Git Pre-commit và Post-commit Hooks cho dự án"""
+    """Cài đặt Git Pre-commit và Post-commit Hooks cho dự án (tự động đồng bộ Graphify & ExcaliFlow)"""
     proj_path = Path(project_dir).resolve()
     hooks_dir = proj_path / ".git" / "hooks"
     if not hooks_dir.exists():
@@ -2068,7 +2096,7 @@ def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
         if marker not in existing or not force:
             print(f"[!] Tu choi ghi de hook hien co: {post_commit}. Dung --force-hook chi voi hook do Excali-Flow quan ly.")
             return False
-    command = f'py -3 "{Path(__file__).resolve()}" --dir "$PWD" --out architecture_viewer.html'
+    command = f'command -v graphify >/dev/null 2>&1 && graphify extract "$PWD" --code-only --out "$PWD" >/dev/null 2>&1 || true\npy -3 "{Path(__file__).resolve()}" --dir "$PWD" --out architecture_viewer.html --with-excalidraw'
     post_commit.write_text(f"#!/bin/sh\n{marker}\n{command}\n", encoding="utf-8")
     print(f"[*] Da cai dat hook an toan tai {post_commit}")
     return True
@@ -2124,6 +2152,7 @@ def main():
     parser.add_argument("--excalidraw-out", help="Duong dan scene .excalidraw co the chinh sua")
     parser.add_argument("--with-excalidraw", action="store_true", help="Tao scene .excalidraw ben canh HTML")
     parser.add_argument("--offline-check", action="store_true", help="Kiem tra runtime offline va thoat")
+    parser.add_argument("--no-graphify", action="store_true", help="Bo qua tu dong chay Graphify khi chua co graph.json")
     parser.add_argument("--editorial-out", help="Xuat SVG hoac HTML editorial tu chua")
     parser.add_argument("--visual-type", choices=sorted(EDITORIAL_TYPES | REPORT_TYPES), help="Grammar cho editorial output")
     parser.add_argument("--visual-data", help="Duong dan JSON brief cho Sankey, Wardley, hoac journey")
@@ -2159,7 +2188,7 @@ def main():
     excalidraw_out = args.excalidraw_out
     if args.with_excalidraw and not excalidraw_out:
         excalidraw_out = str(Path(out_path).with_suffix(".excalidraw"))
-    full_path = generate_html_file(target_dir, out_path, excalidraw_out)
+    full_path = generate_html_file(target_dir, out_path, excalidraw_out, auto_graphify=not args.no_graphify)
 
     if args.open:
         print("[*] Dang mo tren trinh duyet...")

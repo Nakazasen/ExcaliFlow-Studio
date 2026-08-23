@@ -9,6 +9,9 @@ description = "Local-first code intelligence and presentation-ready visual gener
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+dependencies = [
+    "graphifyy>=0.9.0",
+]
 
 [project.scripts]
 excaliflow = "excaliflow.cli:main"
