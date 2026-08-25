@@ -158,6 +158,272 @@ def generate_mermaid_from_language_analysis(project_info: dict, analysis: dict) 
     return {"source_analysis": {"title": "Source Analysis", "desc": desc, "code": "\n".join(lines)}}
 
 
+def compute_architecture_diff(old_analysis: dict, new_analysis: dict) -> dict:
+    """
+    So sánh sự khác biệt kiến trúc giữa 2 bản snapshot (Before vs After).
+    Hỗ trợ cả định dạng Source Analysis (symbols/relations) và Graph JSON (nodes/edges).
+    Phân loại:
+    - Added: Node/Edge mới (+)
+    - Removed: Node/Edge bị xóa (-)
+    - Modified: Node có quan hệ thay đổi hoặc sửa đổi (Δ)
+    - Unchanged: Node giữ nguyên (=)
+    """
+    def extract_elements(data: dict):
+        nodes = {}
+        edges = set()
+        if "symbols" in data:
+            for s in data.get("symbols", []):
+                nid = s.get("id") or s.get("name")
+                nodes[nid] = {"id": nid, "name": s.get("name", nid), "file": s.get("file", ""), "type": "symbol"}
+            for r in data.get("relations", []):
+                edges.add((r.get("source", ""), r.get("target", ""), r.get("kind", "imports")))
+        elif "nodes" in data:
+            for n in data.get("nodes", []):
+                nid = n.get("id") or n.get("name")
+                nodes[nid] = {"id": nid, "name": n.get("name") or n.get("label") or nid, "file": n.get("file") or n.get("path") or "", "type": "node"}
+            for e in data.get("edges", []):
+                src = e.get("source") or e.get("from") or ""
+                tgt = e.get("target") or e.get("to") or ""
+                kind = e.get("kind") or e.get("label") or "rel"
+                edges.add((src, tgt, kind))
+        return nodes, edges
+
+    old_nodes, old_edges = extract_elements(old_analysis)
+    new_nodes, new_edges = extract_elements(new_analysis)
+
+    added_nodes = [n for nid, n in new_nodes.items() if nid not in old_nodes]
+    removed_nodes = [n for nid, n in old_nodes.items() if nid not in new_nodes]
+    common_ids = set(old_nodes.keys()) & set(new_nodes.keys())
+
+    modified_nodes = []
+    unchanged_nodes = []
+    for nid in common_ids:
+        o_n = old_nodes[nid]
+        n_n = new_nodes[nid]
+        o_conns = {e for e in old_edges if e[0] == nid or e[1] == nid or e[0] == o_n.get("file") or e[1] == o_n.get("name")}
+        n_conns = {e for e in new_edges if e[0] == nid or e[1] == nid or e[0] == n_n.get("file") or e[1] == n_n.get("name")}
+        if o_conns != n_conns or o_n.get("file") != n_n.get("file"):
+            modified_nodes.append(n_n)
+        else:
+            unchanged_nodes.append(n_n)
+
+    added_edges = new_edges - old_edges
+    removed_edges = old_edges - new_edges
+    common_edges = new_edges & old_edges
+
+    lines = ["flowchart LR"]
+    lines.append("    %% Architecture Diff Styles")
+    lines.append("    classDef added fill:#dcfce7,stroke:#16a34a,stroke-width:2.5px,color:#14532d;")
+    lines.append("    classDef removed fill:#fee2e2,stroke:#dc2626,stroke-width:2px,stroke-dasharray: 4 4,color:#7f1d1d;")
+    lines.append("    classDef modified fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#78350f;")
+    lines.append("    classDef unchanged fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px,color:#334155;")
+
+    node_id_map = {}
+    counter = 0
+
+    for n in added_nodes:
+        nid = f"ADD_{counter}"
+        counter += 1
+        node_id_map[n["id"]] = nid
+        node_id_map[n["name"]] = nid
+        if n["file"]:
+            node_id_map[n["file"]] = nid
+        f_info = f"\\n{escape_mermaid_label(n['file'])}" if n.get("file") else ""
+        lines.append(f'    {nid}["[+] {escape_mermaid_label(n["name"])}{f_info}"]:::added')
+
+    for n in removed_nodes:
+        nid = f"REM_{counter}"
+        counter += 1
+        node_id_map[n["id"]] = nid
+        node_id_map[n["name"]] = nid
+        if n["file"]:
+            node_id_map[n["file"]] = nid
+        f_info = f"\\n{escape_mermaid_label(n['file'])}" if n.get("file") else ""
+        lines.append(f'    {nid}["[-] {escape_mermaid_label(n["name"])}{f_info}"]:::removed')
+
+    for n in modified_nodes:
+        nid = f"MOD_{counter}"
+        counter += 1
+        node_id_map[n["id"]] = nid
+        node_id_map[n["name"]] = nid
+        if n["file"]:
+            node_id_map[n["file"]] = nid
+        f_info = f"\\n{escape_mermaid_label(n['file'])}" if n.get("file") else ""
+        lines.append(f'    {nid}["[Δ] {escape_mermaid_label(n["name"])}{f_info}"]:::modified')
+
+    for n in unchanged_nodes[:25]:
+        nid = f"UNC_{counter}"
+        counter += 1
+        node_id_map[n["id"]] = nid
+        node_id_map[n["name"]] = nid
+        if n["file"]:
+            node_id_map[n["file"]] = nid
+        lines.append(f'    {nid}["{escape_mermaid_label(n["name"])}"]:::unchanged')
+
+    for src, tgt, kind in added_edges:
+        s = node_id_map.get(src)
+        t = node_id_map.get(tgt)
+        if s and t:
+            lines.append(f'    {s} ==>|added {kind}| {t}')
+
+    for src, tgt, kind in removed_edges:
+        s = node_id_map.get(src)
+        t = node_id_map.get(tgt)
+        if s and t:
+            lines.append(f'    {s} -.->|removed {kind}| {t}')
+
+    for src, tgt, kind in list(common_edges)[:35]:
+        s = node_id_map.get(src)
+        t = node_id_map.get(tgt)
+        if s and t:
+            lines.append(f'    {s} --> {t}')
+
+    if not added_nodes and not removed_nodes and not modified_nodes and not added_edges and not removed_edges:
+        lines.append('    DIFF_EMPTY["No architectural drift detected between snapshots (=)"]')
+
+    desc = f"Architecture Diff: +{len(added_nodes)} added, -{len(removed_nodes)} removed, ~{len(modified_nodes)} modified; +{len(added_edges)} new relations"
+    return {
+        "architecture_diff": {
+            "title": "Architecture Diff (Before vs After)",
+            "desc": desc,
+            "code": "\n".join(lines),
+            "stats": {
+                "added_nodes": len(added_nodes),
+                "removed_nodes": len(removed_nodes),
+                "modified_nodes": len(modified_nodes),
+                "added_relations": len(added_edges),
+                "removed_relations": len(removed_edges)
+            }
+        }
+    }
+
+
+def generate_share_card_svg(project_title: str, stats: dict) -> str:
+    """Tạo thẻ ảnh chia sẻ chuẩn 1200x630 (README & Social Share Card) dạng SVG vector."""
+    nodes_count = stats.get("nodes_count", 0)
+    edges_count = stats.get("edges_count", 0)
+    provenance = stats.get("provenance", "AST Language Aware")
+    
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+    <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg-grad)" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+  
+  <!-- Subtle Grid Pattern -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105" />
+    <line x1="0" y1="210" x2="1200" y2="210" />
+    <line x1="0" y1="315" x2="1200" y2="315" />
+    <line x1="0" y1="420" x2="1200" y2="420" />
+    <line x1="0" y1="525" x2="1200" y2="525" />
+    <line x1="200" y1="0" x2="200" y2="630" />
+    <line x1="400" y1="0" x2="400" y2="630" />
+    <line x1="600" y1="0" x2="600" y2="630" />
+    <line x1="800" y1="0" x2="800" y2="630" />
+    <line x1="1000" y1="0" x2="1000" y2="630" />
+  </g>
+  
+  <!-- Header Section -->
+  <g transform="translate(60, 50)">
+    <rect width="140" height="32" rx="16" fill="#4f46e5" fill-opacity="0.3" stroke="#818cf8" stroke-width="1.5" />
+    <text x="70" y="21" font-family="sans-serif" font-size="13" font-weight="700" fill="#c7d2fe" text-anchor="middle" letter-spacing="1">EXCALIFLOW</text>
+    
+    <text x="0" y="90" font-family="Georgia, sans-serif" font-size="42" font-weight="700" fill="#ffffff">{escape_mermaid_label(project_title)}</text>
+    <text x="0" y="125" font-family="sans-serif" font-size="18" fill="#94a3b8">Interactive Architecture Map &amp; Verified Codebase Atlas</text>
+  </g>
+  
+  <!-- Metric Badges -->
+  <g transform="translate(60, 210)">
+    <rect width="240" height="74" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1.5" filter="url(#card-shadow)" />
+    <text x="24" y="32" font-family="sans-serif" font-size="13" font-weight="600" fill="#94a3b8">CODE SYMBOLS &amp; NODES</text>
+    <text x="24" y="60" font-family="sans-serif" font-size="24" font-weight="800" fill="#38bdf8">{nodes_count} Nodes</text>
+    
+    <rect x="260" width="240" height="74" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1.5" filter="url(#card-shadow)" />
+    <text x="284" y="32" font-family="sans-serif" font-size="13" font-weight="600" fill="#94a3b8">RELATIONS &amp; EDGES</text>
+    <text x="284" y="60" font-family="sans-serif" font-size="24" font-weight="800" fill="#4ade80">{edges_count} Edges</text>
+    
+    <rect x="520" width="280" height="74" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1.5" filter="url(#card-shadow)" />
+    <text x="544" y="32" font-family="sans-serif" font-size="13" font-weight="600" fill="#94a3b8">ANALYSIS PROVENANCE</text>
+    <text x="544" y="60" font-family="sans-serif" font-size="20" font-weight="700" fill="#fbbf24">{provenance}</text>
+  </g>
+  
+  <!-- Visual Window Mockup -->
+  <g transform="translate(60, 310)">
+    <rect width="1080" height="250" rx="16" fill="#0b1120" stroke="#3b82f6" stroke-width="2" stroke-opacity="0.6" filter="url(#card-shadow)" />
+    
+    <circle cx="30" cy="24" r="6" fill="#ef4444" />
+    <circle cx="50" cy="24" r="6" fill="#f59e0b" />
+    <circle cx="70" cy="24" r="6" fill="#10b981" />
+    <text x="100" y="28" font-family="monospace" font-size="12" fill="#64748b">architecture_viewer.html • Panzoom 100% • Reach Tracing Active</text>
+    
+    <g transform="translate(40, 50)">
+      <rect x="20" y="30" width="180" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+      <text x="110" y="66" font-family="sans-serif" font-size="14" font-weight="700" fill="#f8fafc" text-anchor="middle">Entrypoint / API</text>
+      
+      <line x1="200" y1="60" x2="310" y2="60" stroke="#60a5fa" stroke-width="2" stroke-dasharray="6 3" />
+      <polygon points="310,60 300,55 300,65" fill="#60a5fa" />
+      
+      <rect x="320" y="20" width="220" height="80" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="3" />
+      <text x="430" y="55" font-family="sans-serif" font-size="16" font-weight="800" fill="#fef08a" text-anchor="middle">Core Service Engine</text>
+      <text x="430" y="78" font-family="sans-serif" font-size="11" fill="#fef9c3" text-anchor="middle">⚡ Reach Focused Node</text>
+      
+      <line x1="540" y1="60" x2="650" y2="60" stroke="#4ade80" stroke-width="2" stroke-dasharray="6 3" />
+      <polygon points="650,60 640,55 640,65" fill="#4ade80" />
+      
+      <rect x="660" y="30" width="200" height="60" rx="8" fill="#1e293b" stroke="#4ade80" stroke-width="2" />
+      <text x="760" y="66" font-family="sans-serif" font-size="14" font-weight="700" fill="#f8fafc" text-anchor="middle">Database &amp; Storage</text>
+      
+      <line x1="430" y1="100" x2="430" y2="135" stroke="#4ade80" stroke-width="2" stroke-dasharray="6 3" />
+      <polygon points="430,135 425,125 435,125" fill="#4ade80" />
+      <rect x="330" y="140" width="200" height="45" rx="8" fill="#1e293b" stroke="#4ade80" stroke-width="2" />
+      <text x="430" y="168" font-family="sans-serif" font-size="13" font-weight="600" fill="#f8fafc" text-anchor="middle">Graphify Knowledge Graph</text>
+    </g>
+  </g>
+  
+  <!-- Footer Tagline -->
+  <g transform="translate(60, 595)">
+    <text x="0" y="0" font-family="sans-serif" font-size="12" fill="#64748b">Generated by ExcaliFlow Studio • 100% Local-First &amp; Air-Gapped • github.com/Nakazasen/ExcaliFlow-Studio</text>
+  </g>
+</svg>"""
+
+
+def generate_share_card_file(project_dir: str, out_path: str = "share-card.svg") -> Path:
+    """Tạo và ghi tệp Share Card 1200x630 SVG."""
+    proj_path = Path(project_dir).resolve()
+    out_file = Path(out_path)
+    if not out_file.is_absolute():
+        out_file = proj_path / out_file
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    lang_info = scan_language_sources(proj_path)
+    stats = {
+        "languages": lang_info.get("languages", ["Python"]),
+        "nodes_count": len(lang_info.get("symbols", [])),
+        "edges_count": len(lang_info.get("relations", [])),
+        "provenance": lang_info.get("provenance", "AST Language Aware")
+    }
+    svg_content = generate_share_card_svg(proj_path.name, stats)
+    out_file.write_text(svg_content, encoding="utf-8")
+    print(f"[*] Da tao thanh cong 1200x630 Share Card tai: {out_file.resolve()}")
+    return out_file.resolve()
+
+
+
 
 def get_latest_source_mtime(project_root: Path) -> float:
     """Tra cuu thoi diem sua doi moi nhat cua cac tap tin ma nguon trong du an."""
@@ -1327,6 +1593,99 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       font-size: 0.85rem;
       display: none;
     }
+
+    /* Reach Tracing & Isolation */
+    .node {
+      cursor: pointer !important;
+      transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+    }
+    .node.reach-focused {
+      filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.95)) !important;
+      opacity: 1 !important;
+    }
+    .node.reach-upstream {
+      filter: drop-shadow(0 0 8px rgba(2, 132, 199, 0.9)) !important;
+      opacity: 1 !important;
+    }
+    .node.reach-downstream {
+      filter: drop-shadow(0 0 8px rgba(22, 163, 74, 0.9)) !important;
+      opacity: 1 !important;
+    }
+    .node.reach-dimmed {
+      opacity: 0.12 !important;
+      filter: grayscale(90%) !important;
+    }
+    .edgePath {
+      transition: opacity 0.2s ease, stroke-width 0.2s ease;
+    }
+    .edgePath.reach-highlight-up path {
+      stroke: #0284c7 !important;
+      stroke-width: 3.5px !important;
+      opacity: 1 !important;
+    }
+    .edgePath.reach-highlight-down path {
+      stroke: #16a34a !important;
+      stroke-width: 3.5px !important;
+      opacity: 1 !important;
+    }
+    .edgePath.reach-dimmed, .edgeLabel.reach-dimmed {
+      opacity: 0.08 !important;
+    }
+
+    /* Animated Signal Flow */
+    @keyframes signalFlowMotion {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+    .flow-animated .edgePath path {
+      stroke-dasharray: 8 4 !important;
+      animation: signalFlowMotion 1.2s linear infinite !important;
+    }
+
+    /* Reach Info Floating Bar */
+    .reach-info-bar {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      background: rgba(15, 23, 42, 0.92);
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: fadeInDown 0.25s ease;
+    }
+    .reach-pill {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .reach-pill-up { background: #0284c7; color: #ffffff; }
+    .reach-pill-down { background: #16a34a; color: #ffffff; }
+    .reach-clear-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #ffffff;
+      padding: 3px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      transition: background 0.15s;
+    }
+    .reach-clear-btn:hover { background: rgba(255,255,255,0.35); }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translate(-50%, -10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
   </style>
 </head>
 <body>
@@ -1335,7 +1694,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="header-bar">
       <div class="header-title">
         <span>🎨 Excali-Flow</span>
-        <span class="badge">Hand-Drawn</span>
+        <span class="badge">Ultra v3.5</span>
       </div>
       <button id="btn-collapse-sidebar" class="icon-btn" title="Thu gọn Sidebar (Ctrl+B)">◀</button>
     </div>
@@ -1367,11 +1726,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   </button>
 
   <main id="viewport">
+    <div id="reach-bar" class="reach-info-bar" style="display: none;">
+      <span id="reach-title">🔍 Reach Tracing</span>
+      <span class="reach-pill reach-pill-up" id="reach-up-count">0 Upstream</span>
+      <span class="reach-pill reach-pill-down" id="reach-down-count">0 Downstream</span>
+      <button id="reach-clear-btn" class="reach-clear-btn">✕ Bỏ chọn</button>
+    </div>
+
     <div id="panzoom-container">
       <div id="diagram-output" class="mermaid"></div>
     </div>
 
     <div class="floating-toolbar">
+      <button id="toggle-flow" class="tool-btn" title="Bật/Tắt Luồng chuyển động (Animated Signal Flow)" style="font-size: 0.85rem; width: auto; padding: 0 10px; font-weight: 600;">✨ Luồng</button>
+      <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div>
       <button id="zoom-in" class="tool-btn" title="Phóng to (Zoom In)">➕</button>
       <button id="zoom-out" class="tool-btn" title="Thu nhỏ (Zoom Out)">➖</button>
       <button id="zoom-reset" class="tool-btn" title="Về mặc định (Reset)">🎯</button>
@@ -1379,7 +1747,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <span id="zoom-badge" class="zoom-badge">100%</span>
       <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div>
       <button id="export-svg" class="tool-btn" title="Tải file Vector SVG">🖼️ SVG</button>
-      <button id="export-png" class="tool-btn" title="Tải ảnh PNG độ nét cao">📷 PNG</button>
+      <button id="export-png" class="tool-btn" title="Tải ảnh PNG">📷 PNG</button>
+      <button id="export-card" class="tool-btn" title="Xuất Thẻ Ảnh Bìa 1200×630 (README / Social Share Card)" style="font-size: 0.85rem; width: auto; padding: 0 10px; font-weight: 600;">🎴 Card</button>
     </div>
   </main>
 
@@ -1521,6 +1890,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           canvas: true
         });
 
+        setupReachTracing(renderedSvg);
         requestAnimationFrame(() => requestAnimationFrame(fitToScreen));
       } catch (err) {
         console.error(err);
@@ -1528,6 +1898,305 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         errorBox.textContent = '❌ Lỗi cú pháp Mermaid: ' + (err.message || err);
         diagramOutput.innerHTML = '<div style="max-width: 520px; padding: 24px; color: #b91c1c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px; font-family: Arial, sans-serif;">Mermaid could not render this diagram. Read the error message in the left panel, then simplify the selected graph.</div>';
       }
+    }
+
+    // --- Interactive Reach Tracing Engine ---
+    let activeReachNode = null;
+
+    function clearReachTracing() {
+      activeReachNode = null;
+      const reachBar = document.getElementById('reach-bar');
+      if (reachBar) reachBar.style.display = 'none';
+
+      const nodes = diagramOutput.querySelectorAll('.node');
+      nodes.forEach(n => {
+        n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
+      });
+
+      const edgePaths = diagramOutput.querySelectorAll('.edgePath, .edgeLabel');
+      edgePaths.forEach(e => {
+        e.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
+      });
+    }
+
+    function setupReachTracing(svgElement) {
+      if (!svgElement) return;
+      clearReachTracing();
+
+      const nodes = Array.from(svgElement.querySelectorAll('.node'));
+      if (!nodes.length) return;
+
+      // Extract Node IDs and Code relationships
+      const nodeElemMap = new Map();
+      const code = codeArea.value;
+      const adjOut = new Map(); // src -> Set(target)
+      const adjIn = new Map();  // target -> Set(src)
+
+      nodes.forEach(node => {
+        // ID extraction from id="flowchart-NodeId-XX" or class or data-id
+        let rawId = node.id || '';
+        let match = rawId.match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
+        let nodeId = match ? match[1] : rawId;
+        if (!nodeId) {
+          const labelText = node.textContent?.trim();
+          nodeId = labelText ? labelText.split(/\s+/)[0] : rawId;
+        }
+        nodeElemMap.set(nodeId, node);
+        if (rawId) nodeElemMap.set(rawId, node);
+      });
+
+      // Parse relations from Mermaid source code lines
+      const edgeRegex = /([A-Za-z0-9_\-]+)\s*(?:-->|-.->|==>|--\s*\|[^|]+\|\s*-->|--\s*\|[^|]+\|\s*->)\s*([A-Za-z0-9_\-]+)/g;
+      let edgeMatch;
+      while ((edgeMatch = edgeRegex.exec(code)) !== null) {
+        const u = edgeMatch[1];
+        const v = edgeMatch[2];
+        if (!adjOut.has(u)) adjOut.set(u, new Set());
+        if (!adjIn.has(v)) adjIn.set(v, new Set());
+        adjOut.get(u).add(v);
+        adjIn.get(v).add(u);
+      }
+
+      // Also parse Mermaid SVG edge classes: LS-NodeA LE-NodeB
+      const edgeElems = Array.from(svgElement.querySelectorAll('.edgePath'));
+      const edgeMap = [];
+      edgeElems.forEach(edge => {
+        let cls = edge.getAttribute('class') || '';
+        let ls = cls.match(/LS-([A-Za-z0-9_\-]+)/);
+        let le = cls.match(/LE-([A-Za-z0-9_\-]+)/);
+        if (ls && le) {
+          const u = ls[1];
+          const v = le[1];
+          if (!adjOut.has(u)) adjOut.set(u, new Set());
+          if (!adjIn.has(v)) adjIn.set(v, new Set());
+          adjOut.get(u).add(v);
+          adjIn.get(v).add(u);
+          edgeMap.push({ u, v, elem: edge });
+        }
+      });
+
+      // Click on background clears reach tracing
+      svgElement.onclick = (e) => {
+        if (!e.target.closest('.node')) {
+          clearReachTracing();
+        }
+      };
+
+      // Click on Node triggers Upstream / Downstream reach traversal
+      nodes.forEach(node => {
+        node.onclick = (e) => {
+          e.stopPropagation();
+          let rawId = node.id || '';
+          let match = rawId.match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
+          let startNodeId = match ? match[1] : rawId;
+          if (!startNodeId) {
+            startNodeId = node.textContent?.trim().split(/\s+/)[0] || rawId;
+          }
+
+          if (activeReachNode === startNodeId) {
+            clearReachTracing();
+            return;
+          }
+          activeReachNode = startNodeId;
+
+          // BFS Upstream (Callers)
+          const upstreamNodes = new Set();
+          const qUp = [startNodeId];
+          while (qUp.length > 0) {
+            const curr = qUp.shift();
+            const preds = adjIn.get(curr) || [];
+            preds.forEach(p => {
+              if (!upstreamNodes.has(p) && p !== startNodeId) {
+                upstreamNodes.add(p);
+                qUp.push(p);
+              }
+            });
+          }
+
+          // BFS Downstream (Dependencies)
+          const downstreamNodes = new Set();
+          const qDown = [startNodeId];
+          while (qDown.length > 0) {
+            const curr = qDown.shift();
+            const succs = adjOut.get(curr) || [];
+            succs.forEach(s => {
+              if (!downstreamNodes.has(s) && s !== startNodeId) {
+                downstreamNodes.add(s);
+                qDown.push(s);
+              }
+            });
+          }
+
+          // Apply styling
+          nodes.forEach(n => {
+            let nIdMatch = (n.id || '').match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
+            let nId = nIdMatch ? nIdMatch[1] : (n.id || n.textContent?.trim().split(/\s+/)[0]);
+            n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
+
+            if (nId === startNodeId || n === node) {
+              n.classList.add('reach-focused');
+            } else if (upstreamNodes.has(nId)) {
+              n.classList.add('reach-upstream');
+            } else if (downstreamNodes.has(nId)) {
+              n.classList.add('reach-downstream');
+            } else {
+              n.classList.add('reach-dimmed');
+            }
+          });
+
+          // Style edges
+          edgeElems.forEach(edge => {
+            edge.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
+            let cls = edge.getAttribute('class') || '';
+            let ls = cls.match(/LS-([A-Za-z0-9_\-]+)/);
+            let le = cls.match(/LE-([A-Za-z0-9_\-]+)/);
+            if (ls && le) {
+              const u = ls[1];
+              const v = le[1];
+              if ((u === startNodeId || upstreamNodes.has(u)) && (v === startNodeId || upstreamNodes.has(v))) {
+                edge.classList.add('reach-highlight-up');
+              } else if ((u === startNodeId || downstreamNodes.has(u)) && (v === startNodeId || downstreamNodes.has(v))) {
+                edge.classList.add('reach-highlight-down');
+              } else {
+                edge.classList.add('reach-dimmed');
+              }
+            } else {
+              edge.classList.add('reach-dimmed');
+            }
+          });
+
+          // Show Reach Bar
+          const reachBar = document.getElementById('reach-bar');
+          const reachTitle = document.getElementById('reach-title');
+          const reachUp = document.getElementById('reach-up-count');
+          const reachDown = document.getElementById('reach-down-count');
+          if (reachBar && reachTitle && reachUp && reachDown) {
+            const labelText = node.querySelector('text')?.textContent?.trim() || startNodeId;
+            reachTitle.textContent = `🎯 Focus: ${labelText.slice(0, 24)}`;
+            reachUp.textContent = `${upstreamNodes.size} Upstream`;
+            reachDown.textContent = `${downstreamNodes.size} Downstream`;
+            reachBar.style.display = 'flex';
+          }
+        };
+      });
+    }
+
+    const reachClearBtn = document.getElementById('reach-clear-btn');
+    if (reachClearBtn) {
+      reachClearBtn.onclick = clearReachTracing;
+    }
+
+    // --- Animated Signal Flow ---
+    let isFlowAnimated = false;
+    const toggleFlowBtn = document.getElementById('toggle-flow');
+    if (toggleFlowBtn) {
+      toggleFlowBtn.onclick = () => {
+        isFlowAnimated = !isFlowAnimated;
+        if (isFlowAnimated) {
+          diagramOutput.classList.add('flow-animated');
+          toggleFlowBtn.style.background = '#e0e7ff';
+          toggleFlowBtn.style.color = '#3730a3';
+        } else {
+          diagramOutput.classList.remove('flow-animated');
+          toggleFlowBtn.style.background = 'transparent';
+          toggleFlowBtn.style.color = 'var(--text-main)';
+        }
+      };
+    }
+
+    // --- 1200x630 Social / README Share Card Generator ---
+    const exportCardBtn = document.getElementById('export-card');
+    if (exportCardBtn) {
+      exportCardBtn.onclick = () => {
+        const svgElement = diagramOutput.querySelector('svg');
+        if (!svgElement) return alert('Chưa có sơ đồ để xuất Share Card!');
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 630;
+        const ctx = canvas.getContext('2d');
+
+        // Draw Premium Dark Gradient Background
+        const grad = ctx.createLinearGradient(0, 0, 1200, 630);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(0.5, '#1e1b4b');
+        grad.addColorStop(1, '#090d16');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 630);
+
+        // Header Title
+        ctx.fillStyle = '#818cf8';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.fillText('EXCALIFLOW STUDIO • ARCHITECTURE MAP', 60, 60);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 36px "Shantell Sans", Georgia, sans-serif';
+        const projectTitle = document.title || 'Codebase Architecture';
+        ctx.fillText(projectTitle, 60, 105);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px Inter, sans-serif';
+        ctx.fillText('Local-First & Air-Gapped Codebase Intelligence Engine', 60, 135);
+
+        // Render SVG into card
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+
+        img.onload = () => {
+          const cardBoxX = 60;
+          const cardBoxY = 160;
+          const cardBoxW = 1080;
+          const cardBoxH = 410;
+
+          // Mock window container
+          ctx.fillStyle = '#0b1120';
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(cardBoxX, cardBoxY, cardBoxW, cardBoxH, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          // Window header dots
+          ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(cardBoxX + 24, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(cardBoxX + 40, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(cardBoxX + 56, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
+
+          // Calculate aspect scale for diagram
+          const box = svgElement.viewBox?.baseVal;
+          const svgW = (box && box.width) ? box.width : (svgElement.clientWidth || 800);
+          const svgH = (box && box.height) ? box.height : (svgElement.clientHeight || 600);
+
+          const maxW = cardBoxW - 40;
+          const maxH = cardBoxH - 50;
+          const scale = Math.min(maxW / svgW, maxH / svgH, 1.2);
+          const drawW = svgW * scale;
+          const drawH = svgH * scale;
+          const drawX = cardBoxX + (cardBoxW - drawW) / 2;
+          const drawY = cardBoxY + 36 + (cardBoxH - 36 - drawH) / 2;
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+          // Footer
+          ctx.fillStyle = '#64748b';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText('Generated by ExcaliFlow Studio • 100% Offline • github.com/Nakazasen/ExcaliFlow-Studio', 60, 600);
+
+          const pngUrl = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = `architecture-share-card.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          alert('Không thể tạo Share Card từ sơ đồ hiện tại!');
+        };
+        img.src = url;
+      };
     }
 
     function toggleSidebar() {
@@ -2120,6 +2789,7 @@ def generate_html_file(
     excalidraw_output: str | None = None,
     auto_graphify: bool = True,
     strict: bool = False,
+    diff_target: str | None = None,
 ):
     """Sinh file HTML Excalidraw Viewer chứa dữ liệu Mermaid từ dự án chỉ định"""
     proj_path = Path(project_dir).resolve()
@@ -2154,6 +2824,34 @@ def generate_html_file(
                 print(f"[!] AST Notice: {e}")
         diagrams = generate_mermaid_from_project(project_info, ast_data)
         diagrams.update(generate_mermaid_from_language_analysis(project_info, scan_language_sources(proj_path)))
+
+    # 3. Tính toán Architecture Diff nếu có yêu cầu so sánh
+    if diff_target:
+        print(f"[*] Dang tinh toan Architecture Diff voi muc tieu: {diff_target}...")
+        diff_path = Path(diff_target)
+        old_analysis = None
+        if diff_path.is_file():
+            try:
+                old_analysis = json.loads(diff_path.read_text(encoding="utf-8"))
+            except Exception as e:
+                print(f"[!] Khong the doc diff file ({e})")
+        elif diff_path.is_dir():
+            old_analysis = scan_language_sources(diff_path)
+        else:
+            try:
+                res = subprocess.run(["git", "rev-parse", "--verify", diff_target], cwd=str(proj_path), capture_output=True, text=True)
+                if res.returncode == 0:
+                    g_res = subprocess.run(["git", "show", f"{diff_target}:graphify-out/graph.json"], cwd=str(proj_path), capture_output=True, text=True)
+                    if g_res.returncode == 0:
+                        old_analysis = json.loads(g_res.stdout)
+            except Exception:
+                pass
+        if old_analysis:
+            current_lang = scan_language_sources(proj_path)
+            diff_res = compute_architecture_diff(old_analysis, current_lang)
+            combined = diff_res
+            combined.update(diagrams)
+            diagrams = combined
 
     diagrams_json = json.dumps(diagrams, ensure_ascii=False, indent=2)
     # Tránh làm vỡ thẻ script khi trong label hoặc code Mermaid chứa chuỗi </script>
@@ -2297,6 +2995,8 @@ def main():
     parser.add_argument("--offline-check", action="store_true", help="Kiem tra runtime offline va thoat")
     parser.add_argument("--no-graphify", action="store_true", help="Bo qua tu dong chay Graphify khi chua co graph.json")
     parser.add_argument("--strict", action="store_true", help="Che do Fail-Closed: bao loi va thoat ngay neu Graphify hoac do thi that bai")
+    parser.add_argument("--diff", help="So sanh kien truc hien tai voi file snapshot, thu muc, hoac git ref")
+    parser.add_argument("--share-card", help="Xuat the anh chia se 1200x630 (README / Social Card) ra duong dan chi dinh")
     parser.add_argument("--editorial-out", help="Xuat SVG hoac HTML editorial tu chua")
     parser.add_argument("--visual-type", choices=sorted(EDITORIAL_TYPES | REPORT_TYPES), help="Grammar cho editorial output")
     parser.add_argument("--visual-data", help="Duong dan JSON brief cho Sankey, Wardley, hoac journey")
@@ -2312,6 +3012,13 @@ def main():
         return
     if args.install_hook:
         raise SystemExit(0 if install_git_hooks(target_dir, args.force_hook) else 1)
+
+    if args.share_card:
+        card_path = generate_share_card_file(target_dir, args.share_card)
+        if args.open:
+            print("[*] Dang mo Share Card tren trinh duyet...")
+            webbrowser.open(f"file:///{card_path}")
+        return
 
     if args.editorial_out:
         visual_type = args.visual_type or "architecture"
@@ -2333,7 +3040,14 @@ def main():
     if args.with_excalidraw and not excalidraw_out:
         excalidraw_out = str(Path(out_path).with_suffix(".excalidraw"))
     try:
-        full_path = generate_html_file(target_dir, out_path, excalidraw_out, auto_graphify=not args.no_graphify, strict=args.strict)
+        full_path = generate_html_file(
+            target_dir,
+            out_path,
+            excalidraw_out,
+            auto_graphify=not args.no_graphify,
+            strict=args.strict,
+            diff_target=args.diff
+        )
     except RuntimeError as err:
         parser.error(str(err))
 

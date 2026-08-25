@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.2-blue.svg" alt="Phiên bản"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.3-blue.svg" alt="Phiên bản"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/giấy_phép-MIT-purple.svg" alt="Giấy phép"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-47%2F47%20đạt-success.svg" alt="Kiểm thử"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-64%2F64%20đạt-success.svg" alt="Kiểm thử"></a>
   <a href="#tính-năng-nổi-bật"><img src="https://img.shields.io/badge/offline-100%25%20không%20phụ%20thuộc%20mạng-orange.svg" alt="Hoạt động offline"></a>
 </p>
 
@@ -27,11 +27,12 @@
 ## 🚀 Tính Năng Nổi Bật
 
 - **🔒 100% Cục Bộ & Bảo Mật Tuyệt Đối**: Không thu thập dữ liệu, không gửi code lên đám mây, hoạt động hoàn hảo trong môi trường mạng nội bộ (air-gapped).
+- **⚡ Truy Vết Lan Truyền Tương Tác (Reach Tracing)**: Click vào bất kỳ node nào để cô lập ngay luồng gọi đến (Upstream - Xanh ngọc) và luồng phụ thuộc (Downstream - Xanh lá), làm mờ các thành phần ngoài ngữ cảnh.
+- **✨ Hiệu Ứng Luồng Chuyển Động (Animated Signal Flow)**: Bật/tắt dòng xung chuyển động dọc theo các cạnh kết nối để mô phỏng dòng dữ liệu thời gian thực.
+- **🔍 So Sánh Kiến Trúc (Architecture Diff Engine)**: So sánh độ lệch kiến trúc giữa 2 snapshot hoặc git commit (Added, Removed, Modified) trước khi merge PR (`--diff`).
+- **🎴 Thẻ Ảnh Bìa 1200×630 (README Share Card)**: Tự động sinh thẻ ảnh vector chuẩn 1200×630 đính kèm đầu `README.md` và chia sẻ mạng xã hội (`--share-card`).
 - **🗺️ Codebase Atlas (Khám Phá & Học Code)**: Trả lời ứng dụng làm gì, tạo lộ trình đọc code 1→2→3 và sơ đồ quan hệ import trực quan bằng SVG native.
-- **🎨 Đa Dạng Định Dạng Trực Quan**:
-  - Trình xem HTML offline kèm tính năng Pan/Zoom mượt mà.
-  - Tệp `.excalidraw` tương thích đầy đủ để chỉnh sửa tay.
-  - Sơ đồ vector SVG độ phân giải cao dùng cho Slide thuyết trình 16:9, Sách trắng và Tài liệu kỹ thuật.
+- **🎨 Đa Dạng Định Dạng Trực Quan**: Trình xem HTML offline kèm tính năng Pan/Zoom mượt mà, tệp `.excalidraw` tương thích đầy đủ để chỉnh sửa tay, và sơ đồ vector SVG độ phân giải cao dùng cho Slide thuyết trình 16:9, Sách trắng và Tài liệu kỹ thuật.
 - **🧠 Bộ Xử Lý Văn Bản Thông Minh Đa Dòng (Typography Engine)**: Tự động ngắt dòng theo từ ngữ (`<tspan>`), tự điều chỉnh khoảng cách trục Y, nhúng tooltip `<title>` bảo toàn 100% nội dung gốc khi rê chuột, tự động đảo hướng neo tránh tràn mép canvas.
 - **🔍 Hỏi Đáp Mã Nguồn Kèm Dẫn Chứng**: Trả lời chính xác về class, hàm, quan hệ phụ thuộc với số dòng và file cụ thể.
 - **🔗 Evidence Graph Cho RAG**: Chuyển đổi dấu vết truy xuất (`rag-trace.json`) thành bản đồ xác minh nguồn trích dẫn, chống bịa đặt thông tin.
@@ -72,10 +73,10 @@ excaliflow --open --with-excalidraw
 ```text
 ┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
 │  Mã Nguồn Codebase      │ ────> │  ExcaliFlow Độc Lập (AST / Code)     │ ────> │  Trình Xem HTML Tương Tác    │
-│  (Python, JS, TS, v.v.) │   │   └──────────────────────────────────────┘   │   │  + Bản Vẽ Tay .excalidraw    │
-│                         │   │   ┌──────────────────────────────────────┐   │   │  + Slide Thuyết Trình SVG    │
-│                         │   └──>│  Tùy chọn: /graphify Đồ Thị Tri Thức │───┘   └──────────────────────────────┘
-└─────────────────────────┘       └──────────────────────────────────────┘
+│  (Python, JS, TS, v.v.) │   │   └──────────────────────────────────────┘   │   │  (Reach Tracing + Luồng Xung)│
+│                         │   │   ┌──────────────────────────────────────┐   │   │  + Bản Vẽ Tay .excalidraw    │
+│                         │   └──>│  Tùy chọn: /graphify Đồ Thị Tri Thức │───┘   │  + Thẻ Ảnh Bìa 1200x630 SVG  │
+└─────────────────────────┘       └──────────────────────────────────────┘       └──────────────────────────────┘
 ```
 
 ---
@@ -85,14 +86,16 @@ excaliflow --open --with-excalidraw
 Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Chỉ cần gõ `/excaliflow` trong khung chat AI.
-2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.1)**:
-   - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw**
-   - `2` 🗺️ **Codebase Atlas (Khám Phá & Học Code)**
-   - `3` 📊 **Sơ Đồ Xuất Bản Editorial (Wardley, Sankey, Journey, Slide)**
-   - `4` 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng**
-   - `5` 🔗 **Evidence Graph Cho RAG**
-   - `6` 🩺 **Atlas AI Bridge Doctor**
-   - `7` 🔄 **Kiểm Tra Bản Cập Nhật**
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.5)**:
+   - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw (Reach Tracing + Luồng Chuyển Động)**
+   - `2` 🔍 **So Sánh Độ Lệch Kiến Trúc (`--diff`)**
+   - `3` 🎴 **Thẻ Ảnh Bìa 1200×630 (`--share-card`)**
+   - `4` 🗺️ **Codebase Atlas (Khám Phá & Học Code)**
+   - `5` 📊 **Sơ Đồ Xuất Bản Editorial (Wardley, Sankey, Journey, Slide)**
+   - `6` 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng**
+   - `7` 🔗 **Evidence Graph Cho RAG**
+   - `8` 🩺 **Atlas AI Bridge Doctor**
+   - `9` 🔄 **Kiểm Tra Bản Cập Nhật**
 3. Bạn chỉ cần gõ số (vd: `1` hoặc `2`)—**không cần nhớ bất kỳ cờ lệnh CLI phức tạp nào!**
 
 ---
@@ -101,13 +104,15 @@ Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor
 
 | Nhóm Tính Năng | Mô Tả & Sản Phẩm Đầu Ra | Lệnh CLI Thực Thi |
 | :--- | :--- | :--- |
-| **1. Sơ Đồ Kiến Trúc & Excalidraw** | Quét codebase $\to$ Xuất HTML Panzoom offline + file `.excalidraw` chỉnh sửa tay | `excaliflow --dir . --with-excalidraw --open` |
-| **2. Codebase Atlas (Học Code)** | Giao diện web tương tác giải thích ứng dụng, lộ trình đọc code & vai trò module | `excaliflow open --dir .` |
-| **3. Sơ Đồ Xuất Bản Editorial** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Slide 16:9, Báo cáo KPI/Risk | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
-| **4. Hỏi Đáp Có Dẫn Chứng** | Trả lời câu hỏi về hàm/class/import kèm dẫn chứng chính xác `file:line` | `excaliflow ask --dir . --audience engineer --question "..."` |
-| **5. Evidence Graph Cho RAG** | Chuyển đổi log RAG thành bản đồ trực quan xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
-| **6. Atlas AI Bridge & Chẩn Đoán** | Quản lý cầu nối AI Sidecar (`:8788`) và kiểm tra kết nối Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
-| **7. Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
+| **1. Sơ Đồ Kiến Trúc & Excalidraw** | Quét codebase $\to$ HTML Panzoom (Reach Tracing + Animated Flow) + `.excalidraw` | `excaliflow --dir . --with-excalidraw --open` |
+| **2. So Sánh Kiến Trúc (Diff)** | So sánh độ lệch kiến trúc với snapshot cũ hoặc git commit | `excaliflow --diff HEAD~1 --open` |
+| **3. Thẻ Ảnh Bìa 1200×630** | Xuất thẻ ảnh vector 1200×630 dùng cho README và chia sẻ | `excaliflow --share-card "README_CARD.svg" --open` |
+| **4. Codebase Atlas (Học Code)** | Giao diện web tương tác giải thích ứng dụng, lộ trình đọc code & vai trò module | `excaliflow open --dir .` |
+| **5. Sơ Đồ Xuất Bản Editorial** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Slide 16:9, Báo cáo KPI/Risk | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
+| **6. Hỏi Đáp Có Dẫn Chứng** | Trả lời câu hỏi về hàm/class/import kèm dẫn chứng chính xác `file:line` | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **7. Evidence Graph Cho RAG** | Chuyển đổi log RAG thành bản đồ trực quan xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
+| **8. Atlas AI Bridge & Chẩn Đoán** | Quản lý cầu nối AI Sidecar (`:8788`) và kiểm tra kết nối Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
+| **9. Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
 
 ---
 

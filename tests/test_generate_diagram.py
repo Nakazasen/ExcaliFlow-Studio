@@ -447,6 +447,70 @@ class ExcaliFlowTests(unittest.TestCase):
                     generator.find_knowledge_graph(root, auto_trigger=True, strict=True)
                 self.assertIn("Fail-Closed: Graphify reported success but output graph is still stale", str(ctx.exception))
 
+    def test_compute_architecture_diff_detects_changes(self):
+        old_analysis = {
+            "symbols": [
+                {"id": "s1", "name": "UserService", "file": "user.py"},
+                {"id": "s2", "name": "LegacyAuth", "file": "auth_old.py"}
+            ],
+            "relations": [
+                {"source": "user.py", "target": "LegacyAuth", "kind": "imports"}
+            ]
+        }
+        new_analysis = {
+            "symbols": [
+                {"id": "s1", "name": "UserService", "file": "user.py"},
+                {"id": "s3", "name": "OAuthProvider", "file": "oauth.py"}
+            ],
+            "relations": [
+                {"source": "user.py", "target": "OAuthProvider", "kind": "imports"}
+            ]
+        }
+        diff_res = generator.compute_architecture_diff(old_analysis, new_analysis)
+        self.assertIn("architecture_diff", diff_res)
+        diff_data = diff_res["architecture_diff"]
+        self.assertIn("Architecture Diff (Before vs After)", diff_data["title"])
+        self.assertEqual(diff_data["stats"]["added_nodes"], 1)
+        self.assertEqual(diff_data["stats"]["removed_nodes"], 1)
+        self.assertIn("[+] OAuthProvider", diff_data["code"])
+        self.assertIn("[-] LegacyAuth", diff_data["code"])
+
+    def test_html_template_contains_reach_tracing_and_flow_features(self):
+        template = generator.HTML_TEMPLATE
+        self.assertIn("reach-focused", template)
+        self.assertIn("reach-upstream", template)
+        self.assertIn("reach-downstream", template)
+        self.assertIn("flow-animated", template)
+        self.assertIn("export-card", template)
+        self.assertIn("setupReachTracing", template)
+
+    def test_generate_share_card_file(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "main.py").write_text("class CoreApp:\n    pass\n", encoding="utf-8")
+            out_card = root / "test-card.svg"
+            card_path = generator.generate_share_card_file(str(root), str(out_card))
+            self.assertTrue(card_path.is_file())
+            content = card_path.read_text(encoding="utf-8")
+            self.assertIn('viewBox="0 0 1200 630"', content)
+            self.assertIn("EXCALIFLOW", content)
+
+    def test_generate_html_file_with_diff_target(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "main.py").write_text("class CoreApp:\n    pass\n", encoding="utf-8")
+            old_graph = root / "old.json"
+            old_graph.write_text(json.dumps({
+                "symbols": [{"id": "s_old", "name": "OldModule", "file": "old.py"}],
+                "relations": []
+            }), encoding="utf-8")
+            
+            out_html = root / "viewer.html"
+            generator.generate_html_file(str(root), str(out_html), auto_graphify=False, diff_target=str(old_graph))
+            self.assertTrue(out_html.is_file())
+            html_text = out_html.read_text(encoding="utf-8")
+            self.assertIn("Architecture Diff", html_text)
+
 
 if __name__ == "__main__":
     unittest.main()

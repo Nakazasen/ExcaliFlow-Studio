@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.2-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.3-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-47%2F47%20passing-success.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-64%2F64%20passing-success.svg" alt="Tests"></a>
   <a href="#key-highlights"><img src="https://img.shields.io/badge/offline-100%25%20zero%20cloud%20deps-orange.svg" alt="Offline Ready"></a>
 </p>
 
@@ -27,11 +27,12 @@
 ## 🚀 Key Highlights
 
 - **🔒 100% Local-First & Privacy-Preserving**: No telemetry, no cloud dependencies. Works completely in air-gapped environments.
+- **⚡ Interactive Reach Tracing**: Click any node to instantly trace its callers (Upstream - Cyan) and dependencies (Downstream - Emerald) while dimming out-of-scope elements.
+- **✨ Animated Signal Flow**: Toggle animated directional signal pulses along edges to visualize live data flows.
+- **🔍 Architecture Change Comparison (Diff Engine)**: Compare two codebase snapshots or git commits to inspect added, removed, and modified architecture components before merging PRs (`--diff`).
+- **🎴 1200×630 Social & README Share Card**: Generate standard 1200×630 vector presentation cards ready for project README headers and social embeds (`--share-card`).
 - **🗺️ Interactive Codebase Atlas**: Explains what applications do, generates 1→2→3 reading paths, and visualizes native SVG dependency graphs.
-- **🎨 Multi-Format Visual Artifacts**:
-  - Offline HTML viewers with pan/zoom.
-  - Native `.excalidraw` editable files.
-  - High-res vector SVGs with Georgia/Arial typography for executive slides (16:9), whitepapers, and documents.
+- **🎨 Multi-Format Visual Artifacts**: Offline HTML viewers with pan/zoom, native `.excalidraw` editable files, and high-res vector SVGs.
 - **🧠 Smart Multi-Line Typography Engine**: Automatic word-boundary wrapping, dynamic vertical spacing, native SVG `<title>` tooltips, and right-edge clipping auto-anchoring.
 - **🔍 Evidence-First Q&A**: Answers architectural questions with verified `file:line` citations directly from source code AST.
 - **🔗 Evidence Graph for RAG**: Visualizes RAG retrieval traces (`rag-trace.json`) to audit and verify model claims against ground truth passages.
@@ -72,10 +73,10 @@ excaliflow --open --with-excalidraw
 ```text
 ┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
 │  Your Codebase          │ ────> │  ExcaliFlow Standalone (AST / Code)  │ ────> │  Interactive HTML Viewer     │
-│  (Python, JS, TS, etc.) │   │   └──────────────────────────────────────┘   │   │  + Editable .excalidraw Scene│
-│                         │   │   ┌──────────────────────────────────────┐   │   │  + Presentation SVG Slide    │
-│                         │   └──>│  Optional: /graphify Knowledge Graph │───┘   └──────────────────────────────┘
-└─────────────────────────┘       └──────────────────────────────────────┘
+│  (Python, JS, TS, etc.) │   │   └──────────────────────────────────────┘   │   │  (Reach Tracing + Flow Pulse)│
+│                         │   │   ┌──────────────────────────────────────┐   │   │  + Editable .excalidraw Scene│
+│                         │   └──>│  Optional: /graphify Knowledge Graph │───┘   │  + 1200x630 Share Card SVG   │
+└─────────────────────────┘       └──────────────────────────────────────┘       └──────────────────────────────┘
 ```
 
 ---
@@ -85,14 +86,16 @@ excaliflow --open --with-excalidraw
 If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Type `/excaliflow` in your AI chat window.
-2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.1)**:
-   - `1` 🏢 **Architecture & Excalidraw**
-   - `2` 🗺️ **Codebase Atlas (Explore & Learn Code)**
-   - `3` 📊 **Editorial Diagrams (Wardley, Sankey, Journey, Slide)**
-   - `4` 🔍 **Source-Backed Codebase Q&A**
-   - `5` 🔗 **Evidence Graph for RAG**
-   - `6` 🩺 **Atlas AI Bridge Doctor**
-   - `7` 🔄 **Check for Updates**
+2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.5)**:
+   - `1` 🏢 **Architecture & Excalidraw (Reach Tracing + Flow Motion)**
+   - `2` 🔍 **Architecture Diff Comparison (`--diff`)**
+   - `3` 🎴 **1200×630 README Share Card (`--share-card`)**
+   - `4` 🗺️ **Codebase Atlas (Explore & Learn Code)**
+   - `5` 📊 **Editorial Diagrams (Wardley, Sankey, Journey, Slide)**
+   - `6` 🔍 **Source-Backed Codebase Q&A**
+   - `7` 🔗 **Evidence Graph for RAG**
+   - `8` 🩺 **Atlas AI Bridge Doctor**
+   - `9` 🔄 **Check for Updates**
 3. Reply with a number (e.g. `1` or `2`) or a short description—**no need to memorize complex CLI flags!**
 
 ---
@@ -101,13 +104,15 @@ If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, G
 
 | Feature Group | Description & Output | CLI Command |
 | :--- | :--- | :--- |
-| **1. Architecture & Excalidraw** | Scans codebase $\to$ Offline Panzoom HTML viewer + editable `.excalidraw` scene | `excaliflow --dir . --with-excalidraw --open` |
-| **2. Codebase Atlas** | Interactive web guide with plain-language summary, reading path & module roles | `excaliflow open --dir .` |
-| **3. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
-| **4. Source-Backed Q&A** | Answers questions about classes/functions/imports with `file:line` citations | `excaliflow ask --dir . --audience engineer --question "..."` |
-| **5. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
-| **6. Atlas AI Bridge & Doctor** | Manages local sidecar bridges (`:8788`) and checks connection to Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
-| **7. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
+| **1. Architecture & Excalidraw** | Scans codebase $\to$ Offline Panzoom HTML viewer (Reach Tracing + Animated Flow) + `.excalidraw` | `excaliflow --dir . --with-excalidraw --open` |
+| **2. Architecture Diff Engine** | Compares current architecture with previous snapshot or git commit | `excaliflow --diff HEAD~1 --open` |
+| **3. 1200×630 Share Card** | Generates 1200×630 vector card for README and social sharing | `excaliflow --share-card "README_CARD.svg" --open` |
+| **4. Codebase Atlas** | Interactive web guide with plain-language summary, reading path & module roles | `excaliflow open --dir .` |
+| **5. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
+| **6. Source-Backed Q&A** | Answers questions about classes/functions/imports with `file:line` citations | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **7. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
+| **8. Atlas AI Bridge & Doctor** | Manages local sidecar bridges (`:8788`) and checks connection to Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
+| **9. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
 
 ---
 
