@@ -59,6 +59,35 @@ def _receipt_text(edge: dict) -> str:
     return f"{status}. Nguồn: {edge['origin']}; confidence {edge['confidence']:.0%}; vị trí: {locations}."
 
 
+def _label_tspans(text: str, x: int) -> str:
+    limit = 24
+    words = (text or "").split()
+    lines: list[str] = []
+    cur: list[str] = []
+    cur_len = 0
+    for w in words:
+        if cur_len + len(w) + (1 if cur else 0) <= limit:
+            cur.append(w)
+            cur_len += len(w) + (1 if cur else 0)
+        else:
+            if cur:
+                lines.append(" ".join(cur))
+            cur = [w]
+            cur_len = len(w)
+            if len(lines) == 1:
+                break
+    if cur and len(lines) < 2:
+        lines.append(" ".join(cur))
+    if len(lines) == 2 and (len(words) > len(lines[0].split()) + len(lines[1].split())):
+        lines[1] = lines[1][:max(1, limit - 3)].rstrip() + "..."
+    if not lines:
+        lines = [text[:limit] if text else "-"]
+    return "".join(
+        f'<tspan x="{x + 14}" dy="{0 if i == 0 else 16}">{html.escape(line)}</tspan>'
+        for i, line in enumerate(lines[:2])
+    )
+
+
 def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
     """Render one evidence node without version-specific nested f-strings."""
 
@@ -71,12 +100,13 @@ def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
         review_label = f'<text class="review-label" x="{x + 14}" y="{y + 72}">Cần xem lại</text>'
     else:
         review_label = ""
+    label_tspans = _label_tspans(node["label"], x)
     return (
         f'<g class="{classes}" data-node="{html.escape(node["id"])}" tabindex="0" role="button">'
         f'<rect x="{x}" y="{y}" width="260" height="84" rx="14" '
         f'style="--node-color:{TYPE_COLORS[node["type"]]}"/>'
         f'<text class="node-type" x="{x + 14}" y="{y + 24}">{TYPE_LABELS[node["type"]]}</text>'
-        f'<text class="node-label" x="{x + 14}" y="{y + 51}">{html.escape(_display_label(node))}</text>'
+        f'<text class="node-label" x="{x + 14}" y="{y + 46}">{label_tspans}</text>'
         f'{review_label}</g>'
     )
 

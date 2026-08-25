@@ -1597,49 +1597,112 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     /* Reach Tracing & Isolation */
     .node {
       cursor: pointer !important;
-      transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), filter 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .node:hover {
+      filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.7)) !important;
     }
     .node.reach-focused {
-      filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.95)) !important;
+      filter: drop-shadow(0 0 18px #f59e0b) drop-shadow(0 0 6px #f59e0b) !important;
       opacity: 1 !important;
+      transform-origin: center;
+      transform: scale(1.05);
+    }
+    .node.reach-focused rect, .node.reach-focused path, .node.reach-focused polygon, .node.reach-focused circle {
+      stroke: #f59e0b !important;
+      stroke-width: 3.5px !important;
+      fill: #fef3c7 !important;
+    }
+    .node.reach-focused foreignObject div, .node.reach-focused .nodeLabel, .node.reach-focused text {
+      color: #78350f !important;
+      fill: #78350f !important;
+      font-weight: 800 !important;
     }
     .node.reach-upstream {
-      filter: drop-shadow(0 0 8px rgba(2, 132, 199, 0.9)) !important;
+      filter: drop-shadow(0 0 14px #0284c7) drop-shadow(0 0 5px #38bdf8) !important;
       opacity: 1 !important;
+      transform-origin: center;
+      transform: scale(1.02);
+    }
+    .node.reach-upstream rect, .node.reach-upstream path, .node.reach-upstream polygon, .node.reach-upstream circle {
+      stroke: #0284c7 !important;
+      stroke-width: 3px !important;
+      fill: #e0f2fe !important;
+    }
+    .node.reach-upstream foreignObject div, .node.reach-upstream .nodeLabel, .node.reach-upstream text {
+      color: #0369a1 !important;
+      fill: #0369a1 !important;
+      font-weight: 800 !important;
     }
     .node.reach-downstream {
-      filter: drop-shadow(0 0 8px rgba(22, 163, 74, 0.9)) !important;
+      filter: drop-shadow(0 0 14px #16a34a) drop-shadow(0 0 5px #4ade80) !important;
       opacity: 1 !important;
+      transform-origin: center;
+      transform: scale(1.02);
+    }
+    .node.reach-downstream rect, .node.reach-downstream path, .node.reach-downstream polygon, .node.reach-downstream circle {
+      stroke: #16a34a !important;
+      stroke-width: 3px !important;
+      fill: #dcfce7 !important;
+    }
+    .node.reach-downstream foreignObject div, .node.reach-downstream .nodeLabel, .node.reach-downstream text {
+      color: #14532d !important;
+      fill: #14532d !important;
+      font-weight: 800 !important;
     }
     .node.reach-dimmed {
       opacity: 0.12 !important;
-      filter: grayscale(90%) !important;
+      filter: grayscale(95%) blur(0.4px) opacity(0.35) !important;
     }
-    .edgePath {
-      transition: opacity 0.2s ease, stroke-width 0.2s ease;
+    .edgePath, .edgePaths > g, path.flowchart-link {
+      transition: opacity 0.25s ease, stroke-width 0.25s ease, stroke 0.25s ease !important;
     }
-    .edgePath.reach-highlight-up path {
+    .edgePath.reach-highlight-up path,
+    .edgePaths > g.reach-highlight-up path,
+    path.flowchart-link.reach-highlight-up {
       stroke: #0284c7 !important;
       stroke-width: 3.5px !important;
       opacity: 1 !important;
+      filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.9)) !important;
     }
-    .edgePath.reach-highlight-down path {
+    .edgePath.reach-highlight-down path,
+    .edgePaths > g.reach-highlight-down path,
+    path.flowchart-link.reach-highlight-down {
       stroke: #16a34a !important;
       stroke-width: 3.5px !important;
       opacity: 1 !important;
+      filter: drop-shadow(0 0 6px rgba(22, 163, 74, 0.9)) !important;
     }
-    .edgePath.reach-dimmed, .edgeLabel.reach-dimmed {
-      opacity: 0.08 !important;
+    .edgePath.reach-dimmed, .edgePaths > g.reach-dimmed, path.flowchart-link.reach-dimmed,
+    .edgeLabel.reach-dimmed {
+      opacity: 0.06 !important;
     }
 
-    /* Animated Signal Flow */
+    /* Animated Signal Flow (Stream of Glowing Photons) */
     @keyframes signalFlowMotion {
-      from { stroke-dashoffset: 24; }
+      from { stroke-dashoffset: 36; }
       to { stroke-dashoffset: 0; }
     }
-    .flow-animated .edgePath path {
-      stroke-dasharray: 8 4 !important;
-      animation: signalFlowMotion 1.2s linear infinite !important;
+    .flow-animated .edgePath path,
+    .flow-animated .edgePaths path,
+    .flow-animated path.flowchart-link,
+    .flow-animated path.path,
+    .flow-animated g[class*="edge"] path,
+    .flow-animated .edge-thickness-normal,
+    .flow-animated svg path[id*="L-"],
+    .flow-animated svg path[id*="L_"] {
+      stroke-dasharray: 8 6 !important;
+      stroke: #6366f1 !important;
+      stroke-width: 3px !important;
+      animation: signalFlowMotion 0.85s linear infinite !important;
+      filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.9)) !important;
+      opacity: 1 !important;
+    }
+    .flow-animated marker path,
+    .flow-animated marker polygon {
+      fill: #6366f1 !important;
+      stroke: #6366f1 !important;
+      filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.9)) !important;
     }
 
     /* Reach Info Floating Bar */
@@ -1908,177 +1971,324 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       const reachBar = document.getElementById('reach-bar');
       if (reachBar) reachBar.style.display = 'none';
 
-      const nodes = diagramOutput.querySelectorAll('.node');
+      const nodes = diagramOutput.querySelectorAll('.node, g[id*="flowchart-"]');
       nodes.forEach(n => {
         n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
+        n.style.opacity = '1';
+        n.style.transform = '';
+        n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+          shape.style.stroke = '';
+          shape.style.strokeWidth = '';
+          shape.style.fill = '';
+        });
+        n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+          txt.style.color = '';
+          txt.style.fontWeight = '';
+        });
       });
 
-      const edgePaths = diagramOutput.querySelectorAll('.edgePath, .edgeLabel');
+      const edgePaths = diagramOutput.querySelectorAll('.edgePath, .edgePaths > g, path.flowchart-link, g[class*="edge"], .edgeLabel');
       edgePaths.forEach(e => {
         e.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
+        e.style.opacity = '1';
+        e.querySelectorAll('path').forEach(p => {
+          p.style.stroke = '';
+          p.style.strokeWidth = '';
+        });
       });
+    }
+
+    function normalizeId(id) {
+      if (!id) return '';
+      let s = String(id).trim();
+      s = s.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+      return s;
     }
 
     function setupReachTracing(svgElement) {
       if (!svgElement) return;
       clearReachTracing();
 
-      const nodes = Array.from(svgElement.querySelectorAll('.node'));
+      const nodes = Array.from(svgElement.querySelectorAll('.node, g[id*="flowchart-"]'));
       if (!nodes.length) return;
 
-      // Extract Node IDs and Code relationships
-      const nodeElemMap = new Map();
       const code = codeArea.value;
       const adjOut = new Map(); // src -> Set(target)
       const adjIn = new Map();  // target -> Set(src)
 
-      nodes.forEach(node => {
-        // ID extraction from id="flowchart-NodeId-XX" or class or data-id
-        let rawId = node.id || '';
-        let match = rawId.match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
-        let nodeId = match ? match[1] : rawId;
-        if (!nodeId) {
-          const labelText = node.textContent?.trim();
-          nodeId = labelText ? labelText.split(/\s+/)[0] : rawId;
+      // 1. Infallible multi-syntax Mermaid Edge Parser
+      const lines = code.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('%%') || trimmed.startsWith('subgraph') || trimmed.startsWith('flowchart') || trimmed.startsWith('graph')) return;
+
+        const m = trimmed.match(/^([A-Za-z0-9_]+)(?:\[.*?\]|\(.*?\)|\{.*?\}|\>.*?\])?\s*(?:-->|-.->|==>|---|-->\s*\|[^|]+\||-\.->\s*\|[^|]+\||==>\s*\|[^|]+\||--\s*\|[^|]+\|\s*-->|--\s*[^-\n\r|]+\s*-->)\s*([A-Za-z0-9_]+)/);
+        if (m) {
+          const u = normalizeId(m[1]);
+          const v = normalizeId(m[2]);
+          if (u && v && u !== v) {
+            if (!adjOut.has(u)) adjOut.set(u, new Set());
+            if (!adjIn.has(v)) adjIn.set(v, new Set());
+            adjOut.get(u).add(v);
+            adjIn.get(v).add(u);
+          }
         }
-        nodeElemMap.set(nodeId, node);
-        if (rawId) nodeElemMap.set(rawId, node);
       });
 
-      // Parse relations from Mermaid source code lines
-      const edgeRegex = /([A-Za-z0-9_\-]+)\s*(?:-->|-.->|==>|--\s*\|[^|]+\|\s*-->|--\s*\|[^|]+\|\s*->)\s*([A-Za-z0-9_\-]+)/g;
-      let edgeMatch;
-      while ((edgeMatch = edgeRegex.exec(code)) !== null) {
-        const u = edgeMatch[1];
-        const v = edgeMatch[2];
-        if (!adjOut.has(u)) adjOut.set(u, new Set());
-        if (!adjIn.has(v)) adjIn.set(v, new Set());
-        adjOut.get(u).add(v);
-        adjIn.get(v).add(u);
-      }
-
-      // Also parse Mermaid SVG edge classes: LS-NodeA LE-NodeB
-      const edgeElems = Array.from(svgElement.querySelectorAll('.edgePath'));
-      const edgeMap = [];
+      // 2. Also parse Mermaid SVG edge classes: LS-NodeA LE-NodeB or L-NodeA-NodeB
+      const edgeElems = Array.from(svgElement.querySelectorAll('.edgePath, .edgePaths > g, path.flowchart-link, g[class*="edge"]'));
+      const edgeEntries = [];
       edgeElems.forEach(edge => {
         let cls = edge.getAttribute('class') || '';
+        let edgeId = edge.getAttribute('id') || '';
         let ls = cls.match(/LS-([A-Za-z0-9_\-]+)/);
         let le = cls.match(/LE-([A-Za-z0-9_\-]+)/);
-        if (ls && le) {
-          const u = ls[1];
-          const v = le[1];
+        let u = ls ? normalizeId(ls[1]) : '';
+        let v = le ? normalizeId(le[1]) : '';
+
+        if (!u || !v) {
+          let mId = edgeId.match(/L[_-]([A-Za-z0-9_]+)[_-]([A-Za-z0-9_]+)/);
+          if (mId) {
+            u = normalizeId(mId[1]);
+            v = normalizeId(mId[2]);
+          }
+        }
+
+        if (u && v) {
           if (!adjOut.has(u)) adjOut.set(u, new Set());
           if (!adjIn.has(v)) adjIn.set(v, new Set());
           adjOut.get(u).add(v);
           adjIn.get(v).add(u);
-          edgeMap.push({ u, v, elem: edge });
         }
+        edgeEntries.push({ u, v, elem: edge });
       });
 
-      // Click on background clears reach tracing
-      svgElement.onclick = (e) => {
-        if (!e.target.closest('.node')) {
-          clearReachTracing();
+      function findClosestNode(elem) {
+        let curr = elem;
+        while (curr && curr !== svgElement && curr !== document.body) {
+          if (curr.classList && (curr.classList.contains('node') || curr.classList.contains('cluster'))) {
+            return curr;
+          }
+          if (curr.id && curr.id.startsWith('flowchart-')) {
+            return curr;
+          }
+          curr = curr.parentElement || curr.parentNode;
         }
-      };
+        return null;
+      }
 
-      // Click on Node triggers Upstream / Downstream reach traversal
+      function handleNodeClick(node) {
+        if (!node) return;
+        const rawId = node.id || '';
+        let startNodeId = normalizeId(rawId);
+        if (!startNodeId) {
+          const txt = node.textContent?.trim().split(/\s+/)[0] || '';
+          startNodeId = normalizeId(txt) || rawId;
+        }
+
+        if (activeReachNode === startNodeId) {
+          clearReachTracing();
+          return;
+        }
+        activeReachNode = startNodeId;
+
+        // Helper to get neighbors across ID variants
+        function getOutNeighbors(curr) {
+          const res = new Set();
+          const keys = [curr, 'N_' + curr, curr.replace(/^N_/, '')];
+          keys.forEach(k => {
+            const s = adjOut.get(k);
+            if (s) s.forEach(item => { res.add(normalizeId(item)); });
+          });
+          return Array.from(res);
+        }
+
+        function getInNeighbors(curr) {
+          const res = new Set();
+          const keys = [curr, 'N_' + curr, curr.replace(/^N_/, '')];
+          keys.forEach(k => {
+            const s = adjIn.get(k);
+            if (s) s.forEach(item => { res.add(normalizeId(item)); });
+          });
+          return Array.from(res);
+        }
+
+        // BFS Upstream (Callers / Ancestors)
+        const upstreamNodes = new Set();
+        const qUp = [startNodeId];
+        while (qUp.length > 0) {
+          const curr = qUp.shift();
+          const preds = getInNeighbors(curr);
+          preds.forEach(p => {
+            if (!upstreamNodes.has(p) && p !== startNodeId) {
+              upstreamNodes.add(p);
+              qUp.push(p);
+            }
+          });
+        }
+
+        // BFS Downstream (Dependencies / Successors)
+        const downstreamNodes = new Set();
+        const qDown = [startNodeId];
+        while (qDown.length > 0) {
+          const curr = qDown.shift();
+          const succs = getOutNeighbors(curr);
+          succs.forEach(s => {
+            if (!downstreamNodes.has(s) && s !== startNodeId) {
+              downstreamNodes.add(s);
+              qDown.push(s);
+            }
+          });
+        }
+
+        // Apply Direct Inline Node Styling (100% Reliable across all browsers)
+        nodes.forEach(n => {
+          let nId = normalizeId(n.id || n.textContent?.trim().split(/\s+/)[0] || '');
+          n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
+
+          const isFocus = (nId === startNodeId || nId === 'N_' + startNodeId || startNodeId === 'N_' + nId || n === node);
+          const isUp = upstreamNodes.has(nId) || upstreamNodes.has(nId.replace(/^N_/, '')) || upstreamNodes.has('N_' + nId);
+          const isDown = downstreamNodes.has(nId) || downstreamNodes.has(nId.replace(/^N_/, '')) || downstreamNodes.has('N_' + nId);
+
+          if (isFocus) {
+            n.classList.add('reach-focused');
+            n.style.opacity = '1';
+            n.style.transform = 'scale(1.06)';
+            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+              shape.style.stroke = '#f59e0b';
+              shape.style.strokeWidth = '4px';
+              shape.style.fill = '#fef3c7';
+            });
+            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+              txt.style.color = '#78350f';
+              txt.style.fontWeight = 'bold';
+            });
+          } else if (isUp) {
+            n.classList.add('reach-upstream');
+            n.style.opacity = '1';
+            n.style.transform = 'scale(1.02)';
+            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+              shape.style.stroke = '#0284c7';
+              shape.style.strokeWidth = '3.5px';
+              shape.style.fill = '#e0f2fe';
+            });
+            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+              txt.style.color = '#0369a1';
+              txt.style.fontWeight = 'bold';
+            });
+          } else if (isDown) {
+            n.classList.add('reach-downstream');
+            n.style.opacity = '1';
+            n.style.transform = 'scale(1.02)';
+            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+              shape.style.stroke = '#16a34a';
+              shape.style.strokeWidth = '3.5px';
+              shape.style.fill = '#dcfce7';
+            });
+            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+              txt.style.color = '#14532d';
+              txt.style.fontWeight = 'bold';
+            });
+          } else {
+            n.classList.add('reach-dimmed');
+            n.style.opacity = '0.12';
+            n.style.transform = 'none';
+            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+              shape.style.stroke = '';
+              shape.style.strokeWidth = '';
+              shape.style.fill = '';
+            });
+          }
+        });
+
+        // Apply Direct Inline Edge Styling
+        edgeEntries.forEach(entry => {
+          entry.elem.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
+          const u = entry.u;
+          const v = entry.v;
+
+          if (u && v) {
+            const uFocus = (u === startNodeId || u === 'N_' + startNodeId);
+            const vFocus = (v === startNodeId || v === 'N_' + startNodeId);
+            const uUp = upstreamNodes.has(u) || upstreamNodes.has(u.replace(/^N_/, ''));
+            const vUp = upstreamNodes.has(v) || upstreamNodes.has(v.replace(/^N_/, ''));
+            const uDown = downstreamNodes.has(u) || downstreamNodes.has(u.replace(/^N_/, ''));
+            const vDown = downstreamNodes.has(v) || downstreamNodes.has(v.replace(/^N_/, ''));
+
+            if ((uUp || uFocus) && (vUp || vFocus) && (uUp || vUp)) {
+              entry.elem.classList.add('reach-highlight-up');
+              entry.elem.style.opacity = '1';
+              entry.elem.querySelectorAll('path').forEach(p => {
+                p.style.stroke = '#0284c7';
+                p.style.strokeWidth = '4px';
+              });
+            } else if ((uDown || uFocus) && (vDown || vFocus) && (uDown || vDown)) {
+              entry.elem.classList.add('reach-highlight-down');
+              entry.elem.style.opacity = '1';
+              entry.elem.querySelectorAll('path').forEach(p => {
+                p.style.stroke = '#16a34a';
+                p.style.strokeWidth = '4px';
+              });
+            } else {
+              entry.elem.classList.add('reach-dimmed');
+              entry.elem.style.opacity = '0.06';
+              entry.elem.querySelectorAll('path').forEach(p => {
+                p.style.stroke = '';
+                p.style.strokeWidth = '';
+              });
+            }
+          } else {
+            entry.elem.classList.add('reach-dimmed');
+            entry.elem.style.opacity = '0.06';
+          }
+        });
+
+        // Show floating Reach Bar
+        const reachBar = document.getElementById('reach-bar');
+        const reachTitle = document.getElementById('reach-title');
+        const reachUp = document.getElementById('reach-up-count');
+        const reachDown = document.getElementById('reach-down-count');
+        if (reachBar && reachTitle && reachUp && reachDown) {
+          const labelText = node.querySelector('text, span, div')?.textContent?.trim() || startNodeId;
+          reachTitle.innerHTML = `🎯 <b>Đang chọn:</b> ${htmlEscape(labelText.slice(0, 26))}`;
+          reachUp.textContent = `🔵 ${upstreamNodes.size} Nút gọi đến (Upstream)`;
+          reachDown.textContent = `🟢 ${downstreamNodes.size} Nút phụ thuộc (Downstream)`;
+          reachBar.style.display = 'flex';
+        }
+      }
+
+      // Attach direct click & pointer handlers on all nodes
       nodes.forEach(node => {
+        node.style.cursor = 'pointer';
         node.onclick = (e) => {
           e.stopPropagation();
-          let rawId = node.id || '';
-          let match = rawId.match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
-          let startNodeId = match ? match[1] : rawId;
-          if (!startNodeId) {
-            startNodeId = node.textContent?.trim().split(/\s+/)[0] || rawId;
-          }
-
-          if (activeReachNode === startNodeId) {
-            clearReachTracing();
-            return;
-          }
-          activeReachNode = startNodeId;
-
-          // BFS Upstream (Callers)
-          const upstreamNodes = new Set();
-          const qUp = [startNodeId];
-          while (qUp.length > 0) {
-            const curr = qUp.shift();
-            const preds = adjIn.get(curr) || [];
-            preds.forEach(p => {
-              if (!upstreamNodes.has(p) && p !== startNodeId) {
-                upstreamNodes.add(p);
-                qUp.push(p);
-              }
-            });
-          }
-
-          // BFS Downstream (Dependencies)
-          const downstreamNodes = new Set();
-          const qDown = [startNodeId];
-          while (qDown.length > 0) {
-            const curr = qDown.shift();
-            const succs = adjOut.get(curr) || [];
-            succs.forEach(s => {
-              if (!downstreamNodes.has(s) && s !== startNodeId) {
-                downstreamNodes.add(s);
-                qDown.push(s);
-              }
-            });
-          }
-
-          // Apply styling
-          nodes.forEach(n => {
-            let nIdMatch = (n.id || '').match(/flowchart-([A-Za-z0-9_\-]+)-\d+/);
-            let nId = nIdMatch ? nIdMatch[1] : (n.id || n.textContent?.trim().split(/\s+/)[0]);
-            n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
-
-            if (nId === startNodeId || n === node) {
-              n.classList.add('reach-focused');
-            } else if (upstreamNodes.has(nId)) {
-              n.classList.add('reach-upstream');
-            } else if (downstreamNodes.has(nId)) {
-              n.classList.add('reach-downstream');
-            } else {
-              n.classList.add('reach-dimmed');
-            }
-          });
-
-          // Style edges
-          edgeElems.forEach(edge => {
-            edge.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
-            let cls = edge.getAttribute('class') || '';
-            let ls = cls.match(/LS-([A-Za-z0-9_\-]+)/);
-            let le = cls.match(/LE-([A-Za-z0-9_\-]+)/);
-            if (ls && le) {
-              const u = ls[1];
-              const v = le[1];
-              if ((u === startNodeId || upstreamNodes.has(u)) && (v === startNodeId || upstreamNodes.has(v))) {
-                edge.classList.add('reach-highlight-up');
-              } else if ((u === startNodeId || downstreamNodes.has(u)) && (v === startNodeId || downstreamNodes.has(v))) {
-                edge.classList.add('reach-highlight-down');
-              } else {
-                edge.classList.add('reach-dimmed');
-              }
-            } else {
-              edge.classList.add('reach-dimmed');
-            }
-          });
-
-          // Show Reach Bar
-          const reachBar = document.getElementById('reach-bar');
-          const reachTitle = document.getElementById('reach-title');
-          const reachUp = document.getElementById('reach-up-count');
-          const reachDown = document.getElementById('reach-down-count');
-          if (reachBar && reachTitle && reachUp && reachDown) {
-            const labelText = node.querySelector('text')?.textContent?.trim() || startNodeId;
-            reachTitle.textContent = `🎯 Focus: ${labelText.slice(0, 24)}`;
-            reachUp.textContent = `${upstreamNodes.size} Upstream`;
-            reachDown.textContent = `${downstreamNodes.size} Downstream`;
-            reachBar.style.display = 'flex';
-          }
+          handleNodeClick(node);
         };
       });
+
+      // Global delegation on SVG with distance tracking to distinguish drag vs tap
+      let ptX = 0, ptY = 0, ptT = 0;
+      svgElement.addEventListener('pointerdown', (e) => {
+        ptX = e.clientX;
+        ptY = e.clientY;
+        ptT = Date.now();
+      }, { passive: true });
+
+      svgElement.addEventListener('pointerup', (e) => {
+        const dist = Math.hypot(e.clientX - ptX, e.clientY - ptY);
+        const dt = Date.now() - ptT;
+        if (dist < 10 && dt < 500) {
+          const targetNode = findClosestNode(e.target);
+          if (targetNode) {
+            e.stopPropagation();
+            handleNodeClick(targetNode);
+          }
+        }
+      });
+    }
+
+    function htmlEscape(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     const reachClearBtn = document.getElementById('reach-clear-btn');
@@ -2094,12 +2304,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         isFlowAnimated = !isFlowAnimated;
         if (isFlowAnimated) {
           diagramOutput.classList.add('flow-animated');
-          toggleFlowBtn.style.background = '#e0e7ff';
-          toggleFlowBtn.style.color = '#3730a3';
+          toggleFlowBtn.style.background = '#6366f1';
+          toggleFlowBtn.style.color = '#ffffff';
+          toggleFlowBtn.innerHTML = '<span>✨</span> <b>Luồng (Đang chạy)</b>';
         } else {
           diagramOutput.classList.remove('flow-animated');
           toggleFlowBtn.style.background = 'transparent';
           toggleFlowBtn.style.color = 'var(--text-main)';
+          toggleFlowBtn.innerHTML = '<span>✨</span> <span>Luồng</span>';
         }
       };
     }
@@ -2111,91 +2323,63 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const svgElement = diagramOutput.querySelector('svg');
         if (!svgElement) return alert('Chưa có sơ đồ để xuất Share Card!');
 
-        const canvas = document.createElement('canvas');
-        canvas.width = 1200;
-        canvas.height = 630;
-        const ctx = canvas.getContext('2d');
+        const box = svgElement.viewBox?.baseVal;
+        const svgW = (box && box.width) ? box.width : (svgElement.clientWidth || 800);
+        const svgH = (box && box.height) ? box.height : (svgElement.clientHeight || 600);
 
-        // Draw Premium Dark Gradient Background
-        const grad = ctx.createLinearGradient(0, 0, 1200, 630);
-        grad.addColorStop(0, '#0f172a');
-        grad.addColorStop(0.5, '#1e1b4b');
-        grad.addColorStop(1, '#090d16');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 1200, 630);
+        const cardW = 1200;
+        const cardH = 630;
+        const cardBoxX = 60;
+        const cardBoxY = 160;
+        const cardBoxW = 1080;
+        const cardBoxH = 410;
 
-        // Header Title
-        ctx.fillStyle = '#818cf8';
-        ctx.font = 'bold 14px Inter, sans-serif';
-        ctx.fillText('EXCALIFLOW STUDIO • ARCHITECTURE MAP', 60, 60);
+        const maxW = cardBoxW - 40;
+        const maxH = cardBoxH - 50;
+        const scale = Math.min(maxW / svgW, maxH / svgH, 1.2);
+        const drawW = svgW * scale;
+        const drawH = svgH * scale;
+        const drawX = cardBoxX + (cardBoxW - drawW) / 2;
+        const drawY = cardBoxY + 36 + (cardBoxH - 36 - drawH) / 2;
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 36px "Shantell Sans", Georgia, sans-serif';
+        const innerSvgContent = svgElement.innerHTML;
         const projectTitle = document.title || 'Codebase Architecture';
-        ctx.fillText(projectTitle, 60, 105);
 
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '16px Inter, sans-serif';
-        ctx.fillText('Local-First & Air-Gapped Codebase Intelligence Engine', 60, 135);
+        const fullCardSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cardW} ${cardH}" width="${cardW}" height="${cardH}">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+  </defs>
+  <rect width="${cardW}" height="${cardH}" fill="url(#cardGrad)" rx="16" />
+  <text x="60" y="60" fill="#818cf8" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="bold" letter-spacing="1.5">EXCALIFLOW STUDIO • ARCHITECTURE MAP</text>
+  <text x="60" y="105" fill="#ffffff" font-family="'Shantell Sans', Georgia, sans-serif" font-size="34" font-weight="bold">${htmlEscape(projectTitle)}</text>
+  <text x="60" y="135" fill="#94a3b8" font-family="Inter, system-ui, sans-serif" font-size="16">Local-First &amp; Air-Gapped Codebase Intelligence Engine</text>
 
-        // Render SVG into card
-        const svgData = new XMLSerializer().serializeToString(svgElement);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        const img = new Image();
+  <!-- Window Frame -->
+  <rect x="${cardBoxX}" y="${cardBoxY}" width="${cardBoxW}" height="${cardBoxH}" rx="12" fill="#0b1120" stroke="#3b82f6" stroke-width="1.5" />
+  <circle cx="${cardBoxX + 24}" cy="${cardBoxY + 20}" r="5" fill="#ef4444" />
+  <circle cx="${cardBoxX + 40}" cy="${cardBoxY + 20}" r="5" fill="#f59e0b" />
+  <circle cx="${cardBoxX + 56}" cy="${cardBoxY + 20}" r="5" fill="#10b981" />
 
-        img.onload = () => {
-          const cardBoxX = 60;
-          const cardBoxY = 160;
-          const cardBoxW = 1080;
-          const cardBoxH = 410;
+  <!-- Embedded Architecture Diagram -->
+  <g transform="translate(${drawX}, ${drawY}) scale(${scale})">
+    ${innerSvgContent}
+  </g>
 
-          // Mock window container
-          ctx.fillStyle = '#0b1120';
-          ctx.strokeStyle = '#3b82f6';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.roundRect(cardBoxX, cardBoxY, cardBoxW, cardBoxH, 12);
-          ctx.fill();
-          ctx.stroke();
+  <text x="60" y="600" fill="#64748b" font-family="Inter, system-ui, sans-serif" font-size="12">Generated by ExcaliFlow Studio • 100% Offline • github.com/Nakazasen/ExcaliFlow-Studio</text>
+</svg>`;
 
-          // Window header dots
-          ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(cardBoxX + 24, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(cardBoxX + 40, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(cardBoxX + 56, cardBoxY + 20, 5, 0, Math.PI * 2); ctx.fill();
-
-          // Calculate aspect scale for diagram
-          const box = svgElement.viewBox?.baseVal;
-          const svgW = (box && box.width) ? box.width : (svgElement.clientWidth || 800);
-          const svgH = (box && box.height) ? box.height : (svgElement.clientHeight || 600);
-
-          const maxW = cardBoxW - 40;
-          const maxH = cardBoxH - 50;
-          const scale = Math.min(maxW / svgW, maxH / svgH, 1.2);
-          const drawW = svgW * scale;
-          const drawH = svgH * scale;
-          const drawX = cardBoxX + (cardBoxW - drawW) / 2;
-          const drawY = cardBoxY + 36 + (cardBoxH - 36 - drawH) / 2;
-
-          ctx.drawImage(img, drawX, drawY, drawW, drawH);
-
-          // Footer
-          ctx.fillStyle = '#64748b';
-          ctx.font = '12px Inter, sans-serif';
-          ctx.fillText('Generated by ExcaliFlow Studio • 100% Offline • github.com/Nakazasen/ExcaliFlow-Studio', 60, 600);
-
-          const pngUrl = canvas.toDataURL('image/png');
-          const a = document.createElement('a');
-          a.href = pngUrl;
-          a.download = `architecture-share-card.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          alert('Không thể tạo Share Card từ sơ đồ hiện tại!');
-        };
-        img.src = url;
+        // Download High-Resolution Vector Share Card SVG directly
+        const svgBlob = new Blob([fullCardSvg], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const a = document.createElement('a');
+        a.href = svgUrl;
+        a.download = `architecture-share-card.svg`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(svgUrl), 2000);
       };
     }
 
