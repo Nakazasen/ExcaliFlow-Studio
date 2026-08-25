@@ -266,12 +266,12 @@ ExcaliFlow-Studio/
 ├── scripts/
 │   └── generate_diagram.py # Bộ sinh sơ đồ kiến trúc & SVG Editorial
 ├── assets/vendor/          # Thư viện JavaScript offline (Mermaid, Panzoom)
-├── docs/                   # Tài liệu hướng dẫn & thiết lập AI Bridge
+├── docs/                   # Hướng dẫn thiết lập & Sổ tay bảo trì (maintenance-and-architecture.md)
 ├── examples/               # Mẫu brief sơ đồ & tệp mẫu RAG trace
-├── tests/                  # Bộ kiểm thử tự động (47 tests)
-├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.1)
+├── tests/                  # Bộ kiểm thử tự động (64 tests)
+├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.5)
 ├── pyproject.toml          # Cấu hình gói dự án
-└── VERSION                 # Tệp định danh phiên bản
+└── VERSION                 # Tệp định danh phiên bản (0.1.3)
 ```
 
 ---

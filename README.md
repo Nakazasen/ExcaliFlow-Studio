@@ -266,12 +266,12 @@ ExcaliFlow-Studio/
 ├── scripts/
 │   └── generate_diagram.py # Universal architecture & editorial diagram generator
 ├── assets/vendor/          # Pinned offline JavaScript runtimes (Mermaid, Panzoom)
-├── docs/                   # Setup playbooks & architectural guides
+├── docs/                   # Setup playbooks & Maintenance manuals (maintenance-and-architecture.md)
 ├── examples/               # Sample briefs & RAG trace payloads
-├── tests/                  # Deterministic test suite (47 tests)
-├── SKILL.md                # AI Agent skill protocol definition (v3.1)
+├── tests/                  # Deterministic test suite (64 tests)
+├── SKILL.md                # AI Agent skill protocol definition (v3.5)
 ├── pyproject.toml          # Package configuration
-└── VERSION                 # Semantic version file
+└── VERSION                 # Semantic version file (0.1.3)
 ```
 
 ---
