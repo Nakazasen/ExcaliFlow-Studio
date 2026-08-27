@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import shutil
+import json
+import sys
+from importlib import metadata
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 
 SKILL_CONTENT = ("VERSION", "SKILL.md", "THIRD_PARTY_LICENSES.md", "agents", "assets", "docs", "scripts", "src", "tests")
@@ -32,6 +36,25 @@ HOSTS = tuple(sorted({*USER_TARGETS, *WORKSPACE_TARGETS, "antigravity", "agy", "
 
 
 def repository_root() -> Path:
+    """Resolve a complete source/portable root across editable and wheel installs."""
+    candidates = [Path(__file__).resolve().parents[2], Path(sys.prefix)]
+    try:
+        direct_url = metadata.distribution("excaliflow-studio").read_text("direct_url.json")
+        if direct_url:
+            parsed = urlparse(str(json.loads(direct_url).get("url", "")))
+            if parsed.scheme == "file":
+                path = unquote(parsed.path)
+                if parsed.netloc:
+                    path = f"//{parsed.netloc}{path}"
+                elif sys.platform.startswith("win") and path.startswith("/"):
+                    path = path[1:]
+                candidates.insert(0, Path(path))
+    except (metadata.PackageNotFoundError, json.JSONDecodeError, OSError, TypeError, ValueError):
+        pass
+    for candidate in candidates:
+        root = candidate.resolve()
+        if (root / "scripts" / "generate_diagram.py").is_file() and (root / "assets" / "vendor").is_dir():
+            return root
     return Path(__file__).resolve().parents[2]
 
 

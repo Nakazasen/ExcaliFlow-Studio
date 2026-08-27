@@ -3,14 +3,25 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from excaliflow.installer import doctor, install_skill, resolve_target
+from excaliflow.installer import doctor, install_skill, repository_root, resolve_target
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackageEntrypointTests(unittest.TestCase):
+    def test_repository_root_resolves_editable_install_direct_url(self):
+        class EditableDistribution:
+            @staticmethod
+            def read_text(name):
+                self.assertEqual(name, "direct_url.json")
+                return '{"dir_info":{"editable":true},"url":"' + ROOT.as_uri() + '"}'
+
+        with patch("excaliflow.installer.metadata.distribution", return_value=EditableDistribution()):
+            self.assertEqual(repository_root(), ROOT)
+
     def test_package_cli_exposes_the_generator_help(self):
         result = subprocess.run(
             [sys.executable, "-m", "excaliflow.cli", "--help"],

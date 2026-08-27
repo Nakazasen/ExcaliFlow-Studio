@@ -86,7 +86,7 @@ excaliflow --open --with-excalidraw
 If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Type `/excaliflow` in your AI chat window.
-2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.5)**:
+2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.6)**:
    - `1` 🏢 **Architecture & Excalidraw (Reach Tracing + Flow Motion)**
    - `2` 🔍 **Architecture Diff Comparison (`--diff`)**
    - `3` 🎴 **1200×630 README Share Card (`--share-card`)**
@@ -94,8 +94,10 @@ If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, G
    - `5` 📊 **Editorial Diagrams (Wardley, Sankey, Journey, Slide)**
    - `6` 🔍 **Source-Backed Codebase Q&A**
    - `7` 🔗 **Evidence Graph for RAG**
-   - `8` 🩺 **Atlas AI Bridge Doctor**
-   - `9` 🔄 **Check for Updates**
+   - `8` 🩺 **Atlas AI Bridge Lifecycle**
+   - `9` 📖 **Atlas, Explain, Watch & Offline Check**
+   - `10` 🧩 **Install/Doctor for AI Hosts**
+   - `11` 🔄 **Check for Updates**
 3. Reply with a number (e.g. `1` or `2`) or a short description—**no need to memorize complex CLI flags!**
 
 ---
@@ -111,8 +113,10 @@ If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, G
 | **5. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
 | **6. Source-Backed Q&A** | Answers questions about classes/functions/imports with `file:line` citations | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
-| **8. Atlas AI Bridge & Doctor** | Manages local sidecar bridges (`:8788`) and checks connection to Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
-| **9. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
+| **8. Atlas AI Bridge Lifecycle** | Manages Atlas Bridge (`:8788`), optional AIOS IDE bridge (`:8585`), and Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **9. Atlas, Explain & Monitoring** | Generates Atlas/guides, watches source changes, and verifies offline assets | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
+| **10. AI Host Installation** | Lists targets, installs, and diagnoses portable skills for supported AI hosts | `excaliflow targets/install/doctor` |
+| **11. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
 
 ---
 
@@ -268,8 +272,8 @@ ExcaliFlow-Studio/
 ├── assets/vendor/          # Pinned offline JavaScript runtimes (Mermaid, Panzoom)
 ├── docs/                   # Setup playbooks & Maintenance manuals (maintenance-and-architecture.md)
 ├── examples/               # Sample briefs & RAG trace payloads
-├── tests/                  # Deterministic test suite (64 tests)
-├── SKILL.md                # AI Agent skill protocol definition (v3.5)
+├── tests/                  # Deterministic test suite (65 tests)
+├── SKILL.md                # AI Agent skill protocol definition (v3.6)
 ├── pyproject.toml          # Package configuration
 └── VERSION                 # Semantic version file (0.1.3)
 ```
@@ -280,4 +284,3 @@ ExcaliFlow-Studio/
 
 This project is licensed under the [MIT License](LICENSE).
 Third-party bundled libraries are documented in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
-

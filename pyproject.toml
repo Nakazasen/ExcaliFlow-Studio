@@ -18,3 +18,7 @@ excaliflow = "excaliflow.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.data-files]
+scripts = ["scripts/generate_diagram.py"]
+"assets/vendor" = ["assets/vendor/mermaid.min.js", "assets/vendor/panzoom.min.js"]

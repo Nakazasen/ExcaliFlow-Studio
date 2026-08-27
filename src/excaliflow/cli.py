@@ -174,7 +174,7 @@ def main() -> None:
             if not ready:
                 raise SystemExit(1)
         return
-    package_root = Path(__file__).resolve().parents[2]
+    package_root = repository_root()
     legacy_script = package_root / "scripts" / "generate_diagram.py"
     if not legacy_script.is_file():
         raise SystemExit(f"ExcaliFlow generator is missing: {legacy_script}")

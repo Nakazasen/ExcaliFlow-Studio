@@ -3,13 +3,13 @@ name: excaliflow
 description: "Trung tâm điều khiển trực quan hóa kiến trúc ExcaliFlow Studio: Phân tích codebase/Graphify thành sơ đồ Excalidraw, Codebase Atlas, sơ đồ Editorial (Wardley, Sankey, Journey, Architecture), và Evidence Graph cho RAG."
 ---
 
-# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.5)
+# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.6)
 
 > **MỤC TIÊU CỐT LÕI**: Khi người dùng gõ `/excaliflow` (hoặc gọi skill này mà chưa chỉ định cụ thể tham số phức tạp), Agent **BẮT BUỘC** hiển thị ngay **BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard)** để người dùng chọn nhanh tính năng mong muốn (bằng số hoặc mô tả) thay vì phải tự nhớ lệnh.
 
 ---
 
-## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v3.5)
+## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v3.6)
 
 Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hiển thị ngay bảng tính năng sau:
 
@@ -19,11 +19,13 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 | **2** | 🔍 **So Sánh Kiến Trúc (Diff Mode)** | So sánh độ lệch kiến trúc giữa 2 snapshot hoặc git commit (Added, Removed, Modified) | `excaliflow --diff <file_or_git_ref> --open` |
 | **3** | 🎴 **Thẻ Ảnh Bìa 1200×630 (Share Card)**| Xuất ảnh bìa kiến trúc chuẩn 1200×630 dùng cho `README.md` và chia sẻ mạng xã hội | `excaliflow --share-card "README_CARD.svg" --open` |
 | **4** | 🗺️ **Codebase Atlas (Học Codebase)** | Giao diện tương tác đọc hiểu codebase, giải thích ứng dụng, đọc sơ đồ SVG native | `excaliflow open --dir .` |
-| **5** | 📊 **Sơ Đồ Editorial (Slide 16:9 / Doc)** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Architecture Slide | `excaliflow --editorial-out <out> --visual-type <type>` |
+| **5** | 📊 **Editorial & Business Reports** | Xuất SVG/HTML với 11 grammar: architecture, Wardley, Sankey, Journey, KPI, Funnel, Timeline, Process, Quadrant, Matrix, Risk | `excaliflow --editorial-out <out> --visual-type <type>` |
 | **6** | 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng** | Phân tích AST và trả lời câu hỏi về hàm/class/import kèm file:line dẫn chứng | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7** | 🔗 **Evidence Graph Cho RAG & Điều Tra** | Chuyển đổi `rag-trace.json` $\to$ Bản đồ tương tác xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
-| **8** | 🩺 **Atlas AI Bridge Doctor** | Kiểm tra trạng thái kết nối Sidecar Daemon (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
-| **9** | 🔄 **Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
+| **8** | 🩺 **Atlas AI Bridge Lifecycle** | Khởi tạo/chạy/chẩn đoán Atlas Bridge (`:8788`), AIOS IDE bridge (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **9** | 📖 **Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và render lại, kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
+| **10** | 🧩 **Cài Skill Cho AI Host** | Liệt kê target, cài và chẩn đoán skill cho Codex, Claude, Copilot, Gemini, Antigravity và host khác | `excaliflow targets/install/doctor` |
+| **11** | 🔄 **Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
 
 ---
 
@@ -69,6 +71,7 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   2. `wardley`: Bản đồ tiến hóa công nghệ (Genesis $\to$ Custom $\to$ Product $\to$ Commodity) kèm chuỗi giá trị.
   3. `sankey`: Biểu đồ dòng chảy dữ liệu / luân chuyển giá trị giữa các node.
   4. `journey`: Bản đồ trải nghiệm người dùng / các giai đoạn phát triển theo thời gian.
+  5. `kpi`, `funnel`, `timeline`, `process`, `quadrant`, `matrix`, `risk`: Các báo cáo kinh doanh và vận hành.
 - **Lệnh thực thi**:
   ```powershell
   excaliflow --dir . --editorial-out "diagram.svg" --visual-type wardley --visual-data "brief.json" --canvas slide
@@ -93,12 +96,34 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 
 ### Nhóm 8: Atlas AI Bridge Doctor
 - **Mục đích**: Chẩn đoán kết nối backend AI cục bộ cho Atlas.
+- **Cổng mặc định**: Atlas Bridge `127.0.0.1:8788`; AIOS IDE bridge `127.0.0.1:8585`; Gemini Web2API `127.0.0.1:8081`.
 - **Lệnh thực thi**:
   ```powershell
+  excaliflow bridge init --dir "<project_path>"
+  excaliflow bridge start --dir "<project_path>"
   excaliflow bridge doctor --dir "<project_path>"
   ```
 
-### Nhóm 9: Kiểm Tra Cập Nhật
+### Nhóm 9: Atlas, Explain, Watch & Offline Check
+- **Mục đích**: Xuất Atlas/guide tĩnh, theo dõi thay đổi source và xác minh tài nguyên offline.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow atlas --dir "<project_path>" --audience learner --out "codebase-atlas.html"
+  excaliflow explain --dir "<project_path>" --audience engineer --out "CODEBASE_GUIDE.md"
+  excaliflow --dir "<project_path>" --watch
+  excaliflow --offline-check
+  ```
+
+### Nhóm 10: Cài Đặt Skill Cho AI Host
+- **Mục đích**: Xem target được hỗ trợ, cài skill và xác minh đúng vị trí host.
+- **Lệnh thực thi**:
+  ```powershell
+  excaliflow targets
+  excaliflow install --host antigravity
+  excaliflow doctor --host antigravity
+  ```
+
+### Nhóm 11: Kiểm Tra Cập Nhật
 - **Mục đích**: Kiểm tra phiên bản mới nhất từ kho GitHub ExcaliFlow-Studio.
 - **Lệnh thực thi**:
   ```powershell

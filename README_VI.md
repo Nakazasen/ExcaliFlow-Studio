@@ -86,7 +86,7 @@ excaliflow --open --with-excalidraw
 Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Chỉ cần gõ `/excaliflow` trong khung chat AI.
-2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.5)**:
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.6)**:
    - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw (Reach Tracing + Luồng Chuyển Động)**
    - `2` 🔍 **So Sánh Độ Lệch Kiến Trúc (`--diff`)**
    - `3` 🎴 **Thẻ Ảnh Bìa 1200×630 (`--share-card`)**
@@ -94,8 +94,10 @@ Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor
    - `5` 📊 **Sơ Đồ Xuất Bản Editorial (Wardley, Sankey, Journey, Slide)**
    - `6` 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng**
    - `7` 🔗 **Evidence Graph Cho RAG**
-   - `8` 🩺 **Atlas AI Bridge Doctor**
-   - `9` 🔄 **Kiểm Tra Bản Cập Nhật**
+   - `8` 🩺 **Vòng Đời Atlas AI Bridge**
+   - `9` 📖 **Atlas, Explain, Watch & Offline Check**
+   - `10` 🧩 **Cài Đặt/Chẩn Đoán Skill Cho AI Host**
+   - `11` 🔄 **Kiểm Tra Bản Cập Nhật**
 3. Bạn chỉ cần gõ số (vd: `1` hoặc `2`)—**không cần nhớ bất kỳ cờ lệnh CLI phức tạp nào!**
 
 ---
@@ -111,8 +113,10 @@ Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor
 | **5. Sơ Đồ Xuất Bản Editorial** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Slide 16:9, Báo cáo KPI/Risk | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
 | **6. Hỏi Đáp Có Dẫn Chứng** | Trả lời câu hỏi về hàm/class/import kèm dẫn chứng chính xác `file:line` | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7. Evidence Graph Cho RAG** | Chuyển đổi log RAG thành bản đồ trực quan xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
-| **8. Atlas AI Bridge & Chẩn Đoán** | Quản lý cầu nối AI Sidecar (`:8788`) và kiểm tra kết nối Gemini Web2API (`:8081`) | `excaliflow bridge doctor --dir .` |
-| **9. Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
+| **8. Vòng Đời Atlas AI Bridge** | Quản lý Atlas Bridge (`:8788`), AIOS IDE bridge tùy chọn (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **9. Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
+| **10. Cài Skill Cho AI Host** | Liệt kê target, cài đặt và chẩn đoán skill portable cho các AI host | `excaliflow targets/install/doctor` |
+| **11. Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
 
 ---
 
@@ -268,8 +272,8 @@ ExcaliFlow-Studio/
 ├── assets/vendor/          # Thư viện JavaScript offline (Mermaid, Panzoom)
 ├── docs/                   # Hướng dẫn thiết lập & Sổ tay bảo trì (maintenance-and-architecture.md)
 ├── examples/               # Mẫu brief sơ đồ & tệp mẫu RAG trace
-├── tests/                  # Bộ kiểm thử tự động (64 tests)
-├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.5)
+├── tests/                  # Bộ kiểm thử tự động (65 tests)
+├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.6)
 ├── pyproject.toml          # Cấu hình gói dự án
 └── VERSION                 # Tệp định danh phiên bản (0.1.3)
 ```
