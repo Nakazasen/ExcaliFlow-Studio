@@ -70,6 +70,8 @@ excaliflow --open --with-excalidraw
 | 🚀 **Standalone Mode** *(Default — Zero Setup)* | ExcaliFlow automatically scans your code AST, directory structure, and import relations on its own. | You want an instant, beautiful architecture diagram of any project in 5 seconds without installing anything else. |
 | ⚡ **Supercharged with `/graphify`** *(Optional Power-Up)* | **What is Graphify?** An open-source tool that extracts semantic knowledge graphs, detects central God-nodes, and clusters community hyperedges. If `graphify` is installed on your system, ExcaliFlow **automatically detects it** and renders deep multidimensional knowledge graphs without any extra configuration! | You have large, complex codebases and want AI-powered community detection and God-node structural analysis. |
 
+ExcaliFlow accepts Graphify `>=0.9.48,<0.10`: patch updates remain available, while an unvalidated breaking minor release cannot silently enter the workflow. `uv.lock` intentionally records one exact version for reproducible development and CI. At runtime an incompatible CLI falls back to the internal AST scanner; `--strict` fails closed with an actionable install command.
+
 ```text
 ┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
 │  Your Codebase          │ ────> │  ExcaliFlow Standalone (AST / Code)  │ ────> │  Interactive HTML Viewer     │

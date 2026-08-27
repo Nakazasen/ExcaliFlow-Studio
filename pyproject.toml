@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
-    "graphifyy>=0.9.0",
+    "graphifyy>=0.9.48,<0.10",
 ]
 
 [project.scripts]

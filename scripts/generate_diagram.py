@@ -42,6 +42,13 @@ EDITORIAL_CANVASES = {
 EDITORIAL_TYPES = {"architecture", "sankey", "wardley", "journey"}
 REPORT_TYPES = {"kpi", "funnel", "timeline", "quadrant", "process", "matrix", "risk"}
 
+# Graphify is pre-1.0, so a minor release may contain breaking changes. Allow
+# compatible patch upgrades while requiring an ExcaliFlow validation before
+# crossing into the next minor series.
+GRAPHIFY_MIN_VERSION = (0, 9, 48)
+GRAPHIFY_MAX_VERSION = (0, 10, 0)
+GRAPHIFY_VERSION_SPEC = ">=0.9.48,<0.10"
+
 
 class EditorialValidationError(ValueError):
     """Raised when a visual brief cannot truthfully produce an editorial artifact."""
@@ -453,6 +460,49 @@ def get_latest_source_mtime(project_root: Path) -> float:
     return latest_mtime
 
 
+def graphify_version_status(graphify_bin: str) -> tuple[bool, str]:
+    """Return whether the Graphify CLI is inside ExcaliFlow's tested window."""
+    try:
+        proc = subprocess.run(
+            [graphify_bin, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"khong doc duoc phien ban ({exc})"
+
+    output = (proc.stdout or proc.stderr or "").strip()
+    match = re.search(r"(?:^|\s)(\d+)\.(\d+)\.(\d+)(?:\s|$)", output)
+    if proc.returncode != 0 or not match:
+        detail = output or f"exit code {proc.returncode}"
+        return False, f"khong nhan dien duoc phien ban ({detail})"
+
+    version = tuple(int(part) for part in match.groups())
+    version_text = ".".join(str(part) for part in version)
+    compatible = GRAPHIFY_MIN_VERSION <= version < GRAPHIFY_MAX_VERSION
+    return compatible, version_text
+
+
+def compatible_graphify_binary(graphify_bin: str | None, strict: bool = False) -> str | None:
+    """Validate the executable before allowing automatic Graphify extraction."""
+    if not graphify_bin:
+        return None
+    compatible, detail = graphify_version_status(graphify_bin)
+    if compatible:
+        return graphify_bin
+
+    message = (
+        f"Graphify {detail} nam ngoai cua so tuong thich {GRAPHIFY_VERSION_SPEC}. "
+        f'Hãy cai/cap nhat bang: uv tool install --force "graphifyy{GRAPHIFY_VERSION_SPEC}"'
+    )
+    if strict:
+        raise RuntimeError(f"Fail-Closed: {message}")
+    print(f"[!] Canh bao: {message} Khong tu dong chay Graphify; dung do thi hien co hoac AST.")
+    return None
+
+
 def run_graphify_extract(project_root: Path, graphify_bin: str) -> bool:
     """Kich hoat Graphify headless extraction va bao cao ket qua ro rang, khong giau loi."""
     try:
@@ -512,6 +562,8 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
         graph_mtime = selected_graph.stat().st_mtime
         if latest_src_mtime > graph_mtime:
             if auto_trigger and graphify_bin:
+                graphify_bin = compatible_graphify_binary(graphify_bin, strict=strict)
+            if auto_trigger and graphify_bin:
                 print(f"[*] Phat hien ma nguon co thay doi sau lan tao do thi ({latest_src_mtime:.1f} > {graph_mtime:.1f}). Tien hanh cap nhat Graphify...")
                 success = run_graphify_extract(project_root, graphify_bin)
                 if not success:
@@ -539,6 +591,8 @@ def find_knowledge_graph(project_root: Path, auto_trigger: bool = True, strict: 
         return ("graphify", selected_graph)
 
     # 2. Nếu chưa có đồ thị Graphify và auto_trigger=True: Kích hoạt Graphify để tạo mới lần đầu
+    if auto_trigger and graphify_bin:
+        graphify_bin = compatible_graphify_binary(graphify_bin, strict=strict)
     if auto_trigger and graphify_bin:
         print(f"[*] Chua tim thay do thi tri thuc. Tu dong kich hoat Graphify cho: {project_root}...")
         if run_graphify_extract(project_root, graphify_bin):
@@ -3083,13 +3137,7 @@ def install_git_hooks(project_dir: str = ".", force: bool = False) -> bool:
 {marker}
 set -e
 
-# 1. Tu dong lam moi do thi tri thuc Graphify cuc bo
-if command -v graphify >/dev/null 2>&1; then
-    echo "[excaliflow-hook] Lam moi do thi tri thuc Graphify cuc bo..."
-    graphify extract "$PWD" --code-only --out "$PWD"
-fi
-
-# 2. Tu dong tim trinh thuc thi Python va lam moi viewer ExcaliFlow cuc bo
+# ExcaliFlow tu kiem tra phien ban va chi goi Graphify mot lan khi can.
 echo "[excaliflow-hook] Lam moi so do ExcaliFlow cuc bo..."
 if command -v excaliflow >/dev/null 2>&1; then
     excaliflow --dir "$PWD" --out architecture_viewer.html --with-excalidraw

@@ -70,6 +70,8 @@ excaliflow --open --with-excalidraw
 | 🚀 **Chế Độ Độc Lập (Standalone)** *(Mặc định — Không cần cài thêm gì)* | ExcaliFlow tự động quét cấu trúc cây thư mục (AST), đọc các quan hệ import và tạo sơ đồ kiến trúc ngay tức thì. | Bạn muốn có ngay một sơ đồ kiến trúc đẹp, trực quan cho dự án chỉ trong 5 giây mà không cần cài thêm công cụ ngoài. |
 | ⚡ **Chế Độ Siêu Cấp (Supercharged with `/graphify`)** *(Tùy chọn nâng cao)* | **Graphify là gì?** Là công cụ AI mã nguồn mở giúp biến toàn bộ codebase thành Đồ thị tri thức (Knowledge Graph), tự phát hiện các file trung tâm cốt lõi (God-nodes) và gom cụm đa chiều. Nếu máy bạn đã có `graphify`, ExcaliFlow sẽ **tự động kích hoạt** để vẽ đồ thị sâu hơn gấp 10 lần mà bạn không cần gõ thêm lệnh nào! | Dự án lớn, cấu trúc phức tạp và bạn muốn phân tích sâu cấu trúc cộng đồng mã nguồn bằng đồ thị tri thức. |
 
+ExcaliFlow chấp nhận Graphify `>=0.9.48,<0.10`: vẫn nhận các bản vá tương thích nhưng không âm thầm nhận một bản minor mới chưa được kiểm chứng. `uv.lock` cố ý ghi đúng một phiên bản để môi trường phát triển và CI có thể tái tạo. Khi chạy, CLI ngoài khoảng tương thích sẽ fallback sang AST; chế độ `--strict` sẽ dừng an toàn và đưa ra lệnh cài đặt cụ thể.
+
 ```text
 ┌─────────────────────────┐       ┌──────────────────────────────────────┐       ┌──────────────────────────────┐
 │  Mã Nguồn Codebase      │ ────> │  ExcaliFlow Độc Lập (AST / Code)     │ ────> │  Trình Xem HTML Tương Tác    │

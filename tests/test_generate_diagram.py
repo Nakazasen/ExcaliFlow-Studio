@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -17,6 +18,27 @@ SPEC.loader.exec_module(generator)
 
 
 class ExcaliFlowTests(unittest.TestCase):
+    def test_graphify_package_constraint_matches_runtime_policy(self):
+        pyproject = tomllib.loads((SCRIPT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+        self.assertIn(
+            f"graphifyy{generator.GRAPHIFY_VERSION_SPEC}",
+            pyproject["project"]["dependencies"],
+        )
+
+    def test_graphify_compatible_patch_version_is_accepted(self):
+        result = MagicMock(returncode=0, stdout="graphify 0.9.50\n", stderr="")
+        with patch("subprocess.run", return_value=result):
+            compatible, version = generator.graphify_version_status("graphify")
+        self.assertTrue(compatible)
+        self.assertEqual(version, "0.9.50")
+
+    def test_graphify_next_minor_is_rejected_and_strict_fails_closed(self):
+        result = MagicMock(returncode=0, stdout="graphify 0.10.0\n", stderr="")
+        with patch("subprocess.run", return_value=result):
+            self.assertIsNone(generator.compatible_graphify_binary("graphify"))
+            with self.assertRaisesRegex(RuntimeError, "Fail-Closed"):
+                generator.compatible_graphify_binary("graphify", strict=True)
+
     def test_language_aware_scan_detects_supported_languages(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -264,6 +286,7 @@ class ExcaliFlowTests(unittest.TestCase):
             os.utime(src_file, (2000.0, 2000.0))
             
             with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch.object(generator, "compatible_graphify_binary", return_value="/fake/bin/graphify"), \
                  patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0, stdout="OK", stderr="")
                 kg_type, kg_path = generator.find_knowledge_graph(root, auto_trigger=True)
@@ -318,7 +341,8 @@ class ExcaliFlowTests(unittest.TestCase):
             
             post_text = post_commit.read_text(encoding="utf-8")
             self.assertIn("set -e", post_text)
-            self.assertIn("graphify extract", post_text)
+            self.assertNotIn("graphify extract", post_text)
+            self.assertIn("ExcaliFlow tu kiem tra phien ban", post_text)
             self.assertNotIn("|| true", post_text)
             self.assertNotIn("git add", post_text)
 
@@ -329,6 +353,7 @@ class ExcaliFlowTests(unittest.TestCase):
             src_file.write_text("print('hello')", encoding="utf-8")
             
             with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch.object(generator, "compatible_graphify_binary", return_value="/fake/bin/graphify"), \
                  patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Fatal graphify extraction error")
                 with self.assertRaises(RuntimeError) as ctx:
@@ -470,6 +495,7 @@ class ExcaliFlowTests(unittest.TestCase):
             
             # Mock subprocess.run to return returncode=0, but do NOT update file timestamp
             with patch("shutil.which", return_value="/fake/bin/graphify"), \
+                 patch.object(generator, "compatible_graphify_binary", return_value="/fake/bin/graphify"), \
                  patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0, stdout="Graphify finished with 0 errors", stderr="")
                 with self.assertRaises(RuntimeError) as ctx:

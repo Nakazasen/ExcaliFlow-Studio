@@ -33,6 +33,7 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 
 ### Nhóm 1: Sơ Đồ Kiến Trúc Toàn Diện (Kèm Reach Tracing & Luồng Chuyển Động)
 - **Mục đích**: Phân tích đồ thị tri thức `graphify-out/graph.json` hoặc AST thành sơ đồ tương tác & bản vẽ Excalidraw.
+- **Tương thích Graphify**: Chỉ tự động chạy Graphify trong cửa sổ đã kiểm chứng `>=0.9.48,<0.10`. Bản ngoài cửa sổ phải fallback AST; với `--strict` phải dừng fail-closed thay vì dùng một CLI chưa kiểm chứng.
 - **Tính năng tương tác**:
   - **Reach Tracing**: Click vào bất kỳ node nào để cô lập luồng gọi (Upstream) và phụ thuộc (Downstream).
   - **Animated Signal Flow**: Nút `✨ Luồng` trên thanh công cụ kích hoạt dòng chuyển động dữ liệu.
