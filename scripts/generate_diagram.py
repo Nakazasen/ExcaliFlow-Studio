@@ -1651,8 +1651,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       font-weight: 800 !important;
     }
     .node.reach-dimmed {
-      opacity: 0.12 !important;
-      filter: grayscale(95%) blur(0.4px) opacity(0.35) !important;
+      opacity: 0.34 !important;
+      filter: none !important;
     }
     .edgePath, .edgePaths > g, path.flowchart-link {
       transition: opacity 0.25s ease, stroke-width 0.25s ease, stroke 0.25s ease !important;
@@ -1675,7 +1675,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
     .edgePath.reach-dimmed, .edgePaths > g.reach-dimmed, path.flowchart-link.reach-dimmed,
     .edgeLabel.reach-dimmed {
-      opacity: 0.06 !important;
+      opacity: 0.16 !important;
     }
 
     /* Animated Signal Flow (Stream of Glowing Photons) */
@@ -1950,7 +1950,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           maxScale: 6,
           minScale: 0.1,
           step: 0.2,
-          canvas: true
+          canvas: true,
+          excludeClass: 'panzoom-exclude'
         });
 
         setupReachTracing(renderedSvg);
@@ -2063,20 +2064,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         edgeEntries.push({ u, v, elem: edge });
       });
 
-      function findClosestNode(elem) {
-        let curr = elem;
-        while (curr && curr !== svgElement && curr !== document.body) {
-          if (curr.classList && (curr.classList.contains('node') || curr.classList.contains('cluster'))) {
-            return curr;
-          }
-          if (curr.id && curr.id.startsWith('flowchart-')) {
-            return curr;
-          }
-          curr = curr.parentElement || curr.parentNode;
-        }
-        return null;
-      }
-
       function handleNodeClick(node) {
         if (!node) return;
         const rawId = node.id || '';
@@ -2114,10 +2101,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         }
 
         // BFS Upstream (Callers / Ancestors)
-        const upstreamNodes = new Set();
+        const upstreamNodes = new Set([startNodeId]);
         const qUp = [startNodeId];
-        while (qUp.length > 0) {
-          const curr = qUp.shift();
+        let qUpIndex = 0;
+        while (qUpIndex < qUp.length) {
+          const curr = qUp[qUpIndex++];
           const preds = getInNeighbors(curr);
           preds.forEach(p => {
             if (!upstreamNodes.has(p) && p !== startNodeId) {
@@ -2126,12 +2114,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             }
           });
         }
+        upstreamNodes.delete(startNodeId);
 
         // BFS Downstream (Dependencies / Successors)
-        const downstreamNodes = new Set();
+        const downstreamNodes = new Set([startNodeId]);
         const qDown = [startNodeId];
-        while (qDown.length > 0) {
-          const curr = qDown.shift();
+        let qDownIndex = 0;
+        while (qDownIndex < qDown.length) {
+          const curr = qDown[qDownIndex++];
           const succs = getOutNeighbors(curr);
           succs.forEach(s => {
             if (!downstreamNodes.has(s) && s !== startNodeId) {
@@ -2140,6 +2130,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             }
           });
         }
+        downstreamNodes.delete(startNodeId);
 
         // Apply Direct Inline Node Styling (100% Reliable across all browsers)
         nodes.forEach(n => {
@@ -2191,7 +2182,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             });
           } else {
             n.classList.add('reach-dimmed');
-            n.style.opacity = '0.12';
+            n.style.opacity = '0.34';
             n.style.transform = 'none';
             n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
               shape.style.stroke = '';
@@ -2231,7 +2222,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
               });
             } else {
               entry.elem.classList.add('reach-dimmed');
-              entry.elem.style.opacity = '0.06';
+              entry.elem.style.opacity = '0.16';
               entry.elem.querySelectorAll('path').forEach(p => {
                 p.style.stroke = '';
                 p.style.strokeWidth = '';
@@ -2239,7 +2230,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             }
           } else {
             entry.elem.classList.add('reach-dimmed');
-            entry.elem.style.opacity = '0.06';
+            entry.elem.style.opacity = '0.16';
           }
         });
 
@@ -2257,33 +2248,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         }
       }
 
-      // Attach direct click & pointer handlers on all nodes
+      // A node click is selection, never a Panzoom drag. Use one handler only
+      // so one gesture cannot select and immediately clear the same node.
       nodes.forEach(node => {
         node.style.cursor = 'pointer';
+        node.classList.add('panzoom-exclude');
         node.onclick = (e) => {
+          e.preventDefault();
           e.stopPropagation();
           handleNodeClick(node);
         };
-      });
-
-      // Global delegation on SVG with distance tracking to distinguish drag vs tap
-      let ptX = 0, ptY = 0, ptT = 0;
-      svgElement.addEventListener('pointerdown', (e) => {
-        ptX = e.clientX;
-        ptY = e.clientY;
-        ptT = Date.now();
-      }, { passive: true });
-
-      svgElement.addEventListener('pointerup', (e) => {
-        const dist = Math.hypot(e.clientX - ptX, e.clientY - ptY);
-        const dt = Date.now() - ptT;
-        if (dist < 10 && dt < 500) {
-          const targetNode = findClosestNode(e.target);
-          if (targetNode) {
-            e.stopPropagation();
-            handleNodeClick(targetNode);
-          }
-        }
       });
     }
 

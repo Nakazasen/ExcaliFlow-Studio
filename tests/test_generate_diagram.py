@@ -483,6 +483,14 @@ class ExcaliFlowTests(unittest.TestCase):
         self.assertIn("flow-animated", template)
         self.assertIn("export-card", template)
         self.assertIn("setupReachTracing", template)
+        self.assertIn("excludeClass: 'panzoom-exclude'", template)
+        self.assertIn("node.classList.add('panzoom-exclude')", template)
+        self.assertIn("opacity: 0.34", template)
+        self.assertIn("filter: none", template)
+        self.assertIn("let qUpIndex = 0", template)
+        self.assertIn("let qDownIndex = 0", template)
+        self.assertNotIn("grayscale(95%) blur(0.4px) opacity(0.35)", template)
+        self.assertNotIn("svgElement.addEventListener('pointerup'", template)
 
     def test_generate_share_card_file(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -514,4 +522,3 @@ class ExcaliFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
