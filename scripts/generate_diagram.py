@@ -112,30 +112,32 @@ def scan_language_sources(project_root: Path) -> dict:
         ".rs": ("Rust", r"(?:struct|enum|trait|impl|fn)\s+([A-Za-z_]\w*)", r"use\s+([^;]+)"),
     }
     symbols, relations, languages, warnings = [], [], set(), []
-    for path in project_root.rglob("*"):
-        if not path.is_file() or any(part.startswith(".") or part in {"node_modules", "target", "dist", "build"} for part in path.parts):
-            continue
-        spec = patterns.get(path.suffix.lower())
-        if not spec:
-            continue
-        language, declaration, import_pattern = spec
-        languages.add(language)
-        rel = path.relative_to(project_root).as_posix()
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError) as exc:
-            warnings.append(f"Skipped {rel}: {exc}")
-            continue
-        names = []
-        for match in re.finditer(declaration, text):
-            name = next((value for value in match.groups() if value), None)
-            if name:
-                names.append(name)
-                symbols.append({"id": f"SRC_{sanitize_mermaid_id(rel)}_{sanitize_mermaid_id(name)}", "name": name, "file": rel, "language": language})
-        for match in re.finditer(import_pattern, text, re.MULTILINE | re.DOTALL):
-            target = next((value for value in match.groups() if value), None)
-            if target:
-                relations.append({"source": rel, "target": target, "kind": "imports"})
+    ignored = {"node_modules", "target", "dist", "build", ".git", ".venv", "venv", "__pycache__"}
+    for current_root, directories, filenames in os.walk(project_root, topdown=True):
+        directories[:] = sorted(name for name in directories if name not in ignored and not name.startswith("."))
+        for filename in sorted(filenames):
+            if filename.startswith("."):
+                continue
+            path = Path(current_root) / filename
+            spec = patterns.get(path.suffix.lower())
+            if not spec:
+                continue
+            language, declaration, import_pattern = spec
+            languages.add(language)
+            rel = path.relative_to(project_root).as_posix()
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as exc:
+                warnings.append(f"Skipped {rel}: {exc}")
+                continue
+            for match in re.finditer(declaration, text):
+                name = next((value for value in match.groups() if value), None)
+                if name:
+                    symbols.append({"id": f"SRC_{sanitize_mermaid_id(rel)}_{sanitize_mermaid_id(name)}", "name": name, "file": rel, "language": language})
+            for match in re.finditer(import_pattern, text, re.MULTILINE | re.DOTALL):
+                target = next((value for value in match.groups() if value), None)
+                if target:
+                    relations.append({"source": rel, "target": target, "kind": "imports"})
     return {"provenance": "language_aware" if symbols else "structural", "languages": sorted(languages), "symbols": symbols[:40], "relations": relations[:40], "warnings": warnings[:10]}
 
 
@@ -149,7 +151,8 @@ def generate_mermaid_from_language_analysis(project_info: dict, analysis: dict) 
     for relation in analysis["relations"]:
         source = next((node for node in analysis["symbols"] if node["file"] == relation["source"]), None)
         if source and source["name"] in node_ids:
-            lines.append(f'    {node_ids[source["name"]]} -->|imports| EXT_{abs(hash(relation["target"])) % 10000}["{escape_mermaid_label(relation["target"])}"]')
+            external_id = hashlib.sha256(relation["target"].encode("utf-8")).hexdigest()[:10].upper()
+            lines.append(f'    {node_ids[source["name"]]} -->|imports| EXT_{external_id}["{escape_mermaid_label(relation["target"])}"]')
     if not analysis["symbols"]:
         lines.append('    STRUCT["Structural scan only: no supported source declarations found"]')
     desc = f"Provenance: {analysis['provenance']}; languages: {', '.join(analysis['languages']) or 'none'}"
@@ -1076,6 +1079,10 @@ def scan_python_ast(project_root: Path) -> dict:
         except Exception:
             continue
 
+        for parent in ast.walk(tree):
+            for child in ast.iter_child_nodes(parent):
+                child.parent = parent
+
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 methods = [n.name for n in node.body if isinstance(n, ast.FunctionDef)]
@@ -1687,7 +1694,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .flow-animated .edgePaths path,
     .flow-animated path.flowchart-link,
     .flow-animated path.path,
-    .flow-animated g[class*="edge"] path,
     .flow-animated .edge-thickness-normal,
     .flow-animated svg path[id*="L-"],
     .flow-animated svg path[id*="L_"] {
@@ -1820,6 +1826,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     let currentTab = Object.keys(diagrams)[0];
     let panzoomInstance = null;
+    let renderGeneration = 0;
 
     mermaid.initialize({
       startOnLoad: false,
@@ -1921,13 +1928,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     });
 
     async function renderDiagram() {
+      const generation = ++renderGeneration;
       const code = codeArea.value.trim();
       errorBox.style.display = 'none';
+      if (panzoomInstance) {
+        try { panzoomInstance.destroy(); } catch (e) {}
+        panzoomInstance = null;
+      }
       diagramOutput.innerHTML = '<div style="font-family: var(--font-hand); font-size: 1.2rem; color: #64748b;">⏳ Đang vẽ sơ đồ phác thảo...</div>';
 
       try {
-        const id = 'render-' + Date.now();
+        const id = `render-${generation}-${Date.now()}`;
         const { svg } = await mermaid.render(id, code);
+        if (generation !== renderGeneration) return;
         diagramOutput.innerHTML = svg;
         const renderedSvg = diagramOutput.querySelector('svg');
         const viewBox = renderedSvg?.viewBox?.baseVal;
@@ -1941,11 +1954,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         diagramOutput.style.width = `${viewBox.width}px`;
         diagramOutput.style.height = `${viewBox.height}px`;
 
-        if (panzoomInstance) {
-          try { panzoomInstance.destroy(); } catch (e) {}
-          panzoomInstance = null;
-        }
-
         panzoomInstance = Panzoom(diagramOutput, {
           maxScale: 6,
           minScale: 0.1,
@@ -1957,6 +1965,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         setupReachTracing(renderedSvg);
         requestAnimationFrame(() => requestAnimationFrame(fitToScreen));
       } catch (err) {
+        if (generation !== renderGeneration) return;
         console.error(err);
         errorBox.style.display = 'block';
         errorBox.textContent = '❌ Lỗi cú pháp Mermaid: ' + (err.message || err);
@@ -1988,7 +1997,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         });
       });
 
-      const edgePaths = diagramOutput.querySelectorAll('.edgePath, .edgePaths > g, path.flowchart-link, g[class*="edge"], .edgeLabel');
+      const edgePaths = diagramOutput.querySelectorAll('.edgePath, .edgePaths > g, path.flowchart-link, .edgeLabel');
       edgePaths.forEach(e => {
         e.classList.remove('reach-highlight-up', 'reach-highlight-down', 'reach-dimmed');
         e.style.opacity = '1';
@@ -2012,6 +2021,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
       const nodes = Array.from(svgElement.querySelectorAll('.node, g[id*="flowchart-"]'));
       if (!nodes.length) return;
+      const nodeEntries = nodes.map(elem => ({
+        elem,
+        id: normalizeId(elem.id || elem.textContent?.trim().split(/\s+/)[0] || ''),
+        shapes: Array.from(elem.querySelectorAll('path, rect, circle, polygon')),
+        texts: Array.from(elem.querySelectorAll('.nodeLabel, text, span, div'))
+      }));
 
       const code = codeArea.value;
       const adjOut = new Map(); // src -> Set(target)
@@ -2037,7 +2052,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       });
 
       // 2. Also parse Mermaid SVG edge classes: LS-NodeA LE-NodeB or L-NodeA-NodeB
-      const edgeElems = Array.from(svgElement.querySelectorAll('.edgePath, .edgePaths > g, path.flowchart-link, g[class*="edge"]'));
+      const edgeContainers = Array.from(svgElement.querySelectorAll('.edgePath, .edgePaths > g'));
+      const edgeContainerSet = new Set(edgeContainers);
+      const standaloneEdgePaths = Array.from(svgElement.querySelectorAll('path.flowchart-link')).filter(path => {
+        let parent = path.parentElement;
+        while (parent && parent !== svgElement) {
+          if (edgeContainerSet.has(parent)) return false;
+          parent = parent.parentElement;
+        }
+        return true;
+      });
+      const edgeElems = [...edgeContainers, ...standaloneEdgePaths];
       const edgeEntries = [];
       edgeElems.forEach(edge => {
         let cls = edge.getAttribute('class') || '';
@@ -2061,7 +2086,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           adjOut.get(u).add(v);
           adjIn.get(v).add(u);
         }
-        edgeEntries.push({ u, v, elem: edge });
+        const paths = edge.matches('path') ? [edge] : Array.from(edge.querySelectorAll('path'));
+        edgeEntries.push({ u, v, elem: edge, paths });
       });
 
       function handleNodeClick(node) {
@@ -2133,8 +2159,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         downstreamNodes.delete(startNodeId);
 
         // Apply Direct Inline Node Styling (100% Reliable across all browsers)
-        nodes.forEach(n => {
-          let nId = normalizeId(n.id || n.textContent?.trim().split(/\s+/)[0] || '');
+        nodeEntries.forEach(entry => {
+          const n = entry.elem;
+          const nId = entry.id;
           n.classList.remove('reach-focused', 'reach-upstream', 'reach-downstream', 'reach-dimmed');
 
           const isFocus = (nId === startNodeId || nId === 'N_' + startNodeId || startNodeId === 'N_' + nId || n === node);
@@ -2145,12 +2172,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             n.classList.add('reach-focused');
             n.style.opacity = '1';
             n.style.transform = 'scale(1.06)';
-            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+            entry.shapes.forEach(shape => {
               shape.style.stroke = '#f59e0b';
               shape.style.strokeWidth = '4px';
               shape.style.fill = '#fef3c7';
             });
-            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+            entry.texts.forEach(txt => {
               txt.style.color = '#78350f';
               txt.style.fontWeight = 'bold';
             });
@@ -2158,12 +2185,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             n.classList.add('reach-upstream');
             n.style.opacity = '1';
             n.style.transform = 'scale(1.02)';
-            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+            entry.shapes.forEach(shape => {
               shape.style.stroke = '#0284c7';
               shape.style.strokeWidth = '3.5px';
               shape.style.fill = '#e0f2fe';
             });
-            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+            entry.texts.forEach(txt => {
               txt.style.color = '#0369a1';
               txt.style.fontWeight = 'bold';
             });
@@ -2171,12 +2198,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             n.classList.add('reach-downstream');
             n.style.opacity = '1';
             n.style.transform = 'scale(1.02)';
-            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+            entry.shapes.forEach(shape => {
               shape.style.stroke = '#16a34a';
               shape.style.strokeWidth = '3.5px';
               shape.style.fill = '#dcfce7';
             });
-            n.querySelectorAll('.nodeLabel, text, span, div').forEach(txt => {
+            entry.texts.forEach(txt => {
               txt.style.color = '#14532d';
               txt.style.fontWeight = 'bold';
             });
@@ -2184,7 +2211,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             n.classList.add('reach-dimmed');
             n.style.opacity = '0.34';
             n.style.transform = 'none';
-            n.querySelectorAll('path, rect, circle, polygon').forEach(shape => {
+            entry.shapes.forEach(shape => {
               shape.style.stroke = '';
               shape.style.strokeWidth = '';
               shape.style.fill = '';
@@ -2209,21 +2236,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             if ((uUp || uFocus) && (vUp || vFocus) && (uUp || vUp)) {
               entry.elem.classList.add('reach-highlight-up');
               entry.elem.style.opacity = '1';
-              entry.elem.querySelectorAll('path').forEach(p => {
+              entry.paths.forEach(p => {
                 p.style.stroke = '#0284c7';
                 p.style.strokeWidth = '4px';
               });
             } else if ((uDown || uFocus) && (vDown || vFocus) && (uDown || vDown)) {
               entry.elem.classList.add('reach-highlight-down');
               entry.elem.style.opacity = '1';
-              entry.elem.querySelectorAll('path').forEach(p => {
+              entry.paths.forEach(p => {
                 p.style.stroke = '#16a34a';
                 p.style.strokeWidth = '4px';
               });
             } else {
               entry.elem.classList.add('reach-dimmed');
               entry.elem.style.opacity = '0.16';
-              entry.elem.querySelectorAll('path').forEach(p => {
+              entry.paths.forEach(p => {
                 p.style.stroke = '';
                 p.style.strokeWidth = '';
               });

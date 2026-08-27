@@ -28,6 +28,35 @@ class ExcaliFlowTests(unittest.TestCase):
             self.assertTrue({"TypeScript", "Go", "Rust"}.issubset(result["languages"]))
             self.assertGreaterEqual(len(result["symbols"]), 3)
 
+    def test_language_scan_prunes_dependencies_and_uses_stable_external_ids(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "src").mkdir()
+            (root / "src" / "app.ts").write_text(
+                'import { helper } from "shared-lib"; export function route() {}', encoding="utf-8"
+            )
+            ignored = root / "node_modules" / "large-package"
+            ignored.mkdir(parents=True)
+            (ignored / "noise.ts").write_text("export function noise() {}", encoding="utf-8")
+            analysis = generator.scan_language_sources(root)
+            self.assertFalse(any(item["name"] == "noise" for item in analysis["symbols"]))
+            first = generator.generate_mermaid_from_language_analysis({"root_name": "demo"}, analysis)
+            second = generator.generate_mermaid_from_language_analysis({"root_name": "demo"}, analysis)
+            self.assertEqual(first, second)
+            self.assertIn("EXT_E2EE005CED", first["source_analysis"]["code"])
+
+    def test_python_ast_does_not_duplicate_methods_as_top_level_functions(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "main.py").write_text(
+                "class Service:\n    def run(self):\n        return True\n\ndef main():\n    return Service().run()\n",
+                encoding="utf-8",
+            )
+            analysis = generator.scan_python_ast(root)
+            self.assertIn("Service", analysis["classes"])
+            self.assertIn("main", analysis["functions"])
+            self.assertNotIn("run", analysis["functions"])
+
     def test_offline_viewer_and_native_scene(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -491,6 +520,11 @@ class ExcaliFlowTests(unittest.TestCase):
         self.assertIn("let qDownIndex = 0", template)
         self.assertNotIn("grayscale(95%) blur(0.4px) opacity(0.35)", template)
         self.assertNotIn("svgElement.addEventListener('pointerup'", template)
+        self.assertIn("let renderGeneration = 0", template)
+        self.assertIn("if (generation !== renderGeneration) return", template)
+        self.assertIn("const nodeEntries = nodes.map", template)
+        self.assertIn("const edgeContainers = Array.from", template)
+        self.assertNotIn("g[class*=\"edge\"]", template)
 
     def test_generate_share_card_file(self):
         with tempfile.TemporaryDirectory() as temp:
