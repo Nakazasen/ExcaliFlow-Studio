@@ -3,13 +3,13 @@ name: excaliflow
 description: "Trung tâm điều khiển trực quan hóa kiến trúc ExcaliFlow Studio: Phân tích codebase/Graphify thành sơ đồ Excalidraw, Codebase Atlas, sơ đồ Editorial (Wardley, Sankey, Journey, Architecture), và Evidence Graph cho RAG."
 ---
 
-# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.6)
+# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.7)
 
 > **MỤC TIÊU CỐT LÕI**: Khi người dùng gõ `/excaliflow` (hoặc gọi skill này mà chưa chỉ định cụ thể tham số phức tạp), Agent **BẮT BUỘC** hiển thị ngay **BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard)** để người dùng chọn nhanh tính năng mong muốn (bằng số hoặc mô tả) thay vì phải tự nhớ lệnh.
 
 ---
 
-## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v3.6)
+## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v3.7)
 
 Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hiển thị ngay bảng tính năng sau:
 
@@ -20,9 +20,9 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 | **3** | 🎴 **Thẻ Ảnh Bìa 1200×630 (Share Card)**| Xuất ảnh bìa kiến trúc chuẩn 1200×630 dùng cho `README.md` và chia sẻ mạng xã hội | `excaliflow --share-card "README_CARD.svg" --open` |
 | **4** | 🗺️ **Codebase Atlas (Học Codebase)** | Giao diện tương tác đọc hiểu codebase, giải thích ứng dụng, đọc sơ đồ SVG native | `excaliflow open --dir .` |
 | **5** | 📊 **Editorial & Business Reports** | Xuất SVG/HTML với 11 grammar: architecture, Wardley, Sankey, Journey, KPI, Funnel, Timeline, Process, Quadrant, Matrix, Risk | `excaliflow --editorial-out <out> --visual-type <type>` |
-| **6** | 🔍 **Hỏi Đáp Codebase Có Dẫn Chứng** | Phân tích AST và trả lời câu hỏi về hàm/class/import kèm file:line dẫn chứng | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **6** | 🔍 **Tra Cứu Codebase Có Dẫn Chứng** | Tra cứu source/AST theo tên hàm, class, file hoặc import và trả về `file:line`; không giả làm semantic AI khi chưa có bridge | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7** | 🔗 **Evidence Graph Cho RAG & Điều Tra** | Chuyển đổi `rag-trace.json` $\to$ Bản đồ tương tác xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
-| **8** | 🩺 **Atlas AI Bridge Lifecycle** | Khởi tạo/chạy/chẩn đoán Atlas Bridge (`:8788`), AIOS IDE bridge (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **8** | 🩺 **Atlas Bridge Control & Diagnostics** | Khởi tạo/chạy Atlas Bridge (`:8788`) và chẩn đoán riêng Atlas, AIOS IDE bridge (`:8585`), Gemini Web2API (`:8081`); không tự khởi động dịch vụ bên ngoài | `excaliflow bridge init/start/doctor --dir .` |
 | **9** | 📖 **Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và render lại, kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10** | 🧩 **Cài Skill Cho AI Host** | Liệt kê target, cài và chẩn đoán skill cho Codex, Claude, Copilot, Gemini, Antigravity và host khác | `excaliflow targets/install/doctor` |
 | **11** | 🔄 **Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
@@ -79,7 +79,7 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   ```
 
 ### Nhóm 6: Hỏi Đáp Codebase Có Dẫn Chứng (Evidence-First Q&A)
-- **Mục đích**: Hỏi về một biểu tượng, class, hàm hoặc kiến trúc với cam kết dẫn chứng chính xác `file:line`.
+- **Mục đích**: Tra cứu source-backed về một biểu tượng, class, hàm, file hoặc import với dẫn chứng chính xác `file:line`. Câu hỏi suy luận tự do chỉ dùng AI khi Atlas Bridge khỏe; CLI offline không được bịa câu trả lời semantic.
 - **Lệnh thực thi**:
   ```powershell
   excaliflow ask --dir "<project_path>" --audience engineer --question "<câu hỏi>"
@@ -95,8 +95,8 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   excaliflow knowledge atlas --graph "<project>\evidence-graph.json" --out "<project>\evidence-atlas.html"
   ```
 
-### Nhóm 8: Atlas AI Bridge Doctor
-- **Mục đích**: Chẩn đoán kết nối backend AI cục bộ cho Atlas.
+### Nhóm 8: Atlas Bridge Control & Diagnostics
+- **Mục đích**: Quản lý manifest/chạy Atlas Bridge và chẩn đoán độc lập các backend AI cục bộ. ExcaliFlow không tự khởi động hay dừng AIOS IDE Bridge và Gemini Web2API.
 - **Cổng mặc định**: Atlas Bridge `127.0.0.1:8788`; AIOS IDE bridge `127.0.0.1:8585`; Gemini Web2API `127.0.0.1:8081`.
 - **Lệnh thực thi**:
   ```powershell

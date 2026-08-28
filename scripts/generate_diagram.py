@@ -24,8 +24,9 @@ import uuid
 import math
 import subprocess
 import shutil
+import tempfile
 from html import escape as xml_escape
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VENDOR_DIR = SKILL_ROOT / "assets" / "vendor"
@@ -48,6 +49,12 @@ REPORT_TYPES = {"kpi", "funnel", "timeline", "quadrant", "process", "matrix", "r
 GRAPHIFY_MIN_VERSION = (0, 9, 48)
 GRAPHIFY_MAX_VERSION = (0, 10, 0)
 GRAPHIFY_VERSION_SPEC = ">=0.9.48,<0.10"
+SOURCE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs"}
+WATCH_CONFIG_NAMES = {"pyproject.toml", "package.json", "go.mod", "Cargo.toml"}
+WATCH_EXCLUDED_DIRS = {
+    ".git", ".excaliflow", ".venv", "venv", "__pycache__", "build", "dist",
+    "graphify-out", "node_modules", "target",
+}
 
 
 class EditorialValidationError(ValueError):
@@ -111,6 +118,7 @@ def load_offline_runtime() -> dict:
 def scan_language_sources(project_root: Path) -> dict:
     """Extract declarations and simple relationships without claiming a full AST."""
     patterns = {
+        ".py": ("Python", r"(?:^|\n)\s*(?:async\s+)?(?:class|def)\s+([A-Za-z_]\w*)", r"(?:^|\n)\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))"),
         ".js": ("JavaScript", r"(?:class|function)\s+([A-Za-z_$][\w$]*)", r"(?:import.+?from\s+|require\s*\()['\"]([^'\"]+)"),
         ".jsx": ("JavaScript", r"(?:class|function)\s+([A-Za-z_$][\w$]*)", r"(?:import.+?from\s+|require\s*\()['\"]([^'\"]+)"),
         ".ts": ("TypeScript", r"(?:class|function|interface|type)\s+([A-Za-z_$][\w$]*)", r"(?:import.+?from\s+|require\s*\()['\"]([^'\"]+)"),
@@ -308,6 +316,57 @@ def compute_architecture_diff(old_analysis: dict, new_analysis: dict) -> dict:
     }
 
 
+def load_diff_baseline(diff_target: str, project_root: Path) -> dict:
+    """Load a snapshot, directory, or Git commit; never silently skip a requested diff."""
+    supplied = Path(diff_target)
+    candidate = supplied if supplied.is_absolute() else project_root / supplied
+    if candidate.is_file():
+        try:
+            value = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"Diff baseline file is invalid: {candidate} ({error})") from error
+        if not isinstance(value, dict):
+            raise RuntimeError(f"Diff baseline must be a JSON object: {candidate}")
+        return value
+    if candidate.is_dir():
+        return scan_language_sources(candidate)
+
+    verified = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{diff_target}^{{commit}}"],
+        cwd=str(project_root), capture_output=True, text=True, check=False,
+    )
+    if verified.returncode != 0:
+        raise RuntimeError(f"Diff baseline does not exist as a file, directory, or Git commit: {diff_target}")
+    listing = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", "-z", diff_target],
+        cwd=str(project_root), capture_output=True, check=False,
+    )
+    if listing.returncode != 0:
+        raise RuntimeError(f"Could not list source files at Git commit: {diff_target}")
+
+    names = [name.decode("utf-8", errors="strict") for name in listing.stdout.split(b"\0") if name]
+    with tempfile.TemporaryDirectory(prefix="excaliflow-diff-") as temp:
+        snapshot_root = Path(temp)
+        extracted = 0
+        for name in names:
+            pure = PurePosixPath(name)
+            if pure.is_absolute() or ".." in pure.parts or pure.suffix.lower() not in SOURCE_SUFFIXES:
+                continue
+            content = subprocess.run(
+                ["git", "show", f"{diff_target}:{name}"],
+                cwd=str(project_root), capture_output=True, check=False,
+            )
+            if content.returncode != 0:
+                raise RuntimeError(f"Could not read {name} at Git commit {diff_target}")
+            destination = snapshot_root.joinpath(*pure.parts)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content.stdout)
+            extracted += 1
+        if not extracted:
+            raise RuntimeError(f"Git commit contains no supported source files: {diff_target}")
+        return scan_language_sources(snapshot_root)
+
+
 def generate_share_card_svg(project_title: str, stats: dict) -> str:
     """Tạo thẻ ảnh chia sẻ chuẩn 1200x630 (README & Social Share Card) dạng SVG vector."""
     nodes_count = stats.get("nodes_count", 0)
@@ -467,6 +526,8 @@ def graphify_version_status(graphify_bin: str) -> tuple[bool, str]:
             [graphify_bin, "--version"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
             check=False,
         )
@@ -512,6 +573,8 @@ def run_graphify_extract(project_root: Path, graphify_bin: str) -> bool:
             cwd=str(project_root),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=180,
             check=False
         )
@@ -3067,30 +3130,12 @@ def generate_html_file(
     # 3. Tính toán Architecture Diff nếu có yêu cầu so sánh
     if diff_target:
         print(f"[*] Dang tinh toan Architecture Diff voi muc tieu: {diff_target}...")
-        diff_path = Path(diff_target)
-        old_analysis = None
-        if diff_path.is_file():
-            try:
-                old_analysis = json.loads(diff_path.read_text(encoding="utf-8"))
-            except Exception as e:
-                print(f"[!] Khong the doc diff file ({e})")
-        elif diff_path.is_dir():
-            old_analysis = scan_language_sources(diff_path)
-        else:
-            try:
-                res = subprocess.run(["git", "rev-parse", "--verify", diff_target], cwd=str(proj_path), capture_output=True, text=True)
-                if res.returncode == 0:
-                    g_res = subprocess.run(["git", "show", f"{diff_target}:graphify-out/graph.json"], cwd=str(proj_path), capture_output=True, text=True)
-                    if g_res.returncode == 0:
-                        old_analysis = json.loads(g_res.stdout)
-            except Exception:
-                pass
-        if old_analysis:
-            current_lang = scan_language_sources(proj_path)
-            diff_res = compute_architecture_diff(old_analysis, current_lang)
-            combined = diff_res
-            combined.update(diagrams)
-            diagrams = combined
+        old_analysis = load_diff_baseline(diff_target, proj_path)
+        current_lang = scan_language_sources(proj_path)
+        diff_res = compute_architecture_diff(old_analysis, current_lang)
+        combined = diff_res
+        combined.update(diagrams)
+        diagrams = combined
 
     diagrams_json = json.dumps(diagrams, ensure_ascii=False, indent=2)
     # Tránh làm vỡ thẻ script khi trong label hoặc code Mermaid chứa chuỗi </script>
@@ -3176,39 +3221,48 @@ fi
     return True
 
 
+def watch_source_snapshot(project_dir: Path, excluded_files: set[Path] | None = None) -> dict[str, tuple[int, int]]:
+    """Snapshot only architecture inputs while pruning generated and dependency trees."""
+    excluded = {path.resolve() for path in (excluded_files or set())}
+    snapshot: dict[str, tuple[int, int]] = {}
+    for current_root, directories, filenames in os.walk(project_dir, topdown=True):
+        directories[:] = sorted(
+            name for name in directories
+            if name not in WATCH_EXCLUDED_DIRS and not name.startswith(".")
+        )
+        for filename in filenames:
+            path = Path(current_root) / filename
+            if path.resolve() in excluded:
+                continue
+            if path.suffix.lower() not in SOURCE_SUFFIXES and filename not in WATCH_CONFIG_NAMES:
+                continue
+            try:
+                stat = path.stat()
+                snapshot[path.relative_to(project_dir).as_posix()] = (stat.st_mtime_ns, stat.st_size)
+            except OSError:
+                pass
+    return snapshot
+
+
 def watch_mode(project_dir: str = ".", interval: float = 1.5, output_path: str = "architecture_viewer.html"):
     """Lắng nghe thay đổi file và tự động build lại"""
     proj_path = Path(project_dir).resolve()
     print(f"[*] Che do Watch Mode dang hoat dong tai {proj_path}... Nhan Ctrl+C de dung.")
-    last_mtimes = {}
-
     output = Path(output_path)
     if not output.is_absolute():
         output = proj_path / output
     excluded = {output.resolve(), output.with_suffix(".excalidraw").resolve()}
-    def get_file_mtimes():
-        mtimes = {}
-        for p in proj_path.rglob("*"):
-            if any(part.startswith('.') or part in {'__pycache__', 'node_modules', 'dist', 'build'} for part in p.parts):
-                continue
-            if p.is_file() and p.resolve() not in excluded:
-                try:
-                    mtimes[str(p)] = p.stat().st_mtime
-                except Exception:
-                    pass
-        return mtimes
-
-    last_mtimes = get_file_mtimes()
+    last_mtimes = watch_source_snapshot(proj_path, excluded)
     generate_html_file(str(proj_path), str(output))
 
     while True:
         try:
             time.sleep(interval)
-            current_mtimes = get_file_mtimes()
+            current_mtimes = watch_source_snapshot(proj_path, excluded)
             if current_mtimes != last_mtimes:
                 print(f"[*] Phat hien thay doi file lúc {time.strftime('%H:%M:%S')}. Dang cap nhat so do...")
                 generate_html_file(str(proj_path), str(output))
-                last_mtimes = get_file_mtimes()
+                last_mtimes = watch_source_snapshot(proj_path, excluded)
         except KeyboardInterrupt:
             print("\n[*] Da dung Watch Mode.")
             break

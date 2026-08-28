@@ -13,6 +13,8 @@ from urllib.parse import urlparse
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8788
 DEFAULT_UPSTREAM = "http://127.0.0.1:8081/v1"
+ATLAS_MANIFEST = "atlas-bridge.json"
+AIOS_BRIDGE_URL = "http://127.0.0.1:8585/health"
 
 
 def _loopback_url(value: str) -> str:
@@ -29,7 +31,7 @@ def initialize_bridge(project_dir: str | Path, *, port: int = DEFAULT_PORT) -> P
     root = Path(project_dir).resolve()
     if not root.is_dir():
         raise ValueError(f"Codebase directory does not exist: {root}")
-    manifest = root / ".excaliflow" / "ide-bridge.json"
+    manifest = root / ".excaliflow" / ATLAS_MANIFEST
     if manifest.exists():
         raise FileExistsError(f"Bridge manifest already exists: {manifest}")
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -42,6 +44,7 @@ def initialize_bridge(project_dir: str | Path, *, port: int = DEFAULT_PORT) -> P
                 "completion_url": f"http://127.0.0.1:{port}/v1/chat/completions",
                 "model": "gemini-3.6-flash",
                 "external_processing": True,
+                "upstream_url": DEFAULT_UPSTREAM,
             },
             ensure_ascii=False,
             indent=2,
@@ -50,6 +53,26 @@ def initialize_bridge(project_dir: str | Path, *, port: int = DEFAULT_PORT) -> P
         encoding="utf-8",
     )
     return manifest
+
+
+def load_bridge_config(project_dir: str | Path) -> dict:
+    """Load and validate only ExcaliFlow's own bridge manifest."""
+    manifest = Path(project_dir).resolve() / ".excaliflow" / ATLAS_MANIFEST
+    try:
+        raw = json.loads(manifest.read_text(encoding="utf-8"))
+        if raw.get("bridge_kind") != "excaliflow_gemini_proxy":
+            raise ValueError("bridge_kind must be excaliflow_gemini_proxy")
+        health_url = _loopback_url(str(raw["health_url"]))
+        completion_url = _loopback_url(str(raw["completion_url"]))
+        upstream_url = _loopback_url(str(raw.get("upstream_url") or DEFAULT_UPSTREAM))
+        port = urlparse(health_url).port
+        if port is None or urlparse(completion_url).port != port:
+            raise ValueError("health_url and completion_url must use the same explicit port")
+    except OSError as error:
+        raise ValueError(f"Atlas Bridge manifest is unavailable: {manifest}") from error
+    except (KeyError, TypeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError(f"Atlas Bridge manifest is invalid: {error}") from error
+    return {"manifest": manifest, "port": port, "health_url": health_url, "completion_url": completion_url, "upstream_url": upstream_url}
 
 
 def _response(handler: BaseHTTPRequestHandler, payload: dict, status: int = 200) -> None:
@@ -80,23 +103,23 @@ def _endpoint_ready(url: str, timeout_seconds: float = 0.8) -> bool:
 
 
 def bridge_status(project_dir: str | Path, *, upstream_url: str = DEFAULT_UPSTREAM, port: int = DEFAULT_PORT) -> dict:
-    """Diagnose the three local prerequisites without starting or changing processes."""
+    """Diagnose Atlas, its upstream, and the optional AIOS bridge without mutation."""
     root = Path(project_dir).resolve()
-    manifest = root / ".excaliflow" / "ide-bridge.json"
+    manifest = root / ".excaliflow" / ATLAS_MANIFEST
     manifest_ready = False
     bridge_url = f"http://127.0.0.1:{port}/health"
     manifest_problem = ""
     if manifest.is_file():
         try:
-            raw = json.loads(manifest.read_text(encoding="utf-8"))
-            bridge_url = _loopback_url(str(raw["health_url"]))
-            _loopback_url(str(raw["completion_url"]))
+            config = load_bridge_config(root)
+            bridge_url = config["health_url"]
             manifest_ready = True
-        except (KeyError, ValueError, json.JSONDecodeError) as error:
+        except ValueError as error:
             manifest_problem = str(error)
     upstream = _loopback_url(upstream_url)
     upstream_ready = _upstream_ready(upstream)
     bridge_ready = _endpoint_ready(bridge_url) if manifest_ready else False
+    aios_bridge_ready = _endpoint_ready(AIOS_BRIDGE_URL)
     if not manifest_ready:
         next_action = "Create the project manifest with: excaliflow bridge init --dir <project>."
     elif not upstream_ready:
@@ -114,6 +137,8 @@ def bridge_status(project_dir: str | Path, *, upstream_url: str = DEFAULT_UPSTRE
         "upstream_ready": upstream_ready,
         "bridge_url": bridge_url,
         "bridge_ready": bridge_ready,
+        "aios_bridge_url": AIOS_BRIDGE_URL,
+        "aios_bridge_ready": aios_bridge_ready,
         "next_action": next_action,
     }
 

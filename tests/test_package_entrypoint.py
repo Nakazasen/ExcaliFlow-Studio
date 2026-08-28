@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from excaliflow.installer import doctor, install_skill, repository_root, resolve_target
+from excaliflow.installer import doctor, doctor_issues, install_skill, repository_root, resolve_target
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +57,10 @@ class PackageEntrypointTests(unittest.TestCase):
             self.assertIn("Source-backed answer", result.stdout)
             _, ready = doctor("agy", workspace=root)
             self.assertTrue(ready)
+            (target / "assets" / "vendor" / "panzoom.min.js").unlink()
+            _, ready = doctor("agy", workspace=root)
+            self.assertFalse(ready)
+            self.assertIn("missing assets/vendor/panzoom.min.js", doctor_issues(target))
 
     def test_documented_hosts_resolve_to_exact_user_and_workspace_destinations(self):
         with tempfile.TemporaryDirectory() as temp:

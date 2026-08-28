@@ -28,7 +28,10 @@ LANGUAGES = {
 }
 DECLARATION = re.compile(r"^\s*(?:export\s+)?(?:async\s+)?(?:function|class|interface|struct|fn)\s+([A-Za-z_][\w]*)", re.MULTILINE)
 IMPORT = re.compile(r"^\s*(?:import\s+.*?from\s+|import\s+|use\s+|from\s+)([\w./@-]+)", re.MULTILINE)
-STOP_WORDS = {"a", "an", "and", "are", "about", "code", "does", "explain", "for", "how", "in", "is", "of", "show", "the", "this", "to", "what", "where", "with"}
+STOP_WORDS = {
+    "a", "an", "and", "are", "about", "code", "does", "explain", "for", "how", "in", "is", "of", "show", "the", "this", "to", "what", "where", "with",
+    "cai", "cái", "cho", "cua", "của", "dau", "đâu", "gi", "gì", "ham", "hàm", "la", "là", "lop", "lớp", "nao", "nào", "o", "ở", "toi", "tôi", "ve", "về",
+}
 
 
 def _relative(root: Path, path: Path) -> str:
@@ -143,7 +146,7 @@ def _evidence(item: dict) -> str:
 
 
 def _matching_symbols(report: dict, question: str) -> list[dict]:
-    words = {word.lower() for word in re.findall(r"[A-Za-z_][\w]*", question) if word.lower() not in STOP_WORDS}
+    words = {word.lower() for word in re.findall(r"[^\W\d][\w.\\/-]*", question, re.UNICODE) if word.lower() not in STOP_WORDS}
     scored: list[tuple[int, dict]] = []
     for symbol in report["symbols"]:
         haystack = " ".join((symbol["name"], symbol["qualified_name"], symbol["file"])).lower()
@@ -193,7 +196,16 @@ def answer_question(report: dict, question: str, audience: str = "engineer") -> 
             if module.startswith("src."):
                 internal_modules.add(module.removeprefix("src."))
         internal = [relation for relation in report["relationships"] if relation["to"].lstrip(".").split(".")[0] in internal_modules]
-        matches = (internal + [relation for relation in report["relationships"] if relation not in internal])[:12]
+        candidates = internal + [relation for relation in report["relationships"] if relation not in internal]
+        query_terms = {
+            word.lower() for word in re.findall(r"[^\W\d][\w.\\/-]*", question, re.UNICODE)
+            if word.lower() not in STOP_WORDS and word.lower() not in {"depend", "dependency", "import", "relationship", "connect"}
+        }
+        focused = [
+            relation for relation in candidates
+            if any(term in f"{relation['from']} {relation['to']}".lower() for term in query_terms)
+        ]
+        matches = (focused or candidates)[:12]
         if not matches:
             return "No import relationships were found by the supported source scan.\n\nFidelity: " + report["fidelity"]
         lines = ["# Relationship answer", ""]

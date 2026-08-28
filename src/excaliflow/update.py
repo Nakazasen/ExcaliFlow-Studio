@@ -6,18 +6,22 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Callable
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
-DEFAULT_MANIFEST_URL = "https://github.com/Nakazasen/ExcaliFlow-Studio/releases/latest/download/update.json"
+DEFAULT_MANIFEST_URL = "https://api.github.com/repos/Nakazasen/ExcaliFlow-Studio/releases/latest"
 MANIFEST_SCHEMA = "excaliflow-update/v1"
 _SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
 class UpdateCheckError(ValueError):
     """Raised for invalid local version or release-manifest data."""
+
+
+class NoPublishedReleaseError(UpdateCheckError):
+    """Raised when GitHub confirms that the repository has no release yet."""
 
 
 def _version_tuple(value: str) -> tuple[int, int, int]:
@@ -65,6 +69,24 @@ def _validate_https_url(value: Any, field: str) -> str:
 def _validate_manifest(value: Any) -> dict[str, str]:
     if not isinstance(value, dict):
         raise UpdateCheckError("Update manifest must be a JSON object.")
+    if "tag_name" in value:
+        tag = value.get("tag_name")
+        version = tag[1:] if isinstance(tag, str) and tag.startswith("v") else tag
+        if not isinstance(version, str):
+            raise UpdateCheckError("GitHub latest release tag_name must be text.")
+        _version_tuple(version)
+        assets = value.get("assets")
+        if not isinstance(assets, list):
+            raise UpdateCheckError("GitHub latest release assets must be a list.")
+        asset_url = next(
+            (item.get("browser_download_url") for item in assets if isinstance(item, dict) and item.get("name") == "ExcaliFlow-Setup-windows.zip"),
+            None,
+        )
+        return {
+            "version": version,
+            "release_notes_url": _validate_https_url(value.get("html_url"), "html_url"),
+            "asset_url": _validate_https_url(asset_url, "ExcaliFlow-Setup-windows.zip asset"),
+        }
     if value.get("schema_version") != MANIFEST_SCHEMA:
         raise UpdateCheckError(f"Update manifest schema_version must be {MANIFEST_SCHEMA}.")
     version = value.get("version")
@@ -85,6 +107,10 @@ def _fetch_manifest(url: str, timeout: float) -> dict[str, Any]:
             if response.status != 200:
                 raise UpdateCheckError(f"Update server returned HTTP {response.status}.")
             return json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        if error.code == 404 and url == DEFAULT_MANIFEST_URL:
+            raise NoPublishedReleaseError("No GitHub Release has been published yet.") from error
+        raise UpdateCheckError(f"Could not check for updates: HTTP Error {error.code}.") from error
     except (URLError, OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise UpdateCheckError(f"Could not check for updates: {error}.") from error
 
@@ -103,6 +129,8 @@ def check_for_update(
         _validate_manifest_url(manifest_url)
         manifest = _validate_manifest((fetch or _fetch_manifest)(manifest_url, timeout))
         latest = manifest["version"]
+    except NoPublishedReleaseError as error:
+        return {"status": "no_release", "message": str(error)}
     except (UpdateCheckError, OSError, ValueError) as error:
         return {"status": "unavailable", "message": str(error)}
     status = "update_available" if _version_tuple(latest) > _version_tuple(current) else "up_to_date"

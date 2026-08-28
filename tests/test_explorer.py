@@ -266,7 +266,26 @@ class ExplorerTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("Created Atlas Bridge manifest", result.stdout)
-            self.assertTrue((root / ".excaliflow" / "ide-bridge.json").is_file())
+            self.assertTrue((root / ".excaliflow" / "atlas-bridge.json").is_file())
+
+    def test_atlas_bridge_manifest_does_not_overwrite_aios_manifest(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config = root / ".excaliflow"
+            config.mkdir()
+            ide_manifest = config / "ide-bridge.json"
+            ide_manifest.write_text(
+                '{"name":"AIOS Antigravity Sidecar Bridge","bridge_kind":"antigravity_sidecar",'
+                '"health_url":"http://127.0.0.1:8585/health",'
+                '"completion_url":"http://127.0.0.1:8585/v1/chat/completions"}',
+                encoding="utf-8",
+            )
+            original = ide_manifest.read_bytes()
+            atlas_manifest = initialize_bridge(root, port=8877)
+            bridges = discover_ide_bridges(root)
+            self.assertEqual(atlas_manifest.name, "atlas-bridge.json")
+            self.assertEqual(ide_manifest.read_bytes(), original)
+            self.assertEqual([bridge["name"] for bridge in bridges[:2]], ["ExcaliFlow Atlas Bridge", "AIOS Antigravity Sidecar Bridge"])
 
     def test_bridge_doctor_distinguishes_missing_manifest_from_unavailable_runtime(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -279,6 +298,8 @@ class ExplorerTests(unittest.TestCase):
             initialize_bridge(root, port=8875)
             configured = bridge_status(root, port=8875, upstream_url="http://127.0.0.1:9/v1")
             self.assertTrue(configured["manifest_ready"])
+            self.assertEqual(configured["bridge_url"], "http://127.0.0.1:8875/health")
+            self.assertIn("aios_bridge_ready", configured)
             self.assertIn("Start Gemini Web2API", configured["next_action"])
 
     def test_atlas_bridge_forwards_only_to_a_local_openai_upstream(self):

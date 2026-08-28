@@ -32,8 +32,8 @@ def _local_http_url(value: object) -> str | None:
     return value.rstrip("/")
 
 
-def _manifest_bridge(project_dir: Path) -> dict | None:
-    manifest = project_dir / ".excaliflow" / "ide-bridge.json"
+def _manifest_bridge(project_dir: Path, filename: str = "ide-bridge.json") -> dict | None:
+    manifest = project_dir / ".excaliflow" / filename
     if not manifest.is_file():
         return None
     try:
@@ -53,7 +53,7 @@ def _manifest_bridge(project_dir: Path) -> dict | None:
         "health_url": health_url,
         "completion_url": completion_url,
         "model": str(raw.get("model") or "local-ide-bridge"),
-        "detected_by": ".excaliflow/ide-bridge.json",
+        "detected_by": f".excaliflow/{filename}",
         "external_processing": bool(raw.get("external_processing", False)),
     }
 
@@ -81,19 +81,20 @@ def discover_ide_bridges(project_dir: str | Path) -> list[dict]:
     project; it is selected only after its local model endpoint responds.
     """
     root = Path(project_dir)
-    manifest = _manifest_bridge(root)
-    if manifest is not None:
-        return [manifest] if manifest["detected"] else []
-    bridges = [bridge for bridge in (_aios_bridge(root),) if bridge is not None]
+    manifests = [_manifest_bridge(root, name) for name in ("atlas-bridge.json", "ide-bridge.json")]
+    bridges = [bridge for bridge in manifests if bridge is not None and bridge["detected"]]
+    if not any(bridge.get("name") == "AIOS Antigravity Sidecar Bridge" for bridge in bridges):
+        bridges.extend(bridge for bridge in (_aios_bridge(root),) if bridge is not None)
     bridges.append(dict(GEMINI_WEB2API_BRIDGE))
     return bridges
 
 
 def discover_ide_bridge(project_dir: str | Path) -> dict:
     """Return the primary configured bridge for compatibility with earlier callers."""
-    manifest = _manifest_bridge(Path(project_dir))
-    if manifest is not None and not manifest["detected"]:
-        return manifest
+    for filename in ("atlas-bridge.json", "ide-bridge.json"):
+        manifest = _manifest_bridge(Path(project_dir), filename)
+        if manifest is not None and not manifest["detected"]:
+            return manifest
     bridges = discover_ide_bridges(project_dir)
     if bridges:
         return bridges[0]

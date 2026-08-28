@@ -327,6 +327,8 @@ class ExcaliFlowTests(unittest.TestCase):
                 mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Graphify syntax extraction error")
                 success = generator.run_graphify_extract(root, "graphify")
                 self.assertFalse(success)
+                self.assertEqual(mock_run.call_args.kwargs["encoding"], "utf-8")
+                self.assertEqual(mock_run.call_args.kwargs["errors"], "replace")
 
     def test_git_hooks_install_post_commit_cleanly(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -529,6 +531,37 @@ class ExcaliFlowTests(unittest.TestCase):
         self.assertEqual(diff_data["stats"]["removed_nodes"], 1)
         self.assertIn("[+] OAuthProvider", diff_data["code"])
         self.assertIn("[-] LegacyAuth", diff_data["code"])
+
+    def test_diff_baseline_missing_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(RuntimeError, "Diff baseline does not exist"):
+                generator.load_diff_baseline("missing-ref", Path(temp))
+
+    def test_diff_baseline_reads_source_from_git_commit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "ExcaliFlow Test"], cwd=root, check=True)
+            (root / "app.py").write_text("def before():\n    pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "app.py"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=root, check=True)
+            (root / "app.py").write_text("def after():\n    pass\n", encoding="utf-8")
+            baseline = generator.load_diff_baseline("HEAD", root)
+            self.assertTrue(any(symbol["name"] == "before" for symbol in baseline["symbols"]))
+            self.assertFalse(any(symbol["name"] == "after" for symbol in baseline["symbols"]))
+
+    def test_watch_snapshot_ignores_generated_and_dependency_trees(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "src").mkdir()
+            (root / "src" / "app.py").write_text("def run(): pass\n", encoding="utf-8")
+            (root / "graphify-out").mkdir()
+            (root / "graphify-out" / "generated.py").write_text("def noise(): pass\n", encoding="utf-8")
+            (root / "node_modules").mkdir()
+            (root / "node_modules" / "noise.js").write_text("function noise() {}\n", encoding="utf-8")
+            snapshot = generator.watch_source_snapshot(root)
+            self.assertEqual(set(snapshot), {"src/app.py"})
 
     def test_html_template_contains_reach_tracing_and_flow_features(self):
         template = generator.HTML_TEMPLATE

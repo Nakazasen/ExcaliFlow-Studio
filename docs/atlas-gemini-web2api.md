@@ -71,7 +71,7 @@ Expected status is `ready` for all three lines. If Gemini is unavailable, Atlas 
 
 | Doctor result | Meaning | Safe next action |
 |---|---|---|
-| Project manifest missing or invalid | Atlas has no project bridge contract. | Run `excaliflow bridge init --dir "D:\MyProject" --port 8789`. |
+| Project manifest `.excaliflow/atlas-bridge.json` missing or invalid | Atlas has no ExcaliFlow bridge contract. The separate `ide-bridge.json` remains owned by AIOS/other IDE integrations. | Run `excaliflow bridge init --dir "D:\MyProject" --port 8789`. |
 | Gemini Web2API not responding | Upstream is stopped, misconfigured, or cannot reach Gemini. | Start it from its own folder; inspect its terminal output before changing settings. |
 | Atlas Bridge not responding | The local proxy is not running or is using another port. | Start `excaliflow bridge start` with the manifest port. |
 | All ready but a question fails | Gemini can still reject/rate-limit an individual request. | Read the Gemini terminal log; Atlas will fall back to source-backed local evidence. |

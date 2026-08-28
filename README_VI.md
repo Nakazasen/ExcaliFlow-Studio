@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.3-blue.svg" alt="Phiên bản"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.4-blue.svg" alt="Phiên bản"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/giấy_phép-MIT-purple.svg" alt="Giấy phép"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-64%2F64%20đạt-success.svg" alt="Kiểm thử"></a>
@@ -88,7 +88,7 @@ ExcaliFlow chấp nhận Graphify `>=0.9.48,<0.10`: vẫn nhận các bản vá 
 Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Chỉ cần gõ `/excaliflow` trong khung chat AI.
-2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.6)**:
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.7)**:
    - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw (Reach Tracing + Luồng Chuyển Động)**
    - `2` 🔍 **So Sánh Độ Lệch Kiến Trúc (`--diff`)**
    - `3` 🎴 **Thẻ Ảnh Bìa 1200×630 (`--share-card`)**
@@ -113,9 +113,9 @@ Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor
 | **3. Thẻ Ảnh Bìa 1200×630** | Xuất thẻ ảnh vector 1200×630 dùng cho README và chia sẻ | `excaliflow --share-card "README_CARD.svg" --open` |
 | **4. Codebase Atlas (Học Code)** | Giao diện web tương tác giải thích ứng dụng, lộ trình đọc code & vai trò module | `excaliflow open --dir .` |
 | **5. Sơ Đồ Xuất Bản Editorial** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Slide 16:9, Báo cáo KPI/Risk | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
-| **6. Hỏi Đáp Có Dẫn Chứng** | Trả lời câu hỏi về hàm/class/import kèm dẫn chứng chính xác `file:line` | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **6. Tra Cứu Source Có Dẫn Chứng** | Tra cứu hàm/class/file/import kèm `file:line`; câu trả lời semantic cần Atlas Bridge khỏe | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7. Evidence Graph Cho RAG** | Chuyển đổi log RAG thành bản đồ trực quan xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
-| **8. Vòng Đời Atlas AI Bridge** | Quản lý Atlas Bridge (`:8788`), AIOS IDE bridge tùy chọn (`:8585`) và Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **8. Điều Khiển & Chẩn Đoán Atlas Bridge** | Cấu hình/chạy Atlas Bridge (`:8788`) và chẩn đoán riêng Atlas, AIOS IDE bridge (`:8585`), Gemini Web2API (`:8081`); không tự khởi động dịch vụ ngoài | `excaliflow bridge init/start/doctor --dir .` |
 | **9. Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10. Cài Skill Cho AI Host** | Liệt kê target, cài đặt và chẩn đoán skill portable cho các AI host | `excaliflow targets/install/doctor` |
 | **11. Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
@@ -213,7 +213,7 @@ excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atl
 Kết nối backend AI cục bộ (Sidecar Antigravity `:8585` hoặc [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) `:8081`):
 
 ```powershell
-# Khởi tạo tệp manifest (.excaliflow/ide-bridge.json)
+# Khởi tạo manifest riêng của ExcaliFlow (.excaliflow/atlas-bridge.json)
 excaliflow bridge init --dir "D:\MyProject"
 
 # Khởi chạy cầu nối cục bộ (chỉ liên kết 127.0.0.1:8788)
@@ -275,9 +275,9 @@ ExcaliFlow-Studio/
 ├── docs/                   # Hướng dẫn thiết lập & Sổ tay bảo trì (maintenance-and-architecture.md)
 ├── examples/               # Mẫu brief sơ đồ & tệp mẫu RAG trace
 ├── tests/                  # Bộ kiểm thử tự động (65 tests)
-├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.6)
+├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.7)
 ├── pyproject.toml          # Cấu hình gói dự án
-└── VERSION                 # Tệp định danh phiên bản (0.1.3)
+└── VERSION                 # Tệp định danh phiên bản (0.1.4)
 ```
 
 ---

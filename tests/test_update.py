@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import Thread
 from zipfile import ZipFile
 
-from excaliflow.update import check_for_update, current_version
+from excaliflow.update import NoPublishedReleaseError, check_for_update, current_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +20,17 @@ def manifest(version: str = "0.2.0") -> dict:
         "version": version,
         "release_notes_url": f"https://github.com/Nakazasen/ExcaliFlow-Studio/releases/tag/v{version}",
         "asset_url": f"https://github.com/Nakazasen/ExcaliFlow-Studio/releases/download/v{version}/ExcaliFlow-Setup-windows.zip",
+    }
+
+
+def github_release(version: str = "0.2.0") -> dict:
+    return {
+        "tag_name": f"v{version}",
+        "html_url": f"https://github.com/Nakazasen/ExcaliFlow-Studio/releases/tag/v{version}",
+        "assets": [{
+            "name": "ExcaliFlow-Setup-windows.zip",
+            "browser_download_url": f"https://github.com/Nakazasen/ExcaliFlow-Studio/releases/download/v{version}/ExcaliFlow-Setup-windows.zip",
+        }],
     }
 
 
@@ -36,6 +47,18 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(result["current_version"], "0.1.0")
             self.assertEqual(result["latest_version"], "0.2.0")
             self.assertIn("ExcaliFlow-Setup-windows.zip", result["asset_url"])
+
+    def test_github_latest_release_and_no_release_are_reported_cleanly(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_install(root)
+            latest = check_for_update(root, fetch=lambda _url, _timeout: github_release())
+            self.assertEqual(latest["status"], "update_available")
+            no_release = check_for_update(
+                root,
+                fetch=lambda _url, _timeout: (_ for _ in ()).throw(NoPublishedReleaseError("No GitHub Release has been published yet.")),
+            )
+            self.assertEqual(no_release["status"], "no_release")
 
     def test_equal_malformed_and_unreachable_manifests_never_claim_update(self):
         with tempfile.TemporaryDirectory() as temp:

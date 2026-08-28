@@ -5,6 +5,8 @@ from __future__ import annotations
 import shutil
 import json
 import sys
+import ast
+import re
 from importlib import metadata
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -99,4 +101,35 @@ def install_skill(target: Path, *, source: Path | None = None) -> Path:
 
 def doctor(host: str, *, home: Path | None = None, workspace: Path | None = None) -> tuple[Path, bool]:
     target = resolve_target(host, home=home, workspace=workspace)
-    return target, (target / "scripts" / "generate_diagram.py").is_file()
+    return target, not doctor_issues(target)
+
+
+def doctor_issues(target: Path) -> list[str]:
+    """Return actionable integrity failures for one portable skill install."""
+    required = (
+        "VERSION",
+        "SKILL.md",
+        "scripts/generate_diagram.py",
+        "src/excaliflow/cli.py",
+        "assets/vendor/mermaid.min.js",
+        "assets/vendor/panzoom.min.js",
+    )
+    issues = [f"missing {name}" for name in required if not (target / name).is_file()]
+    if issues:
+        return issues
+    try:
+        version = (target / "VERSION").read_text(encoding="utf-8").strip()
+        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+            issues.append(f"invalid VERSION: {version!r}")
+        skill_text = (target / "SKILL.md").read_text(encoding="utf-8")
+        if not skill_text.startswith("---\n") or "name: excaliflow" not in skill_text[:200]:
+            issues.append("invalid SKILL.md frontmatter")
+        for relative in ("scripts/generate_diagram.py", "src/excaliflow/cli.py"):
+            ast.parse((target / relative).read_text(encoding="utf-8"), filename=relative)
+        for relative, marker in (("assets/vendor/mermaid.min.js", "mermaid"), ("assets/vendor/panzoom.min.js", "Panzoom")):
+            content = (target / relative).read_text(encoding="utf-8")
+            if len(content) < 1000 or marker not in content:
+                issues.append(f"invalid offline asset: {relative}")
+    except (OSError, UnicodeError, SyntaxError) as error:
+        issues.append(str(error))
+    return issues

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.3-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.4-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/tests-64%2F64%20passing-success.svg" alt="Tests"></a>
@@ -88,7 +88,7 @@ ExcaliFlow accepts Graphify `>=0.9.48,<0.10`: patch updates remain available, wh
 If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Type `/excaliflow` in your AI chat window.
-2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.6)**:
+2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.7)**:
    - `1` 🏢 **Architecture & Excalidraw (Reach Tracing + Flow Motion)**
    - `2` 🔍 **Architecture Diff Comparison (`--diff`)**
    - `3` 🎴 **1200×630 README Share Card (`--share-card`)**
@@ -113,9 +113,9 @@ If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, G
 | **3. 1200×630 Share Card** | Generates 1200×630 vector card for README and social sharing | `excaliflow --share-card "README_CARD.svg" --open` |
 | **4. Codebase Atlas** | Interactive web guide with plain-language summary, reading path & module roles | `excaliflow open --dir .` |
 | **5. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
-| **6. Source-Backed Q&A** | Answers questions about classes/functions/imports with `file:line` citations | `excaliflow ask --dir . --audience engineer --question "..."` |
+| **6. Source-Backed Lookup** | Looks up classes/functions/files/imports with `file:line` citations; semantic answers require a healthy Atlas Bridge | `excaliflow ask --dir . --audience engineer --question "..."` |
 | **7. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
-| **8. Atlas AI Bridge Lifecycle** | Manages Atlas Bridge (`:8788`), optional AIOS IDE bridge (`:8585`), and Gemini Web2API (`:8081`) | `excaliflow bridge init/start/doctor --dir .` |
+| **8. Atlas Bridge Control & Diagnostics** | Configures/runs Atlas Bridge (`:8788`) and diagnoses Atlas, optional AIOS IDE bridge (`:8585`), and Gemini Web2API (`:8081`) separately; external services are never started implicitly | `excaliflow bridge init/start/doctor --dir .` |
 | **9. Atlas, Explain & Monitoring** | Generates Atlas/guides, watches source changes, and verifies offline assets | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10. AI Host Installation** | Lists targets, installs, and diagnoses portable skills for supported AI hosts | `excaliflow targets/install/doctor` |
 | **11. Update Checker** | Non-intrusive check against GitHub Releases for new updates | `excaliflow update check` |
@@ -213,7 +213,7 @@ excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atl
 Connects local AI backends (e.g. Antigravity Sidecar `:8585` or local [Gemini Web2API](https://github.com/Sophomoresty/gemini-web2api) `:8081`):
 
 ```powershell
-# Initialize bridge manifest (.excaliflow/ide-bridge.json)
+# Initialize ExcaliFlow's own bridge manifest (.excaliflow/atlas-bridge.json)
 excaliflow bridge init --dir "D:\MyProject"
 
 # Start loopback bridge server (bound strictly to 127.0.0.1:8788)
@@ -275,9 +275,9 @@ ExcaliFlow-Studio/
 ├── docs/                   # Setup playbooks & Maintenance manuals (maintenance-and-architecture.md)
 ├── examples/               # Sample briefs & RAG trace payloads
 ├── tests/                  # Deterministic test suite (65 tests)
-├── SKILL.md                # AI Agent skill protocol definition (v3.6)
+├── SKILL.md                # AI Agent skill protocol definition (v3.7)
 ├── pyproject.toml          # Package configuration
-└── VERSION                 # Semantic version file (0.1.3)
+└── VERSION                 # Semantic version file (0.1.4)
 ```
 
 ---

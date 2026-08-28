@@ -9,10 +9,10 @@ import webbrowser
 from pathlib import Path
 
 from excaliflow.atlas import write_atlas
-from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, serve_bridge
+from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, load_bridge_config, serve_bridge
 from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.evidence_atlas import build_evidence_atlas_html
-from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, install_skill, repository_root, resolve_target
+from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, doctor_issues, install_skill, repository_root, resolve_target
 from excaliflow.knowledge import EvidenceValidationError, load_evidence_graph, write_evidence_graph
 from excaliflow.update import DEFAULT_MANIFEST_URL, check_for_update
 
@@ -30,12 +30,15 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "update":
         parser = argparse.ArgumentParser(prog="excaliflow update", description="Check GitHub Releases for a newer ExcaliFlow skill. This never downloads or installs anything.")
         parser.add_argument("command", choices=("check",))
-        parser.add_argument("--manifest-url", default=DEFAULT_MANIFEST_URL, help="HTTPS update.json URL; loopback HTTP is allowed only for local testing.")
+        parser.add_argument("--manifest-url", default=DEFAULT_MANIFEST_URL, help="HTTPS GitHub release API or update.json URL; loopback HTTP is allowed for testing.")
         parser.add_argument("--root", type=Path, default=repository_root(), help=argparse.SUPPRESS)
         parser.add_argument("--timeout", type=float, default=5.0, help="Seconds to wait for the explicit update check.")
         args = parser.parse_args(sys.argv[2:])
         result = check_for_update(args.root, manifest_url=args.manifest_url, timeout=args.timeout)
         print("ExcaliFlow update")
+        if result["status"] == "no_release":
+            print("No published GitHub Release is available yet; the installed version was not changed.")
+            return
         if result["status"] == "unavailable":
             print(f"Update status unavailable: {result['message']}")
             return
@@ -93,28 +96,46 @@ def main() -> None:
             print("Open the Atlas file above in your browser. AI setup is optional; source-backed learning already works.")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "bridge":
-        parser = argparse.ArgumentParser(prog="excaliflow", description="Create or run a loopback-only Atlas Bridge for a codebase.")
+        parser = argparse.ArgumentParser(prog="excaliflow", description="Configure, run, or diagnose the loopback-only Atlas Bridge.")
         parser.add_argument("command", choices=("init", "serve", "start", "doctor"))
         parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Codebase directory that owns the bridge manifest.")
-        parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Loopback port for the Atlas Bridge.")
-        parser.add_argument("--upstream", default=DEFAULT_UPSTREAM, help="Loopback OpenAI-compatible upstream, usually Gemini Web2API.")
+        parser.add_argument("--port", type=int, help=f"Loopback port for the Atlas Bridge (default: manifest or {DEFAULT_PORT}).")
+        parser.add_argument("--upstream", help=f"Loopback OpenAI-compatible upstream (default: manifest or {DEFAULT_UPSTREAM}).")
         args = parser.parse_args(sys.argv[2:])
         if args.command == "init":
-            print(f"Created Atlas Bridge manifest: {initialize_bridge(args.dir, port=args.port)}")
+            print(f"Created Atlas Bridge manifest: {initialize_bridge(args.dir, port=args.port or DEFAULT_PORT)}")
             return
         if args.command == "doctor":
-            status = bridge_status(args.dir, upstream_url=args.upstream, port=args.port)
+            config = None
+            try:
+                config = load_bridge_config(args.dir)
+            except ValueError:
+                pass
+            selected_port = args.port or (config["port"] if config else DEFAULT_PORT)
+            selected_upstream = args.upstream or (config["upstream_url"] if config else DEFAULT_UPSTREAM)
+            status = bridge_status(args.dir, upstream_url=selected_upstream, port=selected_port)
             print("Atlas Bridge doctor")
             print(f"- Project manifest: {'ready' if status['manifest_ready'] else 'missing or invalid'} ({status['manifest']})")
             print(f"- Gemini Web2API: {'ready' if status['upstream_ready'] else 'not responding'} ({status['upstream_url']})")
             print(f"- Atlas Bridge: {'ready' if status['bridge_ready'] else 'not responding'} ({status['bridge_url']})")
+            print(f"- AIOS IDE Bridge: {'ready' if status['aios_bridge_ready'] else 'not responding'} ({status['aios_bridge_url']})")
             print(f"Next: {status['next_action']}")
             return
+        selected_port = args.port or DEFAULT_PORT
+        selected_upstream = args.upstream or DEFAULT_UPSTREAM
         if args.command == "start":
-            manifest = args.dir / ".excaliflow" / "ide-bridge.json"
-            if not manifest.exists():
-                print(f"Created Atlas Bridge manifest: {initialize_bridge(args.dir, port=args.port)}")
-        serve_bridge(args.upstream, port=args.port)
+            try:
+                config = load_bridge_config(args.dir)
+            except ValueError as error:
+                manifest_path = args.dir.resolve() / ".excaliflow" / "atlas-bridge.json"
+                if manifest_path.exists():
+                    parser.error(str(error))
+                manifest = initialize_bridge(args.dir, port=selected_port)
+                print(f"Created Atlas Bridge manifest: {manifest}")
+                config = load_bridge_config(args.dir)
+            selected_port = args.port or config["port"]
+            selected_upstream = args.upstream or config["upstream_url"]
+        serve_bridge(selected_upstream, port=selected_port)
         return
     if len(sys.argv) > 1 and sys.argv[1] == "atlas":
         parser = argparse.ArgumentParser(prog="excaliflow", description="Create an offline Codebase Atlas with graph, explanation, and local Q&A.")
@@ -169,9 +190,11 @@ def main() -> None:
         if args.command == "install":
             print(f"Installed ExcaliFlow skill to: {install_skill(target)}")
         else:
-            path, ready = doctor(args.host, workspace=args.workspace) if args.target is None else (target, (target / "scripts" / "generate_diagram.py").is_file())
-            print(f"{args.host}: {'ready' if ready else 'not installed'} ({path})")
+            path, ready = doctor(args.host, workspace=args.workspace) if args.target is None else (target, not doctor_issues(target))
+            print(f"{args.host}: {'ready' if ready else 'not ready'} ({path})")
             if not ready:
+                for issue in doctor_issues(path):
+                    print(f"- {issue}")
                 raise SystemExit(1)
         return
     package_root = repository_root()
