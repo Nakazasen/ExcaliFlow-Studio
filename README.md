@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.4-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.5-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/tests-64%2F64%20passing-success.svg" alt="Tests"></a>
@@ -277,7 +277,7 @@ ExcaliFlow-Studio/
 ├── tests/                  # Deterministic test suite (65 tests)
 ├── SKILL.md                # AI Agent skill protocol definition (v3.7)
 ├── pyproject.toml          # Package configuration
-└── VERSION                 # Semantic version file (0.1.4)
+└── VERSION                 # Semantic version file (0.1.5)
 ```
 
 ---

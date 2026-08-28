@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -12,6 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackageEntrypointTests(unittest.TestCase):
+    def test_package_version_matches_version_receipt_and_pyproject(self):
+        import excaliflow
+
+        metadata = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        self.assertEqual(excaliflow.__version__, (ROOT / "VERSION").read_text(encoding="utf-8").strip())
+        self.assertEqual(excaliflow.__version__, metadata["project"]["version"])
+
     def test_repository_root_resolves_editable_install_direct_url(self):
         class EditableDistribution:
             @staticmethod

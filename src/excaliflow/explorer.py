@@ -11,10 +11,13 @@ from pathlib import Path
 
 
 IGNORED_DIRECTORIES = {
-    ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox",
-    "__pycache__", "build", "coverage", "dist", "graphify-out", "local_cases",
-    "local_runs", "node_modules", "output", "vendor",
+    ".agents", ".env", ".excaliflow", ".git", ".mypy_cache", ".nox",
+    ".pytest_cache", ".ruff_cache", ".tmp_smoke", ".tox", ".venv",
+    "__pycache__", "build", "coverage", "dist", "dist-packages", "env",
+    "graphify-out", "local_cases", "local_runs", "node_modules", "output",
+    "site-packages", "target", "vendor", "venv",
 }
+MAX_SOURCE_FILE_BYTES = 2 * 1024 * 1024
 LANGUAGES = {
     ".py": "Python",
     ".js": "JavaScript",
@@ -44,7 +47,9 @@ def _source_files(root: Path) -> list[Path]:
         directories[:] = [
             directory
             for directory in directories
-            if directory not in IGNORED_DIRECTORIES and not directory.startswith(".venv")
+            if directory not in IGNORED_DIRECTORIES
+            and not directory.startswith((".venv", "venv"))
+            and not (Path(current_root) / directory).is_symlink()
         ]
         current = Path(current_root)
         for name in names:
@@ -110,6 +115,13 @@ def inspect_codebase(project_dir: str | Path) -> dict:
         language = LANGUAGES[path.suffix.lower()]
         languages[language] += 1
         relative = _relative(root, path)
+        try:
+            if path.stat().st_size > MAX_SOURCE_FILE_BYTES:
+                parse_warnings.append(f"{relative}: source file exceeds {MAX_SOURCE_FILE_BYTES} bytes and was skipped")
+                continue
+        except OSError as error:
+            parse_warnings.append(f"{relative}: source file metadata could not be read ({error})")
+            continue
         text = path.read_text(encoding="utf-8", errors="replace")
         if path.suffix.lower() == ".py":
             try:
@@ -119,6 +131,8 @@ def inspect_codebase(project_dir: str | Path) -> dict:
                 relationships.extend(visitor.relationships)
             except SyntaxError as error:
                 parse_warnings.append(f"{relative}:{error.lineno}: Python syntax could not be parsed")
+            except (RecursionError, MemoryError) as error:
+                parse_warnings.append(f"{relative}: Python AST exceeded safe analysis limits ({type(error).__name__})")
             continue
         for match in DECLARATION.finditer(text):
             line = text.count("\n", 0, match.start()) + 1

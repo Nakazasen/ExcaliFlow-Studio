@@ -339,3 +339,23 @@ class ExplorerTests(unittest.TestCase):
             (root / ".venv-rag" / "site-packages" / "dependency.py").write_text("def dependency(): pass\n", encoding="utf-8")
             report = inspect_codebase(root)
             self.assertEqual(report["files"], ["app.py", "service.py"])
+
+    def test_aios_scratch_nested_venv_and_agent_skill_are_pruned(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            nested = root / ".tmp_smoke" / "clean" / "venv" / "Lib" / "site-packages"
+            nested.mkdir(parents=True)
+            (nested / "dependency.py").write_text("class DependencyNoise: pass\n", encoding="utf-8")
+            agent_skill = root / ".agents" / "skills" / "tool"
+            agent_skill.mkdir(parents=True)
+            (agent_skill / "tool.py").write_text("class SkillNoise: pass\n", encoding="utf-8")
+            report = inspect_codebase(root)
+            self.assertEqual(report["files"], ["app.py", "service.py"])
+
+    def test_pathological_python_ast_is_reported_without_crashing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "deep.py").write_text("value = " + "[" * 1500 + "0" + "]" * 1500, encoding="utf-8")
+            report = inspect_codebase(root)
+            self.assertTrue(report["parse_warnings"])

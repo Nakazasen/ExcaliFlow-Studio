@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.4-blue.svg" alt="Phiên bản"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.5-blue.svg" alt="Phiên bản"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/giấy_phép-MIT-purple.svg" alt="Giấy phép"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-64%2F64%20đạt-success.svg" alt="Kiểm thử"></a>
@@ -277,7 +277,7 @@ ExcaliFlow-Studio/
 ├── tests/                  # Bộ kiểm thử tự động (65 tests)
 ├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.7)
 ├── pyproject.toml          # Cấu hình gói dự án
-└── VERSION                 # Tệp định danh phiên bản (0.1.4)
+└── VERSION                 # Tệp định danh phiên bản (0.1.5)
 ```
 
 ---
