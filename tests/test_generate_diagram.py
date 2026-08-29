@@ -154,6 +154,25 @@ class ExcaliFlowTests(unittest.TestCase):
                 self.assertNotIn("<link", svg)
                 self.assertNotIn("url(http", svg)
 
+    def test_process_cards_wrap_long_copy_without_ellipsis(self):
+        brief = {
+            "title": "Safe delivery flow",
+            "type": "process",
+            "data": {
+                "items": [
+                    {"label": "Step one", "value": "This description is deliberately long enough to require several wrapped lines inside the process card."},
+                    {"label": "Step two", "value": "A second long description verifies every process card uses the multiline renderer rather than truncation."},
+                ]
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "process.svg"
+            generator.generate_editorial_file(temp, output, visual_type="process", visual_data=brief, canvas="document")
+            svg = output.read_text(encoding="utf-8")
+            ET.fromstring(svg)
+            self.assertIn("<tspan", svg)
+            self.assertNotIn("…", svg)
+
     def test_invalid_editorial_briefs_fail_before_output_is_written(self):
         invalid_briefs = [
             ("sankey", {"title": "Bad Sankey", "type": "sankey", "data": {"nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}], "links": [{"source": "a", "target": "missing", "value": 1}]}}),

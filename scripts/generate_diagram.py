@@ -2838,12 +2838,24 @@ def render_business_report(brief, width, height):
             parts += [f'<circle cx="{x:.1f}" cy="{y:.1f}" r="13" class="accent"/>', f'<text class="label" x="{x + 18:.1f}" y="{y + 6:.1f}">{editorial_text(item["label"], 28)}</text>']
     else:
         segment = usable_width / len(items)
+        is_process = kind == "process"
+        box_height = 172 if is_process else 120
         for index, item in enumerate(items):
             x = left + index * segment
             y = top + (index % 2) * 36 if kind == "timeline" else top
-            parts += [f'<rect class="node" x="{x + 8:.1f}" y="{y}" width="{segment - 16:.1f}" height="120" rx="14"/>', f'<text class="label" x="{x + 26:.1f}" y="{y + 46}">{editorial_text(item["label"], 24)}</text>', f'<text class="small" x="{x + 26:.1f}" y="{y + 78}">{editorial_text(item["value"], 28)}</text>']
+            parts.append(f'<rect class="node" x="{x + 8:.1f}" y="{y}" width="{segment - 16:.1f}" height="{box_height}" rx="14"/>')
+            if is_process:
+                label_svg, label_lines = render_editorial_multiline_svg_with_count(
+                    item["label"], x=x + 20, y=y + 34, css_class="label", line_limit=22, max_lines=2, line_height=17
+                )
+                value_svg, _ = render_editorial_multiline_svg_with_count(
+                    item["value"], x=x + 20, y=y + 40 + label_lines * 17, css_class="small", line_limit=25, max_lines=5, line_height=14
+                )
+                parts.extend([label_svg, value_svg])
+            else:
+                parts.extend([f'<text class="label" x="{x + 26:.1f}" y="{y + 46}">{editorial_text(item["label"], 24)}</text>', f'<text class="small" x="{x + 26:.1f}" y="{y + 78}">{editorial_text(item["value"], 28)}</text>'])
             if index:
-                parts.append(f'<line x1="{x - 8:.1f}" y1="{y + 60}" x2="{x + 8:.1f}" y2="{y + 60}" class="accent-stroke" stroke-width="4"/>')
+                parts.append(f'<line x1="{x - 8:.1f}" y1="{y + box_height / 2:.1f}" x2="{x + 8:.1f}" y2="{y + box_height / 2:.1f}" class="accent-stroke" stroke-width="4"/>')
     return "".join(parts)
 
 
