@@ -141,3 +141,36 @@ class KnowledgeTests(unittest.TestCase):
             self.assertEqual(rendered.returncode, 0, rendered.stderr)
             self.assertIn("Wrote offline Evidence Atlas", rendered.stdout)
             self.assertIn("Evidence Atlas", atlas_path.read_text(encoding="utf-8"))
+
+    def test_evidence_atlas_flowsint_2_features(self):
+        import re
+        atlas = build_evidence_atlas_html(graph_from_rag_trace(valid_trace()))
+
+        # 1. Cubic Bezier edges instead of straight lines
+        self.assertFalse(re.search(r'<line\s+[^>]*class="[^"]*edge[^"]*"', atlas))
+        self.assertTrue(re.search(r'<path\b[^>]*d="M\s*[^"]+C\s*[^"]+"', atlas))
+        self.assertTrue(re.search(r'<path\b[^>]*class="[^"]*edge[^"]*"', atlas))
+        self.assertIn('marker id="atlas-arrow"', atlas)
+        self.assertIn('stroke="#38bdf8"', atlas)
+
+        # 2. Floating Toolbar
+        self.assertIn('class="atlas-floating-toolbar"', atlas)
+        self.assertIn('id="atlas-btn-zoom-in"', atlas)
+        self.assertIn('id="atlas-btn-zoom-out"', atlas)
+        self.assertIn('id="atlas-btn-fit"', atlas)
+        self.assertIn('id="atlas-btn-fullscreen"', atlas)
+
+        # 3. Collapsible Inspector with Confidence Gauge and Connection Chips
+        self.assertIn('id="atlas-toggle-inspector"', atlas)
+        self.assertIn('id="atlas-confidence-box"', atlas)
+        self.assertIn('id="atlas-conf-fill"', atlas)
+        self.assertIn('id="atlas-links-box"', atlas)
+        self.assertIn('id="atlas-in-chips"', atlas)
+        self.assertIn('id="atlas-out-chips"', atlas)
+
+        # 4. Real-time Search Box & Controller
+        self.assertIn('id="atlas-search-input"', atlas)
+        self.assertIn('class="atlas-search-box"', atlas)
+        self.assertIn('updateTransform', atlas)
+        self.assertIn('isPanning', atlas)
+
