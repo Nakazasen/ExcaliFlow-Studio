@@ -454,6 +454,85 @@ button.active {{
   border-color: #38bdf8;
   color: #38bdf8;
 }}
+.atlas-tool-btn.active-mode {{
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}}
+.layout.galaxy-mode .edge-label {{
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}}
+.micro-dots .node text, .micro-dots .edge-label {{
+  display: none;
+}}
+.micro-dots .node rect {{
+  rx: 9999px;
+  transform: scale(0.35);
+  transform-origin: center;
+}}
+.mini-radar-card {{
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}}
+.mini-radar-header {{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}}
+.mini-radar-count {{
+  color: var(--accent);
+  font-weight: 800;
+}}
+.mini-radar-canvas-wrap {{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0f172a;
+  border-radius: 6px;
+  padding: 8px 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}}
+.radar-orbit {{
+  fill: none;
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}}
+.radar-orbit.inner {{
+  stroke: #1e293b;
+}}
+.radar-ray {{
+  stroke: rgba(56, 189, 248, 0.35);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}}
+.radar-dot {{
+  stroke: #0f172a;
+  stroke-width: 1.5;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}}
+.radar-dot-group:hover .radar-dot {{
+  r: 8;
+  filter: drop-shadow(0 0 6px var(--accent));
+}}
+.radar-center {{
+  fill: var(--accent);
+  stroke: #0f172a;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+}}
 svg {{
   display: block;
   min-width: {width}px;
@@ -703,9 +782,12 @@ aside h2 {{
   aside {{ position: static; max-height: none; margin-top: 16px; }}
   h1 {{ font-size: 18px; }}
 }}
-</style></head><body data-view="answer"><header><div class="eyebrow">Nguồn bằng chứng · local file</div><h1>Evidence Atlas</h1><p class="lede">{title}. Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.</p></header><main><div class="toolbar"><button data-view="answer" class="active">Câu trả lời &amp; nguồn</button><button data-view="full">Toàn bộ knowledge graph</button><span id="atlas-view-status" class="legend" aria-live="polite">Đang xem: Câu trả lời &amp; nguồn</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="Tìm kiếm thực thể..." class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="Evidence Graph"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="Phóng to">➕</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="Thu nhỏ">➖</button><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="Vừa khung hình">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="Toàn màn hình">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="Thu gọn bảng">›</button><div class="eyebrow">Nguồn bằng chứng</div><h2 id="detail-title">Bắt đầu từ câu trả lời</h2><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">Độ tin cậy trích xuất</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">📥 Được dẫn chứng từ (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">📤 Dẫn chứng cho (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.</div></aside></div></main><script>
+</style></head><body data-view="answer"><header><div class="eyebrow">Nguồn bằng chứng · local file</div><h1>Evidence Atlas</h1><p class="lede">{title}. Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.</p></header><main><div class="toolbar"><button data-view="answer" class="active">Câu trả lời &amp; nguồn</button><button data-view="full">Toàn bộ knowledge graph</button><span id="atlas-view-status" class="legend" aria-live="polite">Đang xem: Câu trả lời &amp; nguồn</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="Tìm kiếm thực thể..." class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="Evidence Graph"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="Chuyển đổi giao diện Thiên hà / Phân tầng">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="Phóng to">➕</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="Thu nhỏ">➖</button><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="Vừa khung hình">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="Toàn màn hình">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="Thu gọn bảng">›</button><div class="eyebrow">Nguồn bằng chứng</div><h2 id="detail-title">Bắt đầu từ câu trả lời</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>🛰️ Vệ tinh lân cận</span><span id="atlas-mini-radar-count" class="mini-radar-count">0 lân cận</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">Độ tin cậy trích xuất</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">📥 Được dẫn chứng từ (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">📤 Dẫn chứng cho (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.</div></aside></div></main><script>
 (() => {{
   const DATA = {payload};
+  const POSITIONS = {json.dumps(positions)};
+  const SVG_WIDTH = {width};
+  const SVG_HEIGHT = {height};
   const nodeById = Object.fromEntries(DATA.nodes.map(node => [node.id, node]));
   const edgeById = Object.fromEntries(DATA.edges.map(edge => [edge.id, edge]));
   const status = document.getElementById('atlas-view-status');
@@ -727,6 +809,7 @@ aside h2 {{
   const layout = document.querySelector('.layout');
   const toggleInspectorBtn = document.getElementById('atlas-toggle-inspector');
   const searchInput = document.getElementById('atlas-search-input');
+  const toggleLayoutBtn = document.getElementById('atlas-btn-toggle-layout');
 
   const TYPE_NAMES = {{
     'document': '📁 Tệp tài liệu nguồn',
@@ -737,6 +820,247 @@ aside h2 {{
     'code': '💻 Mã nguồn',
     'entity': '🧩 Khái niệm'
   }};
+
+  const TYPE_COLORS = {{
+    'answer': '#ff7a45',
+    'document': '#5d83d6',
+    'chunk': '#4ba980',
+    'entity': '#a46cdb',
+    'claim': '#d49a29',
+    'code': '#2c8498',
+    'case': '#ce5c70'
+  }};
+
+  function updateAtlasMiniRadar(nodeId) {{
+    const radarContainer = document.getElementById('atlas-mini-radar-container');
+    if (!radarContainer) return;
+
+    const inEdges = DATA.edges.filter(e => e.to === nodeId);
+    const outEdges = DATA.edges.filter(e => e.from === nodeId);
+    const neighborIds = [...new Set([...inEdges.map(e => e.from), ...outEdges.map(e => e.to)])].filter(id => id !== nodeId);
+
+    const countSpan = document.getElementById('atlas-mini-radar-count');
+    if (countSpan) {{
+      countSpan.textContent = neighborIds.length + ' lân cận';
+    }}
+
+    if (neighborIds.length === 0) {{
+      radarContainer.style.display = 'none';
+      return;
+    }}
+    radarContainer.style.display = 'block';
+
+    const raysGroup = document.getElementById('atlas-radar-rays');
+    const neighborsGroup = document.getElementById('atlas-radar-neighbors');
+    const centerNode = document.getElementById('atlas-radar-center-node');
+    if (!raysGroup || !neighborsGroup) return;
+
+    const currNode = nodeById[nodeId];
+    if (centerNode && currNode) {{
+      centerNode.setAttribute('fill', TYPE_COLORS[currNode.type] || '#38bdf8');
+    }}
+
+    raysGroup.innerHTML = '';
+    neighborsGroup.innerHTML = '';
+
+    const R = 58;
+    const n = neighborIds.length;
+    let raysHtml = '';
+    let dotsHtml = '';
+    neighborIds.forEach((nbId, idx) => {{
+      const angle = (2 * Math.PI * idx / n) - Math.PI / 2;
+      const nx = Math.cos(angle) * R;
+      const ny = Math.sin(angle) * R;
+      const nbObj = nodeById[nbId] || {{}};
+      const ntype = nbObj.type || 'chunk';
+      const nbLabel = (nbObj.label || nbId).replace(/"/g, '&quot;');
+      const color = TYPE_COLORS[ntype] || '#38bdf8';
+
+      raysHtml += `<line x1="0" y1="0" x2="${{nx.toFixed(1)}}" y2="${{ny.toFixed(1)}}" class="radar-ray" />`;
+      dotsHtml += `<g class="radar-dot-group" cursor="pointer" onclick="selectAtlasNode('${{nbId}}')">` +
+                  `<circle cx="${{nx.toFixed(1)}}" cy="${{ny.toFixed(1)}}" r="5.5" fill="${{color}}" class="radar-dot"><title>${{nbLabel}}</title></circle></g>`;
+    }});
+    raysGroup.innerHTML = raysHtml;
+    neighborsGroup.innerHTML = dotsHtml;
+  }}
+
+  // --- Force-Directed Galaxy Simulation Engine ---
+  let currentLayout = 'galaxy';
+  let simNodes = [];
+  let simEdges = [];
+  let simRunning = true;
+  let animFrameId = null;
+  let draggedNode = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let nodeStartX = 0;
+  let nodeStartY = 0;
+
+  function initForceSimulation() {{
+    const cx = SVG_WIDTH / 2;
+    const cy = SVG_HEIGHT / 2;
+
+    simNodes = DATA.nodes.map((n, i) => {{
+      const isHub = (n.type === 'answer' || n.type === 'document');
+      const angle = (2 * Math.PI * i / (DATA.nodes.length || 1));
+      const dist = isHub ? (Math.random() * 80) : (240 + Math.random() * 200);
+      const basePos = POSITIONS[n.id] || [cx, cy];
+      const baseX = Number(basePos[0]);
+      const baseY = Number(basePos[1]);
+
+      return {{
+        id: n.id,
+        baseX: baseX,
+        baseY: baseY,
+        width: 260,
+        height: 84,
+        x: cx + Math.cos(angle) * dist,
+        y: cy + Math.sin(angle) * dist,
+        vx: 0,
+        vy: 0,
+        isHub: isHub,
+        mass: isHub ? 4.0 : 1.0,
+        elem: document.querySelector(`.node[data-node="${{n.id}}"]`)
+      }};
+    }});
+
+    const simById = Object.fromEntries(simNodes.map(sn => [sn.id, sn]));
+    simEdges = DATA.edges.map(e => {{
+      const edgeElem = document.querySelector(`.edge[data-edge="${{e.id}}"]`);
+      return {{
+        id: e.id,
+        source: simById[e.from],
+        target: simById[e.to],
+        origD: edgeElem ? edgeElem.getAttribute('d') : '',
+        elem: edgeElem
+      }};
+    }}).filter(e => e.source && e.target);
+
+    let alpha = 1.0;
+    function physicsTick() {{
+      if (currentLayout !== 'galaxy') return;
+
+      // Repulsion
+      const kRepel = 4800;
+      for (let i = 0; i < simNodes.length; i++) {{
+        const n1 = simNodes[i];
+        for (let j = i + 1; j < simNodes.length; j++) {{
+          const n2 = simNodes[j];
+          let dx = n1.x - n2.x;
+          let dy = n1.y - n2.y;
+          let d2 = dx * dx + dy * dy + 1;
+          let d = Math.sqrt(d2);
+          if (d < 700) {{
+            let force = (kRepel / (d2 + 100)) * alpha;
+            let fx = (dx / d) * force;
+            let fy = (dy / d) * force;
+            if (n1 !== draggedNode) {{ n1.vx += fx / n1.mass; n1.vy += fy / n1.mass; }}
+            if (n2 !== draggedNode) {{ n2.vx -= fx / n2.mass; n2.vy -= fy / n2.mass; }}
+          }}
+        }}
+      }}
+
+      // Springs between connected nodes
+      const targetDist = 220;
+      const kSpring = 0.035;
+      for (let e of simEdges) {{
+        let dx = e.target.x - e.source.x;
+        let dy = e.target.y - e.source.y;
+        let d = Math.sqrt(dx * dx + dy * dy) || 1;
+        let force = (d - targetDist) * kSpring * alpha;
+        let fx = (dx / d) * force;
+        let fy = (dy / d) * force;
+        if (e.source !== draggedNode) {{ e.source.vx += fx / e.source.mass; e.source.vy += fy / e.source.mass; }}
+        if (e.target !== draggedNode) {{ e.target.vx -= fx / e.target.mass; e.target.vy -= fy / e.target.mass; }}
+      }}
+
+      // Center gravity & dampening
+      const kGravity = 0.012;
+      for (let n of simNodes) {{
+        if (n === draggedNode) continue;
+        n.vx += (cx - n.x) * kGravity * alpha;
+        n.vy += (cy - n.y) * kGravity * alpha;
+        n.vx *= 0.88;
+        n.vy *= 0.88;
+        n.x += n.vx;
+        n.y += n.vy;
+      }}
+
+      // Update node positions
+      for (let n of simNodes) {{
+        if (n.elem) {{
+          const dx = n.x - (n.baseX + 130);
+          const dy = n.y - (n.baseY + 42);
+          n.elem.setAttribute('transform', `translate(${{dx.toFixed(1)}}, ${{dy.toFixed(1)}})`);
+        }}
+      }}
+
+      // Update edge positions
+      for (let e of simEdges) {{
+        if (e.elem) {{
+          const x1 = e.source.x;
+          const y1 = e.source.y;
+          const x2 = e.target.x;
+          const y2 = e.target.y;
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          let cx1, cy1, cx2, cy2;
+          if (Math.abs(dy) >= 10) {{
+            cx1 = x1;
+            cy1 = y1 + dy * 0.45;
+            cx2 = x2;
+            cy2 = y2 - dy * 0.45;
+          }} else {{
+            cx1 = x1 + dx * 0.45;
+            cy1 = y1 - 25;
+            cx2 = x2 - dx * 0.45;
+            cy2 = y2 - 25;
+          }}
+          e.elem.setAttribute('d', `M ${{x1.toFixed(1)}},${{y1.toFixed(1)}} C ${{cx1.toFixed(1)}},${{cy1.toFixed(1)}} ${{cx2.toFixed(1)}},${{cy2.toFixed(1)}} ${{x2.toFixed(1)}},${{y2.toFixed(1)}}`);
+        }}
+      }}
+
+      alpha *= 0.993;
+      if (alpha > 0.005 || draggedNode) {{
+        animFrameId = requestAnimationFrame(physicsTick);
+      }} else {{
+        simRunning = false;
+      }}
+    }}
+
+    animFrameId = requestAnimationFrame(physicsTick);
+  }}
+
+  function switchLayout(mode) {{
+    currentLayout = mode;
+    if (layout) {{
+      layout.classList.toggle('galaxy-mode', mode === 'galaxy');
+    }}
+    if (toggleLayoutBtn) {{
+      toggleLayoutBtn.classList.toggle('active-mode', mode === 'galaxy');
+      toggleLayoutBtn.textContent = mode === 'galaxy' ? '🌌' : '📑';
+      toggleLayoutBtn.title = mode === 'galaxy' ? 'Chuyển sang giao diện Phân tầng chuẩn' : 'Chuyển sang giao diện Thiên hà động lực';
+    }}
+
+    if (mode === 'hierarchical') {{
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      simRunning = false;
+      for (let n of simNodes) {{
+        if (n.elem) n.elem.removeAttribute('transform');
+      }}
+      for (let e of simEdges) {{
+        if (e.elem && e.origD) e.elem.setAttribute('d', e.origD);
+      }}
+    }} else {{
+      initForceSimulation();
+    }}
+  }}
+
+  if (toggleLayoutBtn) {{
+    toggleLayoutBtn.addEventListener('click', () => {{
+      switchLayout(currentLayout === 'galaxy' ? 'hierarchical' : 'galaxy');
+    }});
+  }}
 
   // --- Pan & Zoom Engine ---
   let scale = 1.0;
@@ -749,6 +1073,11 @@ aside h2 {{
   const updateTransform = () => {{
     if (!svgElem) return;
     svgElem.style.transform = `translate(${{panX}}px, ${{panY}}px) scale(${{scale}})`;
+    if (scale < 0.55) {{
+      svgElem.classList.add('micro-dots');
+    }} else {{
+      svgElem.classList.remove('micro-dots');
+    }}
   }};
 
   if (canvasSec && svgElem) {{
@@ -847,6 +1176,43 @@ aside h2 {{
     }});
   }}
 
+  // Node dragging physics
+  document.querySelectorAll('.node').forEach(nodeEl => {{
+    nodeEl.addEventListener('mousedown', (e) => {{
+      if (currentLayout !== 'galaxy') return;
+      const nid = nodeEl.dataset.node;
+      const sn = simNodes.find(n => n.id === nid);
+      if (!sn) return;
+      draggedNode = sn;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      nodeStartX = sn.x;
+      nodeStartY = sn.y;
+      e.stopPropagation();
+      if (!simRunning) {{
+        simRunning = true;
+        initForceSimulation();
+      }}
+    }});
+  }});
+
+  window.addEventListener('mousemove', (e) => {{
+    if (draggedNode && currentLayout === 'galaxy') {{
+      const mouseDx = (e.clientX - dragStartX) / scale;
+      const mouseDy = (e.clientY - dragStartY) / scale;
+      draggedNode.x = nodeStartX + mouseDx;
+      draggedNode.y = nodeStartY + mouseDy;
+      draggedNode.vx = 0;
+      draggedNode.vy = 0;
+    }}
+  }});
+
+  window.addEventListener('mouseup', () => {{
+    if (draggedNode) {{
+      draggedNode = null;
+    }}
+  }});
+
   // --- Node Selection & Focus ---
   window.selectAtlasNode = (nodeId) => {{
     const node = nodeById[nodeId];
@@ -856,7 +1222,7 @@ aside h2 {{
     const typeLabel = TYPE_NAMES[node.type] || node.type;
     const loc = node.properties?.location || node.properties?.source_id || '';
     const text = node.properties?.text || node.label || '';
-    const statusNote = node.review_status === 'needs_review' ? '\nTrạng thái: Cần xem lại (chưa được xác minh)' : '';
+    const statusNote = node.review_status === 'needs_review' ? '\\nTrạng thái: Cần xem lại (chưa được xác minh)' : '';
 
     detail.innerHTML = `
       <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:6px;">${{typeLabel}}</div>
@@ -868,6 +1234,9 @@ aside h2 {{
     `;
     const btn = detail.querySelector('.atlas-copy-btn');
     if (btn) btn.dataset.snippet = text;
+
+    // Update Mini Radar
+    updateAtlasMiniRadar(nodeId);
 
     // Update Confidence Gauge
     if (confBox && confPct && confFill) {{
@@ -966,5 +1335,10 @@ aside h2 {{
       if (linksBox) linksBox.style.display = 'none';
     }});
   }});
+
+  if (layout) {{
+    layout.classList.add('galaxy-mode');
+  }}
+  initForceSimulation();
 }})();
 </script></body></html>"""

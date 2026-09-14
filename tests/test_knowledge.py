@@ -174,3 +174,30 @@ class KnowledgeTests(unittest.TestCase):
         self.assertIn('updateTransform', atlas)
         self.assertIn('isPanning', atlas)
 
+    def test_evidence_atlas_galaxy_simulation_and_mini_radar(self):
+        atlas = build_evidence_atlas_html(graph_from_rag_trace(valid_trace()))
+
+        # 1. Galaxy mode switcher button in floating toolbar
+        self.assertIn('id="atlas-btn-toggle-layout"', atlas)
+        self.assertIn('active-mode', atlas)
+
+        # 2. Mini Radar Ego-Graph in inspector panel
+        self.assertIn('id="atlas-mini-radar-container"', atlas)
+        self.assertIn('id="atlas-mini-radar-svg"', atlas)
+        self.assertIn('class="radar-orbit"', atlas)
+        self.assertIn('id="atlas-radar-rays"', atlas)
+        self.assertIn('id="atlas-radar-neighbors"', atlas)
+        self.assertIn('id="atlas-radar-center-node"', atlas)
+        self.assertIn('updateAtlasMiniRadar', atlas)
+
+        # 3. Force Simulation & Drag Physics Engine
+        self.assertIn('initForceSimulation', atlas)
+        self.assertIn('physicsTick', atlas)
+        self.assertIn('draggedNode', atlas)
+        self.assertIn('micro-dots', atlas)
+        self.assertIn('switchLayout', atlas)
+
+        # 4. Strict Zero Cloud Egress Invariant
+        self.assertNotIn("http://", atlas)
+        self.assertNotIn("https://", atlas)
+
