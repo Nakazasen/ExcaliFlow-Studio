@@ -479,6 +479,8 @@ button.active {{
   border-radius: 8px;
   padding: 10px 12px;
   margin: 10px 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }}
 .mini-radar-header {{
   display: flex;
@@ -500,8 +502,11 @@ button.active {{
   align-items: center;
   background: #0f172a;
   border-radius: 6px;
-  padding: 8px 0;
+  padding: 4px 0;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }}
 .radar-orbit {{
   fill: none;
@@ -533,11 +538,50 @@ button.active {{
   stroke-width: 2;
   filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
 }}
-svg {{
+.canvas svg {{
   display: block;
   min-width: {width}px;
   transform-origin: 0 0;
   transition: transform 0.05s ease-out;
+}}
+#atlas-mini-radar-svg {{
+  min-width: 0 !important;
+  width: 160px !important;
+  max-width: 160px !important;
+  height: 140px !important;
+  display: block;
+  margin: 0 auto;
+  transform: none !important;
+}}
+
+/* Celestial Concentric Orbits Backdrop */
+.galaxy-orbit-backdrop {{
+  display: none;
+  pointer-events: none;
+}}
+.layout.galaxy-mode .galaxy-orbit-backdrop {{
+  display: block;
+}}
+.celestial-orbit {{
+  fill: none;
+  stroke-width: 1.2;
+}}
+.celestial-orbit.orbit-core {{
+  stroke: rgba(56, 189, 248, 0.22);
+  stroke-dasharray: 4 6;
+}}
+.celestial-orbit.orbit-mid {{
+  stroke: rgba(75, 169, 128, 0.22);
+  stroke-dasharray: 4 6;
+}}
+.celestial-orbit.orbit-outer {{
+  stroke: rgba(93, 131, 214, 0.22);
+  stroke-dasharray: 6 8;
+}}
+.celestial-axis {{
+  stroke: rgba(148, 163, 184, 0.08);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
 }}
 @keyframes flowDash {{
   from {{ stroke-dashoffset: 24; }}
@@ -782,7 +826,7 @@ aside h2 {{
   aside {{ position: static; max-height: none; margin-top: 16px; }}
   h1 {{ font-size: 18px; }}
 }}
-</style></head><body data-view="answer"><header><div class="eyebrow">Nguồn bằng chứng · local file</div><h1>Evidence Atlas</h1><p class="lede">{title}. Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.</p></header><main><div class="toolbar"><button data-view="answer" class="active">Câu trả lời &amp; nguồn</button><button data-view="full">Toàn bộ knowledge graph</button><span id="atlas-view-status" class="legend" aria-live="polite">Đang xem: Câu trả lời &amp; nguồn</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="Tìm kiếm thực thể..." class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="Evidence Graph"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="Chuyển đổi giao diện Thiên hà / Phân tầng">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="Phóng to">➕</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="Thu nhỏ">➖</button><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="Vừa khung hình">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="Toàn màn hình">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="Thu gọn bảng">›</button><div class="eyebrow">Nguồn bằng chứng</div><h2 id="detail-title">Bắt đầu từ câu trả lời</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>🛰️ Vệ tinh lân cận</span><span id="atlas-mini-radar-count" class="mini-radar-count">0 lân cận</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">Độ tin cậy trích xuất</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">📥 Được dẫn chứng từ (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">📤 Dẫn chứng cho (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.</div></aside></div></main><script>
+</style></head><body data-view="answer"><header><div class="eyebrow">Nguồn bằng chứng · local file</div><h1>Evidence Atlas</h1><p class="lede">{title}. Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.</p></header><main><div class="toolbar"><button data-view="answer" class="active">Câu trả lời &amp; nguồn</button><button data-view="full">Toàn bộ knowledge graph</button><span id="atlas-view-status" class="legend" aria-live="polite">Đang xem: Câu trả lời &amp; nguồn</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="Tìm kiếm thực thể..." class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="Evidence Graph"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="Chuyển đổi giao diện Thiên hà / Phân tầng">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="Phóng to">➕</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="Thu nhỏ">➖</button><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="Vừa khung hình">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="Toàn màn hình">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs><g class="galaxy-orbit-backdrop" id="galaxy-backdrop"><circle cx="{width // 2}" cy="{height // 2}" r="75" class="celestial-orbit orbit-core" /><circle cx="{width // 2}" cy="{height // 2}" r="210" class="celestial-orbit orbit-mid" /><circle cx="{width // 2}" cy="{height // 2}" r="380" class="celestial-orbit orbit-outer" /><line x1="{width // 2 - 420}" y1="{height // 2}" x2="{width // 2 + 420}" y2="{height // 2}" class="celestial-axis" /><line x1="{width // 2}" y1="{height // 2 - 420}" x2="{width // 2}" y2="{height // 2 + 420}" class="celestial-axis" /></g>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="Thu gọn bảng">›</button><div class="eyebrow">Nguồn bằng chứng</div><h2 id="detail-title">Bắt đầu từ câu trả lời</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>🛰️ Vệ tinh lân cận</span><span id="atlas-mini-radar-count" class="mini-radar-count">0 lân cận</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">Độ tin cậy trích xuất</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">📥 Được dẫn chứng từ (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">📤 Dẫn chứng cho (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.</div></aside></div></main><script>
 (() => {{
   const DATA = {payload};
   const POSITIONS = {json.dumps(positions)};
@@ -900,10 +944,49 @@ aside h2 {{
     const cx = SVG_WIDTH / 2;
     const cy = SVG_HEIGHT / 2;
 
-    simNodes = DATA.nodes.map((n, i) => {{
-      const isHub = (n.type === 'answer' || n.type === 'document');
-      const angle = (2 * Math.PI * i / (DATA.nodes.length || 1));
-      const dist = isHub ? (Math.random() * 80) : (240 + Math.random() * 200);
+    const hubs = DATA.nodes.filter(n => n.type === 'answer' || n.type === 'case');
+    const citations = DATA.nodes.filter(n => n.type === 'chunk' || n.type === 'claim' || n.type === 'entity' || n.type === 'code');
+    const docs = DATA.nodes.filter(n => n.type === 'document');
+
+    let hubIdx = 0, citeIdx = 0, docIdx = 0;
+    simNodes = DATA.nodes.map((n) => {{
+      const isHub = (n.type === 'answer' || n.type === 'case');
+      const isCite = (n.type === 'chunk' || n.type === 'claim' || n.type === 'entity' || n.type === 'code');
+      const isDoc = (n.type === 'document');
+
+      let dist = 210;
+      let angle = 0;
+      let idealRadius = 210;
+      let mass = 1.0;
+      let w = 220;
+      let h = 70;
+
+      if (isHub) {{
+        mass = 5.0;
+        idealRadius = 35;
+        dist = 15 + (hubIdx * 25);
+        angle = hubs.length > 1 ? (2 * Math.PI * hubIdx / hubs.length) - Math.PI / 2 : 0;
+        w = 260;
+        h = 84;
+        hubIdx++;
+      }} else if (isCite) {{
+        mass = 1.2;
+        idealRadius = 210;
+        dist = 200 + (citeIdx % 3) * 15;
+        angle = (2 * Math.PI * citeIdx / (citations.length || 1)) - Math.PI / 2 + 0.15;
+        w = 180;
+        h = 64;
+        citeIdx++;
+      }} else if (isDoc) {{
+        mass = 2.8;
+        idealRadius = 380;
+        dist = 370 + (docIdx % 3) * 20;
+        angle = (2 * Math.PI * docIdx / (docs.length || 1)) - Math.PI / 2 + 0.35;
+        w = 240;
+        h = 76;
+        docIdx++;
+      }}
+
       const basePos = POSITIONS[n.id] || [cx, cy];
       const baseX = Number(basePos[0]);
       const baseY = Number(basePos[1]);
@@ -912,14 +995,17 @@ aside h2 {{
         id: n.id,
         baseX: baseX,
         baseY: baseY,
-        width: 260,
-        height: 84,
+        width: w,
+        height: h,
         x: cx + Math.cos(angle) * dist,
         y: cy + Math.sin(angle) * dist,
         vx: 0,
         vy: 0,
         isHub: isHub,
-        mass: isHub ? 4.0 : 1.0,
+        isCite: isCite,
+        isDoc: isDoc,
+        idealRadius: idealRadius,
+        mass: mass,
         elem: document.querySelector(`.node[data-node="${{n.id}}"]`)
       }};
     }});
@@ -941,7 +1027,7 @@ aside h2 {{
       if (currentLayout !== 'galaxy') return;
 
       // Repulsion
-      const kRepel = 4800;
+      const kRepel = 4500;
       for (let i = 0; i < simNodes.length; i++) {{
         const n1 = simNodes[i];
         for (let j = i + 1; j < simNodes.length; j++) {{
@@ -961,12 +1047,17 @@ aside h2 {{
       }}
 
       // Springs between connected nodes
-      const targetDist = 220;
       const kSpring = 0.035;
       for (let e of simEdges) {{
         let dx = e.target.x - e.source.x;
         let dy = e.target.y - e.source.y;
         let d = Math.sqrt(dx * dx + dy * dy) || 1;
+        let targetDist = 160;
+        if (e.source.isHub || e.target.isHub) {{
+          targetDist = 180;
+        }} else if (e.source.isDoc || e.target.isDoc) {{
+          targetDist = 200;
+        }}
         let force = (d - targetDist) * kSpring * alpha;
         let fx = (dx / d) * force;
         let fy = (dy / d) * force;
@@ -974,16 +1065,63 @@ aside h2 {{
         if (e.target !== draggedNode) {{ e.target.vx -= fx / e.target.mass; e.target.vy -= fy / e.target.mass; }}
       }}
 
-      // Center gravity & dampening
+      // Center gravity & Orbital concentric bias
       const kGravity = 0.012;
+      const kOrbit = 0.008;
       for (let n of simNodes) {{
         if (n === draggedNode) continue;
+        let dxC = n.x - cx;
+        let dyC = n.y - cy;
+        let distC = Math.sqrt(dxC * dxC + dyC * dyC) || 1;
+        let rDelta = distC - n.idealRadius;
+        n.vx -= (dxC / distC) * rDelta * kOrbit * alpha;
+        n.vy -= (dyC / distC) * rDelta * kOrbit * alpha;
+
         n.vx += (cx - n.x) * kGravity * alpha;
         n.vy += (cy - n.y) * kGravity * alpha;
         n.vx *= 0.88;
         n.vy *= 0.88;
         n.x += n.vx;
         n.y += n.vy;
+      }}
+
+      // AABB Box Collision Resolution (Strict no-overlap)
+      const pad = 12;
+      for (let i = 0; i < simNodes.length; i++) {{
+        const n1 = simNodes[i];
+        const halfW1 = (n1.width / 2) + pad;
+        const halfH1 = (n1.height / 2) + pad;
+        for (let j = i + 1; j < simNodes.length; j++) {{
+          const n2 = simNodes[j];
+          const halfW2 = (n2.width / 2) + pad;
+          const halfH2 = (n2.height / 2) + pad;
+
+          let dx = n1.x - n2.x;
+          let dy = n1.y - n2.y;
+          let minX = halfW1 + halfW2;
+          let minY = halfH1 + halfH2;
+
+          let overlapX = minX - Math.abs(dx);
+          let overlapY = minY - Math.abs(dy);
+
+          if (overlapX > 0 && overlapY > 0) {{
+            if (overlapX < overlapY) {{
+              let signX = dx >= 0 ? 1 : -1;
+              let pushX = overlapX * 0.5;
+              if (n1 !== draggedNode) n1.x += pushX * signX;
+              if (n2 !== draggedNode) n2.x -= pushX * signX;
+              n1.vx *= 0.5;
+              n2.vx *= 0.5;
+            }} else {{
+              let signY = dy >= 0 ? 1 : -1;
+              let pushY = overlapY * 0.5;
+              if (n1 !== draggedNode) n1.y += pushY * signY;
+              if (n2 !== draggedNode) n2.y -= pushY * signY;
+              n1.vy *= 0.5;
+              n2.vy *= 0.5;
+            }}
+          }}
+        }}
       }}
 
       // Update node positions

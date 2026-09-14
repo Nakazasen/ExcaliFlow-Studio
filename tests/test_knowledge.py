@@ -195,9 +195,17 @@ class KnowledgeTests(unittest.TestCase):
         self.assertIn('physicsTick', atlas)
         self.assertIn('draggedNode', atlas)
         self.assertIn('micro-dots', atlas)
-        self.assertIn('switchLayout', atlas)
+        # 4. Concentric celestial orbits and AABB collision
+        self.assertIn('id="galaxy-backdrop"', atlas)
+        self.assertIn('class="celestial-orbit orbit-core"', atlas)
+        self.assertIn('class="celestial-orbit orbit-mid"', atlas)
+        self.assertIn('class="celestial-orbit orbit-outer"', atlas)
+        self.assertIn('min-width: 0 !important;', atlas)
+        self.assertIn('width: 160px !important;', atlas)
+        self.assertIn('overlapX', atlas)
+        self.assertIn('overlapY', atlas)
 
-        # 4. Strict Zero Cloud Egress Invariant
+        # 5. Strict Zero Cloud Egress Invariant
         self.assertNotIn("http://", atlas)
         self.assertNotIn("https://", atlas)
 
