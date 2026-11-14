@@ -266,7 +266,8 @@ ExcaliFlow-Studio/
 │   ├── cli.py              # CLI entry point
 │   ├── atlas.py            # Interactive Codebase Atlas renderer
 │   ├── bridge_server.py    # Local loopback AI bridge
-│   ├── explorer.py         # Source scan AST & evidence Q&A engine
+│   ├── domain_graph.py     # Mixed-workspace Knowledge Graph & Excalidraw v2 exporter (v0.4.0)
+│   ├── explorer.py         # Source scan AST & C#/VBA/multi-language evidence Q&A engine
 │   ├── knowledge.py        # RAG evidence graph processor
 │   └── installer.py        # Universal AI agent skill installer
 ├── scripts/
@@ -274,10 +275,10 @@ ExcaliFlow-Studio/
 ├── assets/vendor/          # Pinned offline JavaScript runtimes (Mermaid, Panzoom)
 ├── docs/                   # Setup playbooks & Maintenance manuals (maintenance-and-architecture.md)
 ├── examples/               # Sample briefs & RAG trace payloads
-├── tests/                  # Deterministic test suite (65 tests)
-├── SKILL.md                # AI Agent skill protocol definition (v3.7)
+├── tests/                  # Deterministic test suite
+├── SKILL.md                # AI Agent skill protocol definition
 ├── pyproject.toml          # Package configuration
-└── VERSION                 # Semantic version file (0.1.5)
+└── VERSION                 # Semantic version file (0.4.0)
 ```
 
 ---

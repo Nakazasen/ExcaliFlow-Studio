@@ -12,15 +12,177 @@ from typing import Any, Dict, List, Optional, Tuple
 from excaliflow.knowledge import REVIEW_STATUSES, validate_evidence_graph
 
 
-TYPE_LABELS = {
-    "answer": "Câu trả lời",
-    "document": "Tài liệu nguồn",
-    "chunk": "Đoạn bằng chứng",
-    "entity": "Khái niệm",
-    "claim": "Nhận định",
-    "code": "Mã nguồn",
-    "case": "Case",
+_ATLAS_I18N: Dict[str, Dict[str, Any]] = {
+    "vi": {
+        "eyebrow": "Nguồn bằng chứng · local file",
+        "lede": "Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.",
+        "view_answer": "Câu trả lời & nguồn",
+        "view_full": "Toàn bộ knowledge graph",
+        "status_prefix": "Đang xem: ",
+        "search_placeholder": "Tìm kiếm thực thể...",
+        "canvas_aria": "Đồ thị bằng chứng",
+        "toggle_layout": "Chuyển đổi giao diện Thiên hà / Phân tầng",
+        "zoom_in": "Phóng to",
+        "zoom_out": "Thu nhỏ",
+        "zoom_fit": "Vừa khung hình",
+        "fullscreen": "Toàn màn hình",
+        "collapse_panel": "Thu gọn bảng",
+        "expand_panel": "Mở rộng bảng",
+        "switch_hier": "Chuyển sang giao diện Phân tầng chuẩn",
+        "switch_galaxy": "Chuyển sang giao diện Thiên hà động lực",
+        "inspector_eyebrow": "Nguồn bằng chứng",
+        "start_title": "Bắt đầu từ câu trả lời",
+        "radar_title": "🛰️ Vệ tinh lân cận",
+        "neighbor_suffix": " lân cận",
+        "conf_title": "Độ tin cậy trích xuất",
+        "inbound_title": "📥 Được dẫn chứng từ",
+        "outbound_title": "📤 Dẫn chứng cho",
+        "empty_rel": "(Không có)",
+        "start_hint": "Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.",
+        "review_needed": "Cần xem lại",
+        "needs_review_note": "\nTrạng thái: Cần xem lại (chưa được xác minh)",
+        "copy_btn": "📋 Sao chép",
+        "copied_btn": "Đã sao chép!",
+        "open_portal": "📂 Mở trong Portal",
+        "opened_portal": "Đã gửi yêu cầu mở file!",
+        "edge_title": "Quan hệ liên kết",
+        "edge_loc_prefix": "Vị trí: ",
+        "type_labels": {
+            "answer": "Câu trả lời",
+            "document": "Tài liệu nguồn",
+            "chunk": "Đoạn bằng chứng",
+            "entity": "Khái niệm",
+            "claim": "Nhận định",
+            "code": "Mã nguồn",
+            "case": "Case",
+        },
+        "rel_labels": {
+            "supports": "dẫn chứng cho",
+            "supported by": "dẫn chứng cho",
+            "supported_by": "dẫn chứng cho",
+            "cites": "trích từ",
+            "extracted_from": "trích từ",
+            "extracted from": "trích từ",
+            "derived_from": "suy ra từ",
+            "derived from": "suy ra từ",
+            "mentions": "liên quan tới",
+            "contains": "chứa đoạn",
+            "depends_on": "phụ thuộc vào",
+            "implemented_by": "triển khai bởi",
+            "defined_in": "định nghĩa trong",
+            "references": "tham chiếu",
+            "implements": "triển khai",
+        },
+    },
+    "ja": {
+        "eyebrow": "エビデンスアトラス · ローカル解析",
+        "lede": "根拠付きの知識関係を表示します。破線および「要確認」ラベルは未検証の推定ノードです。",
+        "view_answer": "回答・根拠パス",
+        "view_full": "全ナレッジグラフ",
+        "status_prefix": "表示中: ",
+        "search_placeholder": "ノード・記号を検索...",
+        "canvas_aria": "エビデンスグラフ",
+        "toggle_layout": "ギャラクシー / 階層レイアウト切替",
+        "zoom_in": "拡大",
+        "zoom_out": "縮小",
+        "zoom_fit": "画面に合わせる",
+        "fullscreen": "全画面表示",
+        "collapse_panel": "パネルを折りたたむ",
+        "expand_panel": "パネルを開く",
+        "switch_hier": "階層レイアウトへ切替",
+        "switch_galaxy": "力学ギャラクシーへ切替",
+        "inspector_eyebrow": "エビデンス詳細",
+        "start_title": "ノードを選択してください",
+        "radar_title": "🛰️ 近傍ノード",
+        "neighbor_suffix": " 件",
+        "conf_title": "抽出信頼度",
+        "inbound_title": "📥 参照元",
+        "outbound_title": "📤 参照先",
+        "empty_rel": "(なし)",
+        "start_hint": "ノードまたはエッジをクリックすると、参照元ファイル・信頼度・近傍関係が表示されます。",
+        "review_needed": "要確認",
+        "needs_review_note": "\n状態: 要確認（未検証）",
+        "copy_btn": "📋 コピー",
+        "copied_btn": "コピー済み！",
+        "open_portal": "📂 ポータルで開く",
+        "opened_portal": "開く要求を送信しました！",
+        "edge_title": "関連リンク",
+        "edge_loc_prefix": "参照元: ",
+        "type_labels": {
+            "answer": "回答要約",
+            "document": "ソース資料",
+            "chunk": "根拠抜粋",
+            "entity": "概念・識別子",
+            "claim": "抽出クレーム",
+            "code": "ソースコード",
+            "case": "ケース",
+        },
+        "rel_labels": {
+            "supports": "裏付け",
+            "supported by": "根拠引用",
+            "supported_by": "根拠引用",
+            "cites": "引用元",
+            "extracted_from": "抽出元",
+            "extracted from": "抽出元",
+            "derived_from": "派生元",
+            "derived from": "派生元",
+            "mentions": "言及",
+            "contains": "包含",
+            "depends_on": "依存",
+            "implemented_by": "実装先",
+            "defined_in": "定義元",
+            "references": "相互参照",
+            "implements": "実装",
+        },
+    },
+    "en": {
+        "eyebrow": "Evidence Atlas · local workspace",
+        "lede": "Displays source-backed knowledge relations; dashed outlines indicate needs-review claims.",
+        "view_answer": "Answer & Citations",
+        "view_full": "Full Knowledge Graph",
+        "status_prefix": "Viewing: ",
+        "search_placeholder": "Search nodes...",
+        "canvas_aria": "Evidence Graph",
+        "toggle_layout": "Toggle Galaxy / Hierarchical",
+        "zoom_in": "Zoom in",
+        "zoom_out": "Zoom out",
+        "zoom_fit": "Fit view",
+        "fullscreen": "Fullscreen",
+        "collapse_panel": "Collapse inspector",
+        "expand_panel": "Expand inspector",
+        "switch_hier": "Switch to hierarchical layout",
+        "switch_galaxy": "Switch to force-directed galaxy",
+        "inspector_eyebrow": "Evidence Inspector",
+        "start_title": "Select a node to inspect",
+        "radar_title": "🛰️ Local Neighborhood",
+        "neighbor_suffix": " neighbors",
+        "conf_title": "Extraction Confidence",
+        "inbound_title": "📥 Referenced by",
+        "outbound_title": "📤 References",
+        "empty_rel": "(None)",
+        "start_hint": "Click a node or edge to inspect source receipts, file location, and confidence.",
+        "review_needed": "Needs review",
+        "needs_review_note": "\nStatus: Needs review (unverified)",
+        "copy_btn": "📋 Copy",
+        "copied_btn": "Copied!",
+        "open_portal": "📂 Open in Portal",
+        "opened_portal": "Sent open request!",
+        "edge_title": "Relation Link",
+        "edge_loc_prefix": "Location: ",
+        "type_labels": {
+            "answer": "Answer",
+            "document": "Document",
+            "chunk": "Evidence Chunk",
+            "entity": "Entity",
+            "claim": "Claim",
+            "code": "Source Code",
+            "case": "Case",
+        },
+        "rel_labels": {},
+    },
 }
+
+TYPE_LABELS = _ATLAS_I18N["vi"]["type_labels"]
 
 TYPE_COLORS = {
     "answer": "#ff7a45",
@@ -33,22 +195,10 @@ TYPE_COLORS = {
 }
 
 
-def _relation_label(relation: Any) -> str:
-    labels = {
-        "supports": "dẫn chứng cho",
-        "supported by": "dẫn chứng cho",
-        "supported_by": "dẫn chứng cho",
-        "cites": "trích từ",
-        "extracted_from": "trích từ",
-        "extracted from": "trích từ",
-        "derived_from": "suy ra từ",
-        "derived from": "suy ra từ",
-        "mentions": "liên quan tới",
-        "contains": "chứa đoạn",
-        "depends_on": "phụ thuộc vào",
-        "implemented_by": "triển khai bởi",
-    }
-    raw = str(relation or "liên kết").strip().lower().replace("-", " ")
+def _relation_label(relation: Any, lang: str = "vi") -> str:
+    tr = _ATLAS_I18N.get(lang, _ATLAS_I18N["vi"])
+    labels = tr["rel_labels"]
+    raw = str(relation or "link").strip().lower().replace("-", " ")
     return labels.get(raw, raw.replace("_", " "))
 
 
@@ -108,15 +258,16 @@ def _receipt_text(edge: dict) -> str:
     return f"{status}. Nguồn: {origin}{conf_str}{loc_str}."
 
 
-def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
+def _node_svg(node: dict, position: tuple[int, int], is_focused: bool, lang: str = "vi") -> str:
     """Render one evidence node with pill shape and clean multi-line label."""
+    tr = _ATLAS_I18N.get(lang, _ATLAS_I18N["vi"])
     x, y = position
     classes = "node"
     if is_focused:
         classes += " focus"
     if node.get("review_status") == "needs_review":
         classes += " needs-review"
-        review_label = f'<text class="review-label" x="{x + 14}" y="{y + 72}">Cần xem lại</text>'
+        review_label = f'<text class="review-label" x="{x + 14}" y="{y + 72}">{html.escape(tr["review_needed"])}</text>'
     else:
         review_label = ""
 
@@ -125,7 +276,7 @@ def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
         f'<tspan x="{x + 14}" dy="{0 if i == 0 else 17}">{html.escape(line)}</tspan>'
         for i, line in enumerate(lines)
     )
-    node_type_label = TYPE_LABELS.get(node.get("type", ""), node.get("type", "").upper())
+    node_type_label = tr["type_labels"].get(node.get("type", ""), node.get("type", "").upper())
 
     return (
         f'<g class="{classes}" data-node="{html.escape(str(node["id"]))}" tabindex="0" role="button">'
@@ -137,9 +288,11 @@ def _node_svg(node: dict, position: tuple[int, int], is_focused: bool) -> str:
     )
 
 
-def build_evidence_atlas_html(graph: dict) -> str:
+def build_evidence_atlas_html(graph: dict, lang: str = "vi") -> str:
     """Create one standalone Flowsint 2.0 HTML document from a validated evidence graph."""
     validate_evidence_graph(graph)
+    norm_lang = lang if lang in _ATLAS_I18N else "vi"
+    tr = _ATLAS_I18N[norm_lang]
     positions, width, height = _layout(graph)
     focus_ids = {
         node["id"]
@@ -242,7 +395,7 @@ def build_evidence_atlas_html(graph: dict) -> str:
             cand_x = int(0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2)
             cand_y_pt = int(0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2)
 
-        rel_text = html.escape(_relation_label(edge.get("relation", "")))
+        rel_text = html.escape(_relation_label(edge.get("relation", ""), norm_lang))
         w_lbl = min(140, max(76, 16 + len(rel_text) * 6))
         h_lbl = 20
         bx1 = cand_x - w_lbl // 2
@@ -267,14 +420,15 @@ def build_evidence_atlas_html(graph: dict) -> str:
             )
 
     node_svg = "".join(
-        _node_svg(node, positions[node["id"]], node["id"] in focus_ids)
+        _node_svg(node, positions[node["id"]], node["id"] in focus_ids, norm_lang)
         for node in graph["nodes"]
     )
     payload = json.dumps(graph, ensure_ascii=False).replace("</", "<\\/")
+    tr_json = json.dumps(tr, ensure_ascii=False).replace("</", "<\\/")
     title = html.escape(graph.get("title", "Evidence Graph"))
 
     return f"""<!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evidence Atlas — {title}</title>
+<html lang="{norm_lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evidence Atlas — {title}</title>
 <style>
 :root {{
   --ink: #f8fafc;
@@ -821,14 +975,34 @@ aside h2 {{
 .atlas-copy-btn:hover {{
   background: #475569;
 }}
+.atlas-open-btn {{
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.45);
+  margin-left: 6px;
+}}
+.atlas-open-btn:hover {{
+  background: rgba(56, 189, 248, 0.28);
+  color: #fff;
+}}
+.atlas-zoom-badge {{
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}}
 @media (max-width: 850px) {{
   .layout {{ display: block; }}
   aside {{ position: static; max-height: none; margin-top: 16px; }}
   h1 {{ font-size: 18px; }}
 }}
-</style></head><body data-view="answer"><header><div class="eyebrow">Nguồn bằng chứng · local file</div><h1>Evidence Atlas</h1><p class="lede">{title}. Bản đồ này hiển thị quan hệ có nguồn; đường nét đứt và nhãn “Cần xem lại” là nhận định chưa được xác minh.</p></header><main><div class="toolbar"><button data-view="answer" class="active">Câu trả lời &amp; nguồn</button><button data-view="full">Toàn bộ knowledge graph</button><span id="atlas-view-status" class="legend" aria-live="polite">Đang xem: Câu trả lời &amp; nguồn</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="Tìm kiếm thực thể..." class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="Evidence Graph"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="Chuyển đổi giao diện Thiên hà / Phân tầng">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="Phóng to">➕</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="Thu nhỏ">➖</button><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="Vừa khung hình">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="Toàn màn hình">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs><g class="galaxy-orbit-backdrop" id="galaxy-backdrop"><circle cx="{width // 2}" cy="{height // 2}" r="75" class="celestial-orbit orbit-core" /><circle cx="{width // 2}" cy="{height // 2}" r="210" class="celestial-orbit orbit-mid" /><circle cx="{width // 2}" cy="{height // 2}" r="380" class="celestial-orbit orbit-outer" /><line x1="{width // 2 - 420}" y1="{height // 2}" x2="{width // 2 + 420}" y2="{height // 2}" class="celestial-axis" /><line x1="{width // 2}" y1="{height // 2 - 420}" x2="{width // 2}" y2="{height // 2 + 420}" class="celestial-axis" /></g>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="Thu gọn bảng">›</button><div class="eyebrow">Nguồn bằng chứng</div><h2 id="detail-title">Bắt đầu từ câu trả lời</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>🛰️ Vệ tinh lân cận</span><span id="atlas-mini-radar-count" class="mini-radar-count">0 lân cận</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">Độ tin cậy trích xuất</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">📥 Được dẫn chứng từ (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">📤 Dẫn chứng cho (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">Chọn câu trả lời, đoạn tài liệu, nhận định hoặc đường nối để xem nguồn, vị trí và độ tin cậy.</div></aside></div></main><script>
+</style></head><body data-view="answer"><header><div class="eyebrow">{html.escape(tr["eyebrow"])}</div><h1>Evidence Atlas</h1><p class="lede">{title}. {html.escape(tr["lede"])}</p></header><main><div class="toolbar"><button data-view="answer" class="active">{html.escape(tr["view_answer"])}</button><button data-view="full">{html.escape(tr["view_full"])}</button><span id="atlas-view-status" class="legend" aria-live="polite">{html.escape(tr["status_prefix"] + tr["view_answer"])}</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="{html.escape(tr["search_placeholder"])}" class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="{html.escape(tr["canvas_aria"])}"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="{html.escape(tr["toggle_layout"])}">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="{html.escape(tr["zoom_in"])}">＋</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="{html.escape(tr["zoom_out"])}">－</button><span id="atlas-zoom-badge" class="atlas-zoom-badge">100%</span><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="{html.escape(tr["zoom_fit"])}">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="{html.escape(tr["fullscreen"])}">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs><g class="galaxy-orbit-backdrop" id="galaxy-backdrop"><circle cx="{width // 2}" cy="{height // 2}" r="75" class="celestial-orbit orbit-core" /><circle cx="{width // 2}" cy="{height // 2}" r="210" class="celestial-orbit orbit-mid" /><circle cx="{width // 2}" cy="{height // 2}" r="380" class="celestial-orbit orbit-outer" /><line x1="{width // 2 - 420}" y1="{height // 2}" x2="{width // 2 + 420}" y2="{height // 2}" class="celestial-axis" /><line x1="{width // 2}" y1="{height // 2 - 420}" x2="{width // 2}" y2="{height // 2 + 420}" class="celestial-axis" /></g>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="{html.escape(tr["collapse_panel"])}">›</button><div class="eyebrow">{html.escape(tr["inspector_eyebrow"])}</div><h2 id="detail-title">{html.escape(tr["start_title"])}</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>{html.escape(tr["radar_title"])}</span><span id="atlas-mini-radar-count" class="mini-radar-count">0{html.escape(tr["neighbor_suffix"])}</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">{html.escape(tr["conf_title"])}</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">{html.escape(tr["inbound_title"])} (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">{html.escape(tr["outbound_title"])} (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">{html.escape(tr["start_hint"])}</div></aside></div></main><script>
 (() => {{
   const DATA = {payload};
+  const TR = {tr_json};
   const POSITIONS = {json.dumps(positions)};
   const SVG_WIDTH = {width};
   const SVG_HEIGHT = {height};
@@ -850,20 +1024,26 @@ aside h2 {{
 
   const canvasSec = document.querySelector('.canvas');
   const svgElem = canvasSec ? canvasSec.querySelector('svg') : null;
+  const zoomBadge = document.getElementById('atlas-zoom-badge');
   const layout = document.querySelector('.layout');
   const toggleInspectorBtn = document.getElementById('atlas-toggle-inspector');
   const searchInput = document.getElementById('atlas-search-input');
   const toggleLayoutBtn = document.getElementById('atlas-btn-toggle-layout');
 
-  const TYPE_NAMES = {{
-    'document': '📁 Tệp tài liệu nguồn',
-    'chunk': '🏷️ Đoạn trích bằng chứng',
-    'answer': '💡 Câu trả lời tổng hợp',
-    'question': '❓ Câu hỏi truy vấn',
-    'claim': '📌 Nhận định trích xuất',
-    'code': '💻 Mã nguồn',
-    'entity': '🧩 Khái niệm'
-  }};
+  const TYPE_NAMES = TR.type_labels || {{}};
+
+  function escapeHtml(val) {{
+    return String(val ?? '').replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
+  }}
+
+  function openAtlasLocation(locationStr, nodeId, label) {{
+    if (!locationStr) return false;
+    if (window.parent && window.parent !== window) {{
+      window.parent.postMessage({{ type: 'excaliflow:open-location', location: locationStr, nodeId: nodeId || '', label: label || '' }}, '*');
+      return true;
+    }}
+    return false;
+  }}
 
   const TYPE_COLORS = {{
     'answer': '#ff7a45',
@@ -885,7 +1065,7 @@ aside h2 {{
 
     const countSpan = document.getElementById('atlas-mini-radar-count');
     if (countSpan) {{
-      countSpan.textContent = neighborIds.length + ' lân cận';
+      countSpan.textContent = neighborIds.length + (TR.neighbor_suffix || ' lân cận');
     }}
 
     if (neighborIds.length === 0) {{
@@ -1177,7 +1357,7 @@ aside h2 {{
     if (toggleLayoutBtn) {{
       toggleLayoutBtn.classList.toggle('active-mode', mode === 'galaxy');
       toggleLayoutBtn.textContent = mode === 'galaxy' ? '🌌' : '📑';
-      toggleLayoutBtn.title = mode === 'galaxy' ? 'Chuyển sang giao diện Phân tầng chuẩn' : 'Chuyển sang giao diện Thiên hà động lực';
+      toggleLayoutBtn.title = mode === 'galaxy' ? TR.switch_hier : TR.switch_galaxy;
     }}
 
     if (mode === 'hierarchical') {{
@@ -1211,6 +1391,9 @@ aside h2 {{
   const updateTransform = () => {{
     if (!svgElem) return;
     svgElem.style.transform = `translate(${{panX}}px, ${{panY}}px) scale(${{scale}})`;
+    if (zoomBadge) {{
+      zoomBadge.textContent = Math.round(scale * 100) + '%';
+    }}
     if (scale < 0.55) {{
       svgElem.classList.add('micro-dots');
     }} else {{
@@ -1279,7 +1462,7 @@ aside h2 {{
     toggleInspectorBtn.addEventListener('click', () => {{
       const isCollapsed = layout.classList.toggle('inspector-collapsed');
       toggleInspectorBtn.textContent = isCollapsed ? '‹' : '›';
-      toggleInspectorBtn.title = isCollapsed ? 'Mở rộng bảng' : 'Thu gọn bảng';
+      toggleInspectorBtn.title = isCollapsed ? TR.expand_panel : TR.collapse_panel;
     }});
   }}
 
@@ -1360,18 +1543,33 @@ aside h2 {{
     const typeLabel = TYPE_NAMES[node.type] || node.type;
     const loc = node.properties?.location || node.properties?.source_id || '';
     const text = node.properties?.text || node.label || '';
-    const statusNote = node.review_status === 'needs_review' ? '\\nTrạng thái: Cần xem lại (chưa được xác minh)' : '';
+    const statusNote = node.review_status === 'needs_review' ? (TR.needs_review_note || '\\nCần xem lại') : '';
 
     detail.innerHTML = `
-      <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:6px;">${{typeLabel}}</div>
-      ${{loc ? `<div style="font-size:11px; color:#a78bfa; margin-bottom:8px; word-break:break-all;">📁 ${{loc}}</div>` : ''}}
-      <div style="font-size:12px; line-height:1.6; color:#e2e8f0; white-space:pre-wrap; word-break:break-word;">${{text}}${{statusNote}}</div>
-      <button type="button" class="atlas-copy-btn" onclick="navigator.clipboard.writeText(this.dataset.snippet); this.textContent='Đã sao chép!'; setTimeout(() => this.textContent='Sao chép', 2000);" data-snippet="${{encodeURIComponent(text)}}">
-        📋 Sao chép
-      </button>
+      <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:6px;">${{escapeHtml(typeLabel)}}</div>
+      ${{loc ? `<div style="font-size:11px; color:#a78bfa; margin-bottom:8px; word-break:break-all;">📁 ${{escapeHtml(loc)}}</div>` : ''}}
+      <div style="font-size:12px; line-height:1.6; color:#e2e8f0; white-space:pre-wrap; word-break:break-word;">${{escapeHtml(text + statusNote)}}</div>
+      <div>
+        <button type="button" class="atlas-copy-btn">${{escapeHtml(TR.copy_btn)}}</button>
+        ${{loc ? `<button type="button" class="atlas-copy-btn atlas-open-btn">${{escapeHtml(TR.open_portal)}}</button>` : ''}}
+      </div>
     `;
-    const btn = detail.querySelector('.atlas-copy-btn');
-    if (btn) btn.dataset.snippet = text;
+    const copyBtn = detail.querySelector('.atlas-copy-btn:not(.atlas-open-btn)');
+    if (copyBtn) {{
+      copyBtn.addEventListener('click', () => {{
+        navigator.clipboard?.writeText(text);
+        copyBtn.textContent = TR.copied_btn;
+        setTimeout(() => {{ copyBtn.textContent = TR.copy_btn; }}, 2000);
+      }});
+    }}
+    const openBtn = detail.querySelector('.atlas-open-btn');
+    if (openBtn && loc) {{
+      openBtn.addEventListener('click', () => {{
+        openAtlasLocation(loc, nodeId, node.label);
+        openBtn.textContent = TR.opened_portal;
+        setTimeout(() => {{ openBtn.textContent = TR.open_portal; }}, 2000);
+      }});
+    }}
 
     // Update Mini Radar
     updateAtlasMiniRadar(nodeId);
@@ -1399,15 +1597,15 @@ aside h2 {{
       inChips.innerHTML = inboundEdges.map(e => {{
         const src = nodeById[e.from];
         const srcLabel = src?.label || e.from;
-        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{e.from}}')">${{srcLabel}}</div>`;
-      }}).join('') || '<span style="font-size:11px; color:#64748b;">(Không có)</span>';
+        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{escapeHtml(e.from)}}')">${{escapeHtml(srcLabel)}}</div>`;
+      }}).join('') || `<span style="font-size:11px; color:#64748b;">${{escapeHtml(TR.empty_rel)}}</span>`;
 
       outCount.textContent = outboundEdges.length;
       outChips.innerHTML = outboundEdges.map(e => {{
         const tgt = nodeById[e.to];
         const tgtLabel = tgt?.label || e.to;
-        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{e.to}}')">${{tgtLabel}}</div>`;
-      }}).join('') || '<span style="font-size:11px; color:#64748b;">(Không có)</span>';
+        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{escapeHtml(e.to)}}')">${{escapeHtml(tgtLabel)}}</div>`;
+      }}).join('') || `<span style="font-size:11px; color:#64748b;">${{escapeHtml(TR.empty_rel)}}</span>`;
 
       linksBox.style.display = (inboundEdges.length > 0 || outboundEdges.length > 0) ? 'block' : 'none';
     }}
@@ -1442,9 +1640,7 @@ aside h2 {{
     document.querySelectorAll('button[data-view]').forEach(button => {{
       button.classList.toggle('active', button.dataset.view === view);
     }});
-    if (status) status.textContent = view === 'full'
-      ? 'Đang xem: Toàn bộ knowledge graph'
-      : 'Đang xem: Câu trả lời & nguồn';
+    if (status) status.textContent = (TR.status_prefix || '') + (view === 'full' ? TR.view_full : TR.view_answer);
   }};
 
   document.querySelectorAll('button[data-view]').forEach(button => {{
@@ -1465,9 +1661,9 @@ aside h2 {{
       const target = nodeById[edge.to]?.label || edge.to;
       const locations = (edge.receipts || []).map(item => item.location).filter(Boolean).join(', ');
       detail.innerHTML = `
-        <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px;">Quan hệ liên kết</div>
-        <div style="font-size:12.5px; color:#f8fafc; line-height:1.5;"><strong>${{source}}</strong><br>───▶ <strong>${{target}}</strong></div>
-        ${{locations ? `<div style="font-size:11px; color:#a78bfa; margin-top:8px;">Vị trí: ${{locations}}</div>` : ''}}
+        <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px;">${{escapeHtml(TR.edge_title)}}</div>
+        <div style="font-size:12.5px; color:#f8fafc; line-height:1.5;"><strong>${{escapeHtml(source)}}</strong><br>───▶ <strong>${{escapeHtml(target)}}</strong></div>
+        ${{locations ? `<div style="font-size:11px; color:#a78bfa; margin-top:8px;">${{escapeHtml(TR.edge_loc_prefix + locations)}}</div>` : ''}}
       `;
       if (confBox) confBox.style.display = 'none';
       if (linksBox) linksBox.style.display = 'none';

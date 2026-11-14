@@ -28,9 +28,32 @@ LANGUAGES = {
     ".rs": "Rust",
     ".java": "Java",
     ".cs": "C#",
+    ".bas": "VBA",
+    ".cls": "VBA",
 }
 DECLARATION = re.compile(r"^\s*(?:export\s+)?(?:async\s+)?(?:function|class|interface|struct|fn)\s+([A-Za-z_][\w]*)", re.MULTILINE)
 IMPORT = re.compile(r"^\s*(?:import\s+.*?from\s+|import\s+|use\s+|from\s+)([\w./@-]+)", re.MULTILINE)
+CS_DECLARATION = re.compile(
+    r"^\s*(?:public|private|protected|internal|file)?\s*(?:static\s+|sealed\s+|abstract\s+|partial\s+|readonly\s+)*"
+    r"(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)",
+    re.MULTILINE,
+)
+CS_METHOD = re.compile(
+    r"^\s*(?:public|private|protected|internal)\s+(?:static\s+|virtual\s+|override\s+|async\s+|sealed\s+)*"
+    r"(?:[\w<>\[\],.?]+)\s+([A-Za-z_]\w*)\s*\(",
+    re.MULTILINE,
+)
+CS_USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.MULTILINE)
+CS_RESERVED_NAMES = {"if", "for", "foreach", "while", "switch", "catch", "using", "return", "new", "lock", "fixed", "sizeof", "typeof"}
+VBA_MODULE = re.compile(r'Attribute\s+VB_Name\s*=\s*"([A-Za-z_]\w*)"')
+VBA_PROC = re.compile(
+    r"^\s*(?:Public\s+|Private\s+|Friend\s+)?(?:Static\s+)?(Sub|Function|Property\s+(?:Get|Let|Set)|Type|Enum)\s+([A-Za-z_]\w*)",
+    re.MULTILINE | re.IGNORECASE,
+)
+VBA_DECLARE_LIB = re.compile(
+    r'^\s*(?:Public\s+|Private\s+)?Declare\s+(?:PtrSafe\s+)?(?:Sub|Function)\s+([A-Za-z_]\w*)\s+Lib\s+"([^"]+)"',
+    re.MULTILINE | re.IGNORECASE,
+)
 STOP_WORDS = {
     "a", "an", "and", "are", "about", "code", "does", "explain", "for", "how", "in", "is", "of", "show", "the", "this", "to", "what", "where", "with",
     "cai", "cái", "cho", "cua", "của", "dau", "đâu", "gi", "gì", "ham", "hàm", "la", "là", "lop", "lớp", "nao", "nào", "o", "ở", "toi", "tôi", "ve", "về",
@@ -123,7 +146,8 @@ def inspect_codebase(project_dir: str | Path) -> dict:
             parse_warnings.append(f"{relative}: source file metadata could not be read ({error})")
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if path.suffix.lower() == ".py":
+        suffix = path.suffix.lower()
+        if suffix == ".py":
             try:
                 visitor = _PythonVisitor(relative)
                 visitor.visit(ast.parse(text, filename=relative))
@@ -133,6 +157,40 @@ def inspect_codebase(project_dir: str | Path) -> dict:
                 parse_warnings.append(f"{relative}:{error.lineno}: Python syntax could not be parsed")
             except (RecursionError, MemoryError) as error:
                 parse_warnings.append(f"{relative}: Python AST exceeded safe analysis limits ({type(error).__name__})")
+            continue
+        if suffix == ".cs":
+            current_type = ""
+            for match in CS_DECLARATION.finditer(text):
+                line = text.count("\n", 0, match.start()) + 1
+                kind_kw, name = match.group(1), match.group(2)
+                current_type = name
+                symbols.append({"name": name, "qualified_name": name, "kind": kind_kw, "file": relative, "line": line, "docstring": ""})
+            for match in CS_METHOD.finditer(text):
+                name = match.group(1)
+                if name in CS_RESERVED_NAMES:
+                    continue
+                line = text.count("\n", 0, match.start()) + 1
+                qualified = f"{current_type}.{name}" if current_type else name
+                symbols.append({"name": name, "qualified_name": qualified, "kind": "method", "file": relative, "line": line, "docstring": ""})
+            for match in CS_USING.finditer(text):
+                line = text.count("\n", 0, match.start()) + 1
+                relationships.append({"from": relative, "to": match.group(1), "kind": "imports", "line": line})
+            continue
+        if suffix in {".bas", ".cls"}:
+            mod_name = Path(relative).stem
+            mod_match = VBA_MODULE.search(text)
+            if mod_match:
+                mod_name = mod_match.group(1)
+                line = text.count("\n", 0, mod_match.start()) + 1
+                symbols.append({"name": mod_name, "qualified_name": mod_name, "kind": "module", "file": relative, "line": line, "docstring": ""})
+            for match in VBA_PROC.finditer(text):
+                proc_kind = match.group(1).split()[0].lower()
+                proc_name = match.group(2)
+                line = text.count("\n", 0, match.start()) + 1
+                symbols.append({"name": proc_name, "qualified_name": f"{mod_name}.{proc_name}", "kind": proc_kind, "file": relative, "line": line, "docstring": ""})
+            for match in VBA_DECLARE_LIB.finditer(text):
+                line = text.count("\n", 0, match.start()) + 1
+                relationships.append({"from": relative, "to": match.group(2), "kind": "imports", "line": line})
             continue
         for match in DECLARATION.finditer(text):
             line = text.count("\n", 0, match.start()) + 1

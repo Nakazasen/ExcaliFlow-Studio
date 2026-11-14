@@ -49,7 +49,7 @@ REPORT_TYPES = {"kpi", "funnel", "timeline", "quadrant", "process", "matrix", "r
 GRAPHIFY_MIN_VERSION = (0, 9, 48)
 GRAPHIFY_MAX_VERSION = (0, 10, 0)
 GRAPHIFY_VERSION_SPEC = ">=0.9.48,<0.10"
-SOURCE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs"}
+SOURCE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".cs", ".bas", ".cls"}
 WATCH_CONFIG_NAMES = {"pyproject.toml", "package.json", "go.mod", "Cargo.toml"}
 WATCH_EXCLUDED_DIRS = {
     ".git", ".excaliflow", ".venv", "venv", "__pycache__", "build", "dist",
@@ -125,6 +125,10 @@ def scan_language_sources(project_root: Path) -> dict:
         ".tsx": ("TypeScript", r"(?:class|function|interface|type)\s+([A-Za-z_$][\w$]*)", r"(?:import.+?from\s+|require\s*\()['\"]([^'\"]+)"),
         ".go": ("Go", r"(?:type\s+([A-Za-z_]\w*)\s+(?:struct|interface)|func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*))", r"import\s+(?:\([^)]*\)|\"([^\"]+)\")"),
         ".rs": ("Rust", r"(?:struct|enum|trait|impl|fn)\s+([A-Za-z_]\w*)", r"use\s+([^;]+)"),
+        ".java": ("Java", r"(?:class|interface|enum|record)\s+([A-Za-z_]\w*)", r"^\s*import\s+([\w.]+)\s*;"),
+        ".cs": ("C#", r"(?:class|interface|struct|enum|record)\s+([A-Za-z_]\w*)", r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;"),
+        ".bas": ("VBA", r"(?:VB_Name\s*=\s*\"([A-Za-z_]\w*)\"|^\s*(?:Public\s+|Private\s+|Friend\s+)?(?:Static\s+)?(?:Sub|Function)\s+([A-Za-z_]\w*))", r'Declare\s+(?:PtrSafe\s+)?(?:Sub|Function)\s+[A-Za-z_]\w*\s+Lib\s+"([^"]+)"'),
+        ".cls": ("VBA", r"(?:VB_Name\s*=\s*\"([A-Za-z_]\w*)\"|^\s*(?:Public\s+|Private\s+|Friend\s+)?(?:Static\s+)?(?:Sub|Function)\s+([A-Za-z_]\w*))", r'Declare\s+(?:PtrSafe\s+)?(?:Sub|Function)\s+[A-Za-z_]\w*\s+Lib\s+"([^"]+)"'),
     }
     symbols, relations, languages, warnings = [], [], set(), []
     ignored = {"node_modules", "target", "dist", "build", ".git", ".venv", "venv", "__pycache__"}
@@ -142,10 +146,16 @@ def scan_language_sources(project_root: Path) -> dict:
             rel = path.relative_to(project_root).as_posix()
             try:
                 text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                try:
+                    text = path.read_text(encoding="cp932", errors="replace")
+                except (OSError, UnicodeError) as exc:
+                    warnings.append(f"Skipped {rel}: {exc}")
+                    continue
             except (OSError, UnicodeError) as exc:
                 warnings.append(f"Skipped {rel}: {exc}")
                 continue
-            for match in re.finditer(declaration, text):
+            for match in re.finditer(declaration, text, re.MULTILINE):
                 name = next((value for value in match.groups() if value), None)
                 if name:
                     symbols.append({"id": f"SRC_{sanitize_mermaid_id(rel)}_{sanitize_mermaid_id(name)}", "name": name, "file": rel, "language": language})

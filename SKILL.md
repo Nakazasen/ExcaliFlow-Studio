@@ -87,12 +87,13 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   excaliflow ask --dir "<project_path>" --audience learner --question "<câu hỏi>"
   ```
 
-### Nhóm 7: Evidence Graph Cho RAG (Bản Đồ Bằng Chứng Trích Dẫn)
-- **Mục đích**: Trực quan hóa đường đi bằng chứng từ câu trả lời RAG, tránh bịa đặt thông tin.
+### Nhóm 7: Evidence Graph Cho RAG & Quét Tri Thức Workspace (v0.4.0)
+- **Mục đích**: Trực quan hóa đường đi bằng chứng từ câu trả lời RAG, hoặc quét workspace đa ngôn ngữ (`.md`, `.csv`, `.json`, `.ini`, C# `.cs`, VBA `.bas`/`.cls`, Python/TS/Go/Rust) thành Knowledge Graph Flowsint 2.0 song ngữ (`vi`/`ja`/`en`) & xuất file `.excalidraw`.
 - **Lệnh thực thi**:
   ```powershell
   excaliflow knowledge import --trace "<project>\rag-trace.json" --out "<project>\evidence-graph.json"
-  excaliflow knowledge atlas --graph "<project>\evidence-graph.json" --out "<project>\evidence-atlas.html"
+  excaliflow knowledge atlas --graph "<project>\evidence-graph.json" --lang vi --out "<project>\evidence-atlas.html"
+  excaliflow knowledge scan --dir "<project>" --lang ja --out "<project>\domain-graph.json" --atlas-out "<project>\domain-atlas.html" --excalidraw "<project>\domain.excalidraw"
   ```
 
 ### Nhóm 8: Atlas Bridge Control & Diagnostics

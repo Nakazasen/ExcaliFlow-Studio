@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.1.5-blue.svg" alt="Phiên bản"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.4.0-blue.svg" alt="Phiên bản"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/giấy_phép-MIT-purple.svg" alt="Giấy phép"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-64%2F64%20đạt-success.svg" alt="Kiểm thử"></a>
@@ -266,7 +266,8 @@ ExcaliFlow-Studio/
 │   ├── cli.py              # Điểm khởi chạy CLI
 │   ├── atlas.py            # Trình tạo Codebase Atlas tương tác
 │   ├── bridge_server.py    # Máy chủ AI Bridge cục bộ
-│   ├── explorer.py         # Bộ quét AST & phân tích hỏi đáp có bằng chứng
+│   ├── domain_graph.py     # Bộ quét Knowledge Graph đa ngôn ngữ (.md/.csv/C#/VBA) & xuất Excalidraw v2
+│   ├── explorer.py         # Bộ quét AST, C#/VBA & phân tích hỏi đáp có bằng chứng
 │   ├── knowledge.py        # Bộ xử lý đồ thị bằng chứng RAG
 │   └── installer.py        # Bộ cài đặt skill cho các AI Host
 ├── scripts/
@@ -274,10 +275,10 @@ ExcaliFlow-Studio/
 ├── assets/vendor/          # Thư viện JavaScript offline (Mermaid, Panzoom)
 ├── docs/                   # Hướng dẫn thiết lập & Sổ tay bảo trì (maintenance-and-architecture.md)
 ├── examples/               # Mẫu brief sơ đồ & tệp mẫu RAG trace
-├── tests/                  # Bộ kiểm thử tự động (65 tests)
-├── SKILL.md                # Giao thức skill điều khiển cho Agent (v3.7)
+├── tests/                  # Bộ kiểm thử tự động
+├── SKILL.md                # Giao thức skill điều khiển cho Agent
 ├── pyproject.toml          # Cấu hình gói dự án
-└── VERSION                 # Tệp định danh phiên bản (0.1.5)
+└── VERSION                 # Tệp định danh phiên bản (0.4.0)
 ```
 
 ---
