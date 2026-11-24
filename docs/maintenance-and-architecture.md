@@ -1,4 +1,4 @@
-# ExcaliFlow Studio: Maintenance & Architecture Manual (v0.1.3)
+# ExcaliFlow Studio: Maintenance & Architecture Manual (v0.5.0)
 
 > **Mục tiêu**: Cung cấp tài liệu bảo trì, kiến trúc hệ thống và quy chuẩn kỹ thuật toàn diện cho các nhà phát triển, quản trị viên và AI Coding Agents khi vận hành, mở rộng hoặc kiểm thử ExcaliFlow Studio.
 
@@ -6,13 +6,13 @@
 
 ## 📌 1. Thông Tin Phiên Bản & Cấu Trúc Gói
 
-- **Phiên bản hiện tại**: `v0.1.3`
+- **Phiên bản hiện tại**: `v0.5.0`
 - **Tương thích Python**: Python 3.11, 3.12, 3.13 (64-bit)
 - **Tập tin phiên bản nguồn**:
-  - `VERSION`: `0.1.3`
-  - `pyproject.toml`: `version = "0.1.3"`
-  - `src/excaliflow/__init__.py`: `__version__ = "0.1.3"`
-  - `uv.lock`: `version = "0.1.3"`
+  - `VERSION`: `0.5.0`
+  - `pyproject.toml`: `version = "0.5.0"`
+  - `src/excaliflow/__init__.py`: `__version__ = "0.5.0"`
+  - `uv.lock`: `version = "0.5.0"`
 
 ---
 
@@ -25,12 +25,23 @@ ExcaliFlow Studio được thiết kế theo triết lý **100% Local-First & Ai
 │                           EXCALIFLOW STUDIO ENGINE                          │
 ├──────────────────────────┬────────────────────────────┬─────────────────────┤
 │   1. Trích Xuất Tri Thức │   2. Xử Lý Đồ Thị & Diff   │  3. Xuất Bản & Web  │
-│  - AST Parser (Py/JS/TS) │  - Graphify Parser & KG    │  - Offline HTML     │
-│  - Understand Importer   │  - Architecture Diff Engine│  - Native .excali.  │
-│  - Source Scanner (Regex)│  - Staleness Validator     │  - 1200x630 Card SVG│
-│  - Staleness Timestamp   │  - Reach BFS Traversal     │  - Editorial SVG    │
+│  - Python AST & Multi-   │  - Graphify Parser & KG    │  - Offline HTML     │
+│    Lang (TS/Go/Rust/C#/  │  - Evidence Graph v1       │  - Flowsint 2.5 Atl.│
+│    VBA/SQL/YAML/TOML)    │  - Architecture Diff Engine│  - Excalidraw v2    │
+│  - Understand Importer   │  - Staleness Validator     │    (Bound Arrows)   │
+│  - Workspace Domain Scan │  - Reach BFS & Edge Trace  │  - Share Card & SVG │
 └──────────────────────────┴────────────────────────────┴─────────────────────┘
 ```
+
+**Các module lõi trong `src/excaliflow/`**:
+- `cli.py`: Điểm khởi chạy CLI (`--version`, `open`, `atlas`, `ask`, `explain`, `knowledge`, `bridge`, `install`, `doctor`, `targets`, `update`, và fallback tới `scripts/generate_diagram.py`).
+- `explorer.py`: Quét AST Python, đa ngôn ngữ (`JS/TS`, `Go`, `Rust`, `Java`, `C#`, `VBA`) và trả lời hỏi đáp nguồn song ngữ (EN/VI) kèm dẫn chứng `file:line`.
+- `atlas.py`: Trình tạo Codebase Atlas tương tác offline với bộ lọc module trực tiếp (`#module-search`) và tô sáng luồng import vào/ra (`edge-in`/`edge-out`).
+- `domain_graph.py`: Bộ quét tri thức workspace đa định dạng (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.toml`, `.sql`, mã nguồn) theo ngân sách tỷ lệ, liên kết `depends_on` nội bộ và xuất scene Excalidraw v2 có binding mũi tên.
+- `knowledge.py`: Trình xác thực & nhập đồ thị bằng chứng `rag-trace/v1` $\to$ `evidence-graph/v1` (fail-closed).
+- `evidence_atlas.py`: Trình kết xuất Flowsint 2.5 offline (`vi`/`ja`/`en`) với vật lý Thiên hà đồng tâm, lọc theo loại node, zoom theo con trỏ, mini ego-radar và xuất SVG offline.
+- `bridge.py` & `bridge_server.py`: Khám phá và chạy proxy Atlas Bridge loopback (`127.0.0.1:8788`, `/health`, `/v1/models`, `/v1/chat/completions` giới hạn 2 MB).
+- `installer.py` & `update.py`: Bộ cài đặt skill đa AI host, kiểm tra toàn vẹn `doctor` và kiểm tra phiên bản phát hành.
 
 ---
 
@@ -94,24 +105,25 @@ excaliflow --install-hook --force-hook
 
 ---
 
-## 🧪 6. Ma Trận Kiểm Thử Tự Động (64 Unit Tests)
+## 🧪 6. Ma Trận Kiểm Thử Tự Động (94 Unit Tests)
 
-Toàn bộ 64 ca kiểm thử tự động được tổ chức trong [`tests/test_generate_diagram.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_generate_diagram.py) với 100% tỷ lệ pass:
+Toàn bộ 94 ca kiểm thử tự động được tổ chức trong thư mục [`tests/`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests) với 100% tỷ lệ pass:
 
-| Nhóm Kiểm Thử | Số Lượng Test | Nội Dung Kiểm Tra |
+| Tệp Kiểm Thử | Số Lượng Test | Nội Dung Kiểm Tra |
 | :--- | :---: | :--- |
-| **Fail-Closed & Staleness** | 12 | Phát hiện đồ thị cũ, thư mục rỗng, hậu kiểm sau chạy Graphify, Understand stale check |
-| **Sanitize & Label Escaping**| 10 | Thoát ký tự đặc biệt, nháy đơn/kép, dấu so sánh, pipe, từ khóa Mermaid |
-| **Editorial Typo & Multiline**| 14 | Ngắt dòng `<tspan>`, tính khoảng cách Y, nhúng `<title>`, cắt ranh giới từ |
-| **Editorial Visual Types** | 16 | Wardley Map, Sankey Flow, User Journey, Architecture, KPI, Funnel, Risk |
-| **Reach Tracing & Signal Flow**| 4 | Kiểm tra presence của CSS, DOM elements, JS BFS traversal engine |
-| **Diff Engine & Share Card** | 4 | Phát hiện Added/Removed/Modified nodes, xuất SVG 1200x630 vector |
-| **Git Hooks & CLI Options** | 4 | Cài đặt hook, kiểm tra ghi đè an toàn, CLI argument validation |
-| **TỔNG CỘNG** | **64 / 64** | **100% Passed (OK)** |
+| [`tests/test_generate_diagram.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_generate_diagram.py) | 36 | Fail-closed & staleness, Graphify window, sanitize/escaping, Editorial SVG/typography, Reach tracing, Diff engine, Share card, Git hooks |
+| [`tests/test_explorer.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_explorer.py) | 27 | AST & đa ngôn ngữ (Python, TS, Go, Rust, Java, C#, VBA), hỏi đáp EN/VI, Codebase Atlas lọc & tô sáng cạnh, Atlas Bridge (`/v1/models`, giới hạn payload) |
+| [`tests/test_knowledge.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_knowledge.py) | 8 | RAG Trace import fail-closed, Flowsint 2.5 Evidence Atlas (bộ lọc loại node, galaxy, mini-radar, xuất SVG offline, zero cloud egress) |
+| [`tests/test_package_entrypoint.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_package_entrypoint.py) | 8 | Đồng bộ `VERSION`/`pyproject.toml`/`__init__.py`/`uv.lock`, `--version`, cài đặt skill portable & `doctor_issues` |
+| [`tests/test_domain_graph.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_domain_graph.py) | 6 | Quét workspace `.md`/`.csv`/`.yaml`/`.toml`/`.sql`/C#/VBA, ngân sách tỷ lệ, cạnh `depends_on`, Excalidraw v2 arrow bindings, `--include` |
+| [`tests/test_update.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_update.py) | 5 | Kiểm tra manifest GitHub Release, kiểm thử offline & bundle release |
+| [`tests/test_windows_setup.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_windows_setup.py) | 3 | Cài đặt không tương tác Windows, tạo `.zip` (kèm `docs/`) và `.exe` tự giải nén |
+| [`tests/test_release_workflow.py`](file:///d:/Sandbox/ExcaliFlow%20Studio/tests/test_release_workflow.py) | 1 | Kiểm tra hợp đồng workflow phát hành Windows |
+| **TỔNG CỘNG** | **94 / 94** | **100% Passed (OK)** |
 
 Lệnh chạy kiểm thử chuẩn:
 ```powershell
-py -3 -m unittest discover -s tests -v
+$env:PYTHONPATH = "$PWD/src"; py -3 -m unittest discover -s tests -v
 ```
 
 ---
@@ -119,10 +131,10 @@ py -3 -m unittest discover -s tests -v
 ## 📋 7. Quy Trình Bảo Trì & Phát Hành (Release Checklist)
 
 Khi phát hành phiên bản mới hoặc cập nhật tính năng:
-1. [x] Chạy toàn bộ 64 unit tests: `py -3 -m unittest discover -s tests`.
+1. [x] Chạy toàn bộ 94 unit tests: `py -3 -m unittest discover -s tests -v`.
 2. [x] Nâng số phiên bản đồng bộ tại: `VERSION`, `pyproject.toml`, `src/excaliflow/__init__.py`, `uv.lock`.
-3. [x] Cập nhật Bảng điều khiển `SKILL.md` (cả trong repo và trong cấu hình toàn cục `.gemini/config` / `.codex`).
+3. [x] Cập nhật Bảng điều khiển `SKILL.md` (cả trong repo và đồng bộ qua `excaliflow install --host antigravity`).
 4. [x] Cập nhật tài liệu song ngữ `README.md` (EN) và `README_VI.md` (VI).
-5. [x] Kiểm tra offline runtime: `excaliflow --offline-check`.
+5. [x] Kiểm tra offline runtime & version: `excaliflow --version` và `excaliflow --offline-check`.
 6. [x] Lưu checkpoint vào AgentMemory theo giao thức dự án.
-7. [x] Tạo git commit rõ ràng và push lên `origin/main`.
+7. [x] Tạo git commit rõ ràng và push mã nguồn lên `origin/main`.

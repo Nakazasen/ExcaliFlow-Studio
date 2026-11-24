@@ -38,6 +38,7 @@ class WindowsSetupTests(unittest.TestCase):
             self.assertTrue((target / "SKILL.md").is_file())
             self.assertTrue((target / "scripts" / "generate_diagram.py").is_file())
             self.assertTrue((target / "src" / "excaliflow" / "explorer.py").is_file())
+            self.assertTrue((target / "docs" / "maintenance-and-architecture.md").is_file())
 
     def test_release_builder_creates_a_double_click_bundle(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -64,6 +65,7 @@ class WindowsSetupTests(unittest.TestCase):
             with ZipFile(archive) as bundle:
                 self.assertIn("ExcaliFlow-Setup/ExcaliFlow-Setup.cmd", bundle.namelist())
                 self.assertIn("ExcaliFlow-Setup/src/excaliflow/explorer.py", bundle.namelist())
+                self.assertIn("ExcaliFlow-Setup/docs/maintenance-and-architecture.md", bundle.namelist())
 
     def test_exe_builder_creates_an_unsigned_local_self_extracting_installer(self):
         with tempfile.TemporaryDirectory() as temp:

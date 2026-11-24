@@ -209,3 +209,33 @@ class KnowledgeTests(unittest.TestCase):
         self.assertNotIn("http://", atlas)
         self.assertNotIn("https://", atlas)
 
+    def test_evidence_atlas_flowsint_2_5_upgrades(self):
+        trace = valid_trace()
+        trace["entities"][0]["id"] = 'entity-"quoted"'
+        trace["claims"][0]["subject_id"] = 'entity-"quoted"'
+        trace["code_references"][0]["target_id"] = 'entity-"quoted"'
+        graph = graph_from_rag_trace(trace)
+        atlas = build_evidence_atlas_html(graph, lang="en")
+
+        # Type filters, reset selection, and offline SVG export
+        self.assertIn('id="atlas-type-filters"', atlas)
+        self.assertIn('id="atlas-btn-reset-selection"', atlas)
+        self.assertIn('id="atlas-btn-export-svg"', atlas)
+        self.assertIn("fitToView", atlas)
+        self.assertIn("resumeSimulation", atlas)
+        self.assertIn("XMLSerializer", atlas)
+        self.assertIn("clearAtlasSelection", atlas)
+        self.assertIn("node.confidence", atlas)
+
+        # Safe delegated listeners instead of inline onclick
+        self.assertIn("data-target-node", atlas)
+        self.assertNotIn('onclick="selectAtlasNode(', atlas)
+
+        # Edge click hides mini radar and renders edge confidence
+        self.assertIn("function selectAtlasEdge(edgeId)", atlas)
+
+        # Escaped special characters in node IDs and zero external URLs
+        self.assertIn("entity-&quot;quoted&quot;", atlas)
+        self.assertNotIn("http://", atlas)
+        self.assertNotIn("https://", atlas)
+

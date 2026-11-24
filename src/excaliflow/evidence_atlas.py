@@ -47,6 +47,13 @@ _ATLAS_I18N: Dict[str, Dict[str, Any]] = {
         "opened_portal": "Đã gửi yêu cầu mở file!",
         "edge_title": "Quan hệ liên kết",
         "edge_loc_prefix": "Vị trí: ",
+        "filter_all": "Tất cả",
+        "clear_selection": "Bỏ chọn (Esc)",
+        "export_svg": "Xuất file SVG",
+        "edge_confidence": "Độ tin cậy liên kết",
+        "edge_origin": "Nguồn trích xuất",
+        "edge_status_verified": "Đã xác minh",
+        "edge_status_review": "Cần xem lại",
         "type_labels": {
             "answer": "Câu trả lời",
             "document": "Tài liệu nguồn",
@@ -108,6 +115,13 @@ _ATLAS_I18N: Dict[str, Dict[str, Any]] = {
         "opened_portal": "開く要求を送信しました！",
         "edge_title": "関連リンク",
         "edge_loc_prefix": "参照元: ",
+        "filter_all": "すべて",
+        "clear_selection": "選択解除 (Esc)",
+        "export_svg": "SVGを書き出す",
+        "edge_confidence": "リンク信頼度",
+        "edge_origin": "抽出元",
+        "edge_status_verified": "検証済み",
+        "edge_status_review": "要確認",
         "type_labels": {
             "answer": "回答要約",
             "document": "ソース資料",
@@ -169,6 +183,13 @@ _ATLAS_I18N: Dict[str, Dict[str, Any]] = {
         "opened_portal": "Sent open request!",
         "edge_title": "Relation Link",
         "edge_loc_prefix": "Location: ",
+        "filter_all": "All",
+        "clear_selection": "Clear selection (Esc)",
+        "export_svg": "Export SVG",
+        "edge_confidence": "Edge Confidence",
+        "edge_origin": "Origin",
+        "edge_status_verified": "Verified",
+        "edge_status_review": "Needs review",
         "type_labels": {
             "answer": "Answer",
             "document": "Document",
@@ -178,7 +199,23 @@ _ATLAS_I18N: Dict[str, Dict[str, Any]] = {
             "code": "Source Code",
             "case": "Case",
         },
-        "rel_labels": {},
+        "rel_labels": {
+            "supports": "supports",
+            "supported by": "supported by",
+            "supported_by": "supported by",
+            "cites": "cites",
+            "extracted_from": "extracted from",
+            "extracted from": "extracted from",
+            "derived_from": "derived from",
+            "derived from": "derived from",
+            "mentions": "mentions",
+            "contains": "contains",
+            "depends_on": "depends on",
+            "implemented_by": "implemented by",
+            "defined_in": "defined in",
+            "references": "references",
+            "implements": "implements",
+        },
     },
 }
 
@@ -415,7 +452,8 @@ def build_evidence_atlas_html(graph: dict, lang: str = "vi") -> str:
         if not collides_node and not collides_label:
             placed_label_coords.append((cand_x, cand_y_pt))
             edge_label_svgs.append(
-                f'<g class="edge-label"><rect x="{bx1}" y="{by1}" width="{w_lbl}" height="{h_lbl}" rx="9999"/>'
+                f'<g class="edge-label" data-from="{html.escape(str(edge["from"]))}" data-to="{html.escape(str(edge["to"]))}">'
+                f'<rect x="{bx1}" y="{by1}" width="{w_lbl}" height="{h_lbl}" rx="9999"/>'
                 f'<text x="{cand_x}" y="{cand_y_pt + 3}" text-anchor="middle">{rel_text}</text></g>'
             )
 
@@ -544,6 +582,44 @@ button.active {{
 }}
 .atlas-search-input:focus {{
   width: 230px;
+}}
+.type-filters {{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+}}
+.type-filter-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}}
+.type-filter-pill:hover {{
+  border-color: var(--accent);
+  color: #fff;
+}}
+.type-filter-pill.active {{
+  background: rgba(56, 189, 248, 0.16);
+  border-color: var(--accent);
+  color: #f8fafc;
+}}
+.type-dot {{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}}
+.node.type-hidden, .edge.type-hidden, .edge-label.type-hidden {{
+  display: none !important;
 }}
 .layout {{
   display: grid;
@@ -999,7 +1075,7 @@ aside h2 {{
   aside {{ position: static; max-height: none; margin-top: 16px; }}
   h1 {{ font-size: 18px; }}
 }}
-</style></head><body data-view="answer"><header><div class="eyebrow">{html.escape(tr["eyebrow"])}</div><h1>Evidence Atlas</h1><p class="lede">{title}. {html.escape(tr["lede"])}</p></header><main><div class="toolbar"><button data-view="answer" class="active">{html.escape(tr["view_answer"])}</button><button data-view="full">{html.escape(tr["view_full"])}</button><span id="atlas-view-status" class="legend" aria-live="polite">{html.escape(tr["status_prefix"] + tr["view_answer"])}</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="{html.escape(tr["search_placeholder"])}" class="atlas-search-input" /></div></div><div class="layout"><section class="canvas" aria-label="{html.escape(tr["canvas_aria"])}"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="{html.escape(tr["toggle_layout"])}">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="{html.escape(tr["zoom_in"])}">＋</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="{html.escape(tr["zoom_out"])}">－</button><span id="atlas-zoom-badge" class="atlas-zoom-badge">100%</span><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="{html.escape(tr["zoom_fit"])}">⊡</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="{html.escape(tr["fullscreen"])}">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs><g class="galaxy-orbit-backdrop" id="galaxy-backdrop"><circle cx="{width // 2}" cy="{height // 2}" r="75" class="celestial-orbit orbit-core" /><circle cx="{width // 2}" cy="{height // 2}" r="210" class="celestial-orbit orbit-mid" /><circle cx="{width // 2}" cy="{height // 2}" r="380" class="celestial-orbit orbit-outer" /><line x1="{width // 2 - 420}" y1="{height // 2}" x2="{width // 2 + 420}" y2="{height // 2}" class="celestial-axis" /><line x1="{width // 2}" y1="{height // 2 - 420}" x2="{width // 2}" y2="{height // 2 + 420}" class="celestial-axis" /></g>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="{html.escape(tr["collapse_panel"])}">›</button><div class="eyebrow">{html.escape(tr["inspector_eyebrow"])}</div><h2 id="detail-title">{html.escape(tr["start_title"])}</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>{html.escape(tr["radar_title"])}</span><span id="atlas-mini-radar-count" class="mini-radar-count">0{html.escape(tr["neighbor_suffix"])}</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">{html.escape(tr["conf_title"])}</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">{html.escape(tr["inbound_title"])} (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">{html.escape(tr["outbound_title"])} (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">{html.escape(tr["start_hint"])}</div></aside></div></main><script>
+</style></head><body data-view="answer"><header><div class="eyebrow">{html.escape(tr["eyebrow"])}</div><h1>Evidence Atlas</h1><p class="lede">{title}. {html.escape(tr["lede"])}</p></header><main><div class="toolbar"><button data-view="answer" class="active">{html.escape(tr["view_answer"])}</button><button data-view="full">{html.escape(tr["view_full"])}</button><span id="atlas-view-status" class="legend" aria-live="polite">{html.escape(tr["status_prefix"] + tr["view_answer"])}</span><div class="atlas-search-box"><span class="atlas-search-icon">🔍</span><input type="text" id="atlas-search-input" placeholder="{html.escape(tr["search_placeholder"])}" class="atlas-search-input" /></div></div><div id="atlas-type-filters" class="type-filters" role="group" aria-label="Filter by node type"></div><div class="layout"><section class="canvas" aria-label="{html.escape(tr["canvas_aria"])}"><div class="atlas-floating-toolbar" role="toolbar" aria-label="Canvas controls"><button type="button" id="atlas-btn-toggle-layout" class="atlas-tool-btn active-mode" title="{html.escape(tr["toggle_layout"])}">🌌</button><button type="button" id="atlas-btn-zoom-in" class="atlas-tool-btn" title="{html.escape(tr["zoom_in"])}">＋</button><button type="button" id="atlas-btn-zoom-out" class="atlas-tool-btn" title="{html.escape(tr["zoom_out"])}">－</button><span id="atlas-zoom-badge" class="atlas-zoom-badge">100%</span><button type="button" id="atlas-btn-fit" class="atlas-tool-btn" title="{html.escape(tr["zoom_fit"])}">⊡</button><button type="button" id="atlas-btn-reset-selection" class="atlas-tool-btn" title="{html.escape(tr["clear_selection"])}">↺</button><button type="button" id="atlas-btn-export-svg" class="atlas-tool-btn" title="{html.escape(tr["export_svg"])}">⬇</button><button type="button" id="atlas-btn-fullscreen" class="atlas-tool-btn" title="{html.escape(tr["fullscreen"])}">⛶</button></div><svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="Evidence graph for {title}"><defs><marker id="atlas-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.3"/></marker></defs><g class="galaxy-orbit-backdrop" id="galaxy-backdrop"><circle cx="{width // 2}" cy="{height // 2}" r="75" class="celestial-orbit orbit-core" /><circle cx="{width // 2}" cy="{height // 2}" r="210" class="celestial-orbit orbit-mid" /><circle cx="{width // 2}" cy="{height // 2}" r="380" class="celestial-orbit orbit-outer" /><line x1="{width // 2 - 420}" y1="{height // 2}" x2="{width // 2 + 420}" y2="{height // 2}" class="celestial-axis" /><line x1="{width // 2}" y1="{height // 2 - 420}" x2="{width // 2}" y2="{height // 2 + 420}" class="celestial-axis" /></g>{''.join(edge_svg_paths)}{''.join(node_svg)}{''.join(edge_label_svgs)}</svg></section><aside><button type="button" id="atlas-toggle-inspector" class="atlas-collapse-btn" title="{html.escape(tr["collapse_panel"])}">›</button><div class="eyebrow">{html.escape(tr["inspector_eyebrow"])}</div><h2 id="detail-title">{html.escape(tr["start_title"])}</h2><div id="atlas-mini-radar-container" class="mini-radar-card" style="display:none;"><div class="mini-radar-header"><span>{html.escape(tr["radar_title"])}</span><span id="atlas-mini-radar-count" class="mini-radar-count">0{html.escape(tr["neighbor_suffix"])}</span></div><div class="mini-radar-canvas-wrap"><svg id="atlas-mini-radar-svg" viewBox="-80 -80 160 160" width="100%" height="150"><circle cx="0" cy="0" r="58" class="radar-orbit" /><circle cx="0" cy="0" r="32" class="radar-orbit inner" /><g id="atlas-radar-rays"></g><g id="atlas-radar-neighbors"></g><circle id="atlas-radar-center-node" cx="0" cy="0" r="9" class="radar-center" /></svg></div></div><div id="atlas-confidence-box" class="confidence-gauge-card" style="display:none;"><div class="gauge-header"><span class="gauge-title">{html.escape(tr["conf_title"])}</span><span id="atlas-conf-pct" class="gauge-pct">--%</span></div><div class="gauge-track"><div id="atlas-conf-fill" class="gauge-fill" style="width:0%;"></div></div></div><div id="atlas-links-box" class="atlas-links-card" style="display:none;"><div id="atlas-inbound-section" style="margin-bottom:10px;"><div class="links-title">{html.escape(tr["inbound_title"])} (<span id="atlas-in-count">0</span>)</div><div id="atlas-in-chips" class="links-chips-wrap"></div></div><div id="atlas-outbound-section"><div class="links-title">{html.escape(tr["outbound_title"])} (<span id="atlas-out-count">0</span>)</div><div id="atlas-out-chips" class="links-chips-wrap"></div></div></div><div id="detail" class="receipt">{html.escape(tr["start_hint"])}</div></aside></div></main><script>
 (() => {{
   const DATA = {payload};
   const TR = {tr_json};
@@ -1031,6 +1107,17 @@ aside h2 {{
   const toggleLayoutBtn = document.getElementById('atlas-btn-toggle-layout');
 
   const TYPE_NAMES = TR.type_labels || {{}};
+  const nodeElemById = Object.create(null);
+  document.querySelectorAll('.node').forEach(el => {{
+    if (el.dataset.node) nodeElemById[el.dataset.node] = el;
+  }});
+  const edgeElemById = Object.create(null);
+  document.querySelectorAll('.edge').forEach(el => {{
+    if (el.dataset.edge) edgeElemById[el.dataset.edge] = el;
+  }});
+  let activeTypeFilter = 'all';
+  let selectedNodeId = null;
+  let selectedEdgeId = null;
 
   function escapeHtml(val) {{
     return String(val ?? '').replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
@@ -1055,6 +1142,33 @@ aside h2 {{
     'case': '#ce5c70'
   }};
 
+  const radarRaysGroup = document.getElementById('atlas-radar-rays');
+  const radarNeighborsGroup = document.getElementById('atlas-radar-neighbors');
+  if (radarNeighborsGroup) {{
+    radarNeighborsGroup.addEventListener('click', (e) => {{
+      const target = e.target.closest('[data-target-node]');
+      if (target && target.dataset.targetNode) {{
+        window.selectAtlasNode(target.dataset.targetNode);
+      }}
+    }});
+  }}
+  if (inChips) {{
+    inChips.addEventListener('click', (e) => {{
+      const chip = e.target.closest('[data-target-node]');
+      if (chip && chip.dataset.targetNode) {{
+        window.selectAtlasNode(chip.dataset.targetNode);
+      }}
+    }});
+  }}
+  if (outChips) {{
+    outChips.addEventListener('click', (e) => {{
+      const chip = e.target.closest('[data-target-node]');
+      if (chip && chip.dataset.targetNode) {{
+        window.selectAtlasNode(chip.dataset.targetNode);
+      }}
+    }});
+  }}
+
   function updateAtlasMiniRadar(nodeId) {{
     const radarContainer = document.getElementById('atlas-mini-radar-container');
     if (!radarContainer) return;
@@ -1074,18 +1188,16 @@ aside h2 {{
     }}
     radarContainer.style.display = 'block';
 
-    const raysGroup = document.getElementById('atlas-radar-rays');
-    const neighborsGroup = document.getElementById('atlas-radar-neighbors');
     const centerNode = document.getElementById('atlas-radar-center-node');
-    if (!raysGroup || !neighborsGroup) return;
+    if (!radarRaysGroup || !radarNeighborsGroup) return;
 
     const currNode = nodeById[nodeId];
     if (centerNode && currNode) {{
       centerNode.setAttribute('fill', TYPE_COLORS[currNode.type] || '#38bdf8');
     }}
 
-    raysGroup.innerHTML = '';
-    neighborsGroup.innerHTML = '';
+    radarRaysGroup.innerHTML = '';
+    radarNeighborsGroup.innerHTML = '';
 
     const R = 58;
     const n = neighborIds.length;
@@ -1097,33 +1209,186 @@ aside h2 {{
       const ny = Math.sin(angle) * R;
       const nbObj = nodeById[nbId] || {{}};
       const ntype = nbObj.type || 'chunk';
-      const nbLabel = (nbObj.label || nbId).replace(/"/g, '&quot;');
+      const nbLabel = escapeHtml(nbObj.label || nbId);
       const color = TYPE_COLORS[ntype] || '#38bdf8';
 
       raysHtml += `<line x1="0" y1="0" x2="${{nx.toFixed(1)}}" y2="${{ny.toFixed(1)}}" class="radar-ray" />`;
-      dotsHtml += `<g class="radar-dot-group" cursor="pointer" onclick="selectAtlasNode('${{nbId}}')">` +
+      dotsHtml += `<g class="radar-dot-group" cursor="pointer" data-target-node="${{escapeHtml(nbId)}}">` +
                   `<circle cx="${{nx.toFixed(1)}}" cy="${{ny.toFixed(1)}}" r="5.5" fill="${{color}}" class="radar-dot"><title>${{nbLabel}}</title></circle></g>`;
     }});
-    raysGroup.innerHTML = raysHtml;
-    neighborsGroup.innerHTML = dotsHtml;
+    radarRaysGroup.innerHTML = raysHtml;
+    radarNeighborsGroup.innerHTML = dotsHtml;
   }}
 
   // --- Force-Directed Galaxy Simulation Engine ---
+  const cx = SVG_WIDTH / 2;
+  const cy = SVG_HEIGHT / 2;
   let currentLayout = 'galaxy';
   let simNodes = [];
   let simEdges = [];
   let simRunning = true;
   let animFrameId = null;
+  let alpha = 1.0;
   let draggedNode = null;
   let dragStartX = 0;
   let dragStartY = 0;
   let nodeStartX = 0;
   let nodeStartY = 0;
 
-  function initForceSimulation() {{
-    const cx = SVG_WIDTH / 2;
-    const cy = SVG_HEIGHT / 2;
+  function physicsTick() {{
+    if (currentLayout !== 'galaxy') return;
 
+    // Repulsion
+    const kRepel = 4500;
+    for (let i = 0; i < simNodes.length; i++) {{
+      const n1 = simNodes[i];
+      for (let j = i + 1; j < simNodes.length; j++) {{
+        const n2 = simNodes[j];
+        let dx = n1.x - n2.x;
+        let dy = n1.y - n2.y;
+        let d2 = dx * dx + dy * dy + 1;
+        let d = Math.sqrt(d2);
+        if (d < 700) {{
+          let force = (kRepel / (d2 + 100)) * alpha;
+          let fx = (dx / d) * force;
+          let fy = (dy / d) * force;
+          if (n1 !== draggedNode) {{ n1.vx += fx / n1.mass; n1.vy += fy / n1.mass; }}
+          if (n2 !== draggedNode) {{ n2.vx -= fx / n2.mass; n2.vy -= fy / n2.mass; }}
+        }}
+      }}
+    }}
+
+    // Springs between connected nodes
+    const kSpring = 0.035;
+    for (let e of simEdges) {{
+      let dx = e.target.x - e.source.x;
+      let dy = e.target.y - e.source.y;
+      let d = Math.sqrt(dx * dx + dy * dy) || 1;
+      let targetDist = 160;
+      if (e.source.isHub || e.target.isHub) {{
+        targetDist = 180;
+      }} else if (e.source.isDoc || e.target.isDoc) {{
+        targetDist = 200;
+      }}
+      let force = (d - targetDist) * kSpring * alpha;
+      let fx = (dx / d) * force;
+      let fy = (dy / d) * force;
+      if (e.source !== draggedNode) {{ e.source.vx += fx / e.source.mass; e.source.vy += fy / e.source.mass; }}
+      if (e.target !== draggedNode) {{ e.target.vx -= fx / e.target.mass; e.target.vy -= fy / e.target.mass; }}
+    }}
+
+    // Center gravity & Orbital concentric bias
+    const kGravity = 0.012;
+    const kOrbit = 0.008;
+    for (let n of simNodes) {{
+      if (n === draggedNode) continue;
+      let dxC = n.x - cx;
+      let dyC = n.y - cy;
+      let distC = Math.sqrt(dxC * dxC + dyC * dyC) || 1;
+      let rDelta = distC - n.idealRadius;
+      n.vx -= (dxC / distC) * rDelta * kOrbit * alpha;
+      n.vy -= (dyC / distC) * rDelta * kOrbit * alpha;
+
+      n.vx += (cx - n.x) * kGravity * alpha;
+      n.vy += (cy - n.y) * kGravity * alpha;
+      n.vx *= 0.88;
+      n.vy *= 0.88;
+      n.x += n.vx;
+      n.y += n.vy;
+    }}
+
+    // AABB Box Collision Resolution (Strict no-overlap)
+    const pad = 12;
+    for (let i = 0; i < simNodes.length; i++) {{
+      const n1 = simNodes[i];
+      const halfW1 = (n1.width / 2) + pad;
+      const halfH1 = (n1.height / 2) + pad;
+      for (let j = i + 1; j < simNodes.length; j++) {{
+        const n2 = simNodes[j];
+        const halfW2 = (n2.width / 2) + pad;
+        const halfH2 = (n2.height / 2) + pad;
+
+        let dx = n1.x - n2.x;
+        let dy = n1.y - n2.y;
+        let minX = halfW1 + halfW2;
+        let minY = halfH1 + halfH2;
+
+        let overlapX = minX - Math.abs(dx);
+        let overlapY = minY - Math.abs(dy);
+
+        if (overlapX > 0 && overlapY > 0) {{
+          if (overlapX < overlapY) {{
+            let signX = dx >= 0 ? 1 : -1;
+            let pushX = overlapX * 0.5;
+            if (n1 !== draggedNode) n1.x += pushX * signX;
+            if (n2 !== draggedNode) n2.x -= pushX * signX;
+            n1.vx *= 0.5;
+            n2.vx *= 0.5;
+          }} else {{
+            let signY = dy >= 0 ? 1 : -1;
+            let pushY = overlapY * 0.5;
+            if (n1 !== draggedNode) n1.y += pushY * signY;
+            if (n2 !== draggedNode) n2.y -= pushY * signY;
+            n1.vy *= 0.5;
+            n2.vy *= 0.5;
+          }}
+        }}
+      }}
+    }}
+
+    // Update node positions
+    for (let n of simNodes) {{
+      if (n.elem) {{
+        const dx = n.x - (n.baseX + 130);
+        const dy = n.y - (n.baseY + 42);
+        n.elem.setAttribute('transform', `translate(${{dx.toFixed(1)}}, ${{dy.toFixed(1)}})`);
+      }}
+    }}
+
+    // Update edge positions
+    for (let e of simEdges) {{
+      if (e.elem) {{
+        const x1 = e.source.x;
+        const y1 = e.source.y;
+        const x2 = e.target.x;
+        const y2 = e.target.y;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        let cx1, cy1, cx2, cy2;
+        if (Math.abs(dy) >= 10) {{
+          cx1 = x1;
+          cy1 = y1 + dy * 0.45;
+          cx2 = x2;
+          cy2 = y2 - dy * 0.45;
+        }} else {{
+          cx1 = x1 + dx * 0.45;
+          cy1 = y1 - 25;
+          cx2 = x2 - dx * 0.45;
+          cy2 = y2 - 25;
+        }}
+        e.elem.setAttribute('d', `M ${{x1.toFixed(1)}},${{y1.toFixed(1)}} C ${{cx1.toFixed(1)}},${{cy1.toFixed(1)}} ${{cx2.toFixed(1)}},${{cy2.toFixed(1)}} ${{x2.toFixed(1)}},${{y2.toFixed(1)}}`);
+      }}
+    }}
+
+    alpha *= 0.993;
+    if (alpha > 0.005 || draggedNode) {{
+      animFrameId = requestAnimationFrame(physicsTick);
+    }} else {{
+      simRunning = false;
+    }}
+  }}
+
+  function resumeSimulation(boostAlpha = 0.35) {{
+    if (currentLayout !== 'galaxy') return;
+    alpha = Math.max(alpha, boostAlpha);
+    if (!simRunning) {{
+      simRunning = true;
+      animFrameId = requestAnimationFrame(physicsTick);
+    }}
+  }}
+
+  function initForceSimulation() {{
+    if (animFrameId) cancelAnimationFrame(animFrameId);
     const hubs = DATA.nodes.filter(n => n.type === 'answer' || n.type === 'case');
     const citations = DATA.nodes.filter(n => n.type === 'chunk' || n.type === 'claim' || n.type === 'entity' || n.type === 'code');
     const docs = DATA.nodes.filter(n => n.type === 'document');
@@ -1186,13 +1451,13 @@ aside h2 {{
         isDoc: isDoc,
         idealRadius: idealRadius,
         mass: mass,
-        elem: document.querySelector(`.node[data-node="${{n.id}}"]`)
+        elem: nodeElemById[n.id] || null
       }};
     }});
 
     const simById = Object.fromEntries(simNodes.map(sn => [sn.id, sn]));
     simEdges = DATA.edges.map(e => {{
-      const edgeElem = document.querySelector(`.edge[data-edge="${{e.id}}"]`);
+      const edgeElem = edgeElemById[e.id] || null;
       return {{
         id: e.id,
         source: simById[e.from],
@@ -1202,150 +1467,8 @@ aside h2 {{
       }};
     }}).filter(e => e.source && e.target);
 
-    let alpha = 1.0;
-    function physicsTick() {{
-      if (currentLayout !== 'galaxy') return;
-
-      // Repulsion
-      const kRepel = 4500;
-      for (let i = 0; i < simNodes.length; i++) {{
-        const n1 = simNodes[i];
-        for (let j = i + 1; j < simNodes.length; j++) {{
-          const n2 = simNodes[j];
-          let dx = n1.x - n2.x;
-          let dy = n1.y - n2.y;
-          let d2 = dx * dx + dy * dy + 1;
-          let d = Math.sqrt(d2);
-          if (d < 700) {{
-            let force = (kRepel / (d2 + 100)) * alpha;
-            let fx = (dx / d) * force;
-            let fy = (dy / d) * force;
-            if (n1 !== draggedNode) {{ n1.vx += fx / n1.mass; n1.vy += fy / n1.mass; }}
-            if (n2 !== draggedNode) {{ n2.vx -= fx / n2.mass; n2.vy -= fy / n2.mass; }}
-          }}
-        }}
-      }}
-
-      // Springs between connected nodes
-      const kSpring = 0.035;
-      for (let e of simEdges) {{
-        let dx = e.target.x - e.source.x;
-        let dy = e.target.y - e.source.y;
-        let d = Math.sqrt(dx * dx + dy * dy) || 1;
-        let targetDist = 160;
-        if (e.source.isHub || e.target.isHub) {{
-          targetDist = 180;
-        }} else if (e.source.isDoc || e.target.isDoc) {{
-          targetDist = 200;
-        }}
-        let force = (d - targetDist) * kSpring * alpha;
-        let fx = (dx / d) * force;
-        let fy = (dy / d) * force;
-        if (e.source !== draggedNode) {{ e.source.vx += fx / e.source.mass; e.source.vy += fy / e.source.mass; }}
-        if (e.target !== draggedNode) {{ e.target.vx -= fx / e.target.mass; e.target.vy -= fy / e.target.mass; }}
-      }}
-
-      // Center gravity & Orbital concentric bias
-      const kGravity = 0.012;
-      const kOrbit = 0.008;
-      for (let n of simNodes) {{
-        if (n === draggedNode) continue;
-        let dxC = n.x - cx;
-        let dyC = n.y - cy;
-        let distC = Math.sqrt(dxC * dxC + dyC * dyC) || 1;
-        let rDelta = distC - n.idealRadius;
-        n.vx -= (dxC / distC) * rDelta * kOrbit * alpha;
-        n.vy -= (dyC / distC) * rDelta * kOrbit * alpha;
-
-        n.vx += (cx - n.x) * kGravity * alpha;
-        n.vy += (cy - n.y) * kGravity * alpha;
-        n.vx *= 0.88;
-        n.vy *= 0.88;
-        n.x += n.vx;
-        n.y += n.vy;
-      }}
-
-      // AABB Box Collision Resolution (Strict no-overlap)
-      const pad = 12;
-      for (let i = 0; i < simNodes.length; i++) {{
-        const n1 = simNodes[i];
-        const halfW1 = (n1.width / 2) + pad;
-        const halfH1 = (n1.height / 2) + pad;
-        for (let j = i + 1; j < simNodes.length; j++) {{
-          const n2 = simNodes[j];
-          const halfW2 = (n2.width / 2) + pad;
-          const halfH2 = (n2.height / 2) + pad;
-
-          let dx = n1.x - n2.x;
-          let dy = n1.y - n2.y;
-          let minX = halfW1 + halfW2;
-          let minY = halfH1 + halfH2;
-
-          let overlapX = minX - Math.abs(dx);
-          let overlapY = minY - Math.abs(dy);
-
-          if (overlapX > 0 && overlapY > 0) {{
-            if (overlapX < overlapY) {{
-              let signX = dx >= 0 ? 1 : -1;
-              let pushX = overlapX * 0.5;
-              if (n1 !== draggedNode) n1.x += pushX * signX;
-              if (n2 !== draggedNode) n2.x -= pushX * signX;
-              n1.vx *= 0.5;
-              n2.vx *= 0.5;
-            }} else {{
-              let signY = dy >= 0 ? 1 : -1;
-              let pushY = overlapY * 0.5;
-              if (n1 !== draggedNode) n1.y += pushY * signY;
-              if (n2 !== draggedNode) n2.y -= pushY * signY;
-              n1.vy *= 0.5;
-              n2.vy *= 0.5;
-            }}
-          }}
-        }}
-      }}
-
-      // Update node positions
-      for (let n of simNodes) {{
-        if (n.elem) {{
-          const dx = n.x - (n.baseX + 130);
-          const dy = n.y - (n.baseY + 42);
-          n.elem.setAttribute('transform', `translate(${{dx.toFixed(1)}}, ${{dy.toFixed(1)}})`);
-        }}
-      }}
-
-      // Update edge positions
-      for (let e of simEdges) {{
-        if (e.elem) {{
-          const x1 = e.source.x;
-          const y1 = e.source.y;
-          const x2 = e.target.x;
-          const y2 = e.target.y;
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          let cx1, cy1, cx2, cy2;
-          if (Math.abs(dy) >= 10) {{
-            cx1 = x1;
-            cy1 = y1 + dy * 0.45;
-            cx2 = x2;
-            cy2 = y2 - dy * 0.45;
-          }} else {{
-            cx1 = x1 + dx * 0.45;
-            cy1 = y1 - 25;
-            cx2 = x2 - dx * 0.45;
-            cy2 = y2 - 25;
-          }}
-          e.elem.setAttribute('d', `M ${{x1.toFixed(1)}},${{y1.toFixed(1)}} C ${{cx1.toFixed(1)}},${{cy1.toFixed(1)}} ${{cx2.toFixed(1)}},${{cy2.toFixed(1)}} ${{x2.toFixed(1)}},${{y2.toFixed(1)}}`);
-        }}
-      }}
-
-      alpha *= 0.993;
-      if (alpha > 0.005 || draggedNode) {{
-        animFrameId = requestAnimationFrame(physicsTick);
-      }} else {{
-        simRunning = false;
-      }}
-    }}
-
+    alpha = 1.0;
+    simRunning = true;
     animFrameId = requestAnimationFrame(physicsTick);
   }}
 
@@ -1385,6 +1508,7 @@ aside h2 {{
   let panX = 0;
   let panY = 0;
   let isPanning = false;
+  let panMoved = false;
   let startX = 0;
   let startY = 0;
 
@@ -1401,10 +1525,101 @@ aside h2 {{
     }}
   }};
 
+  function fitToView() {{
+    if (!canvasSec || !svgElem) return;
+    const activeView = document.body.dataset.view || 'answer';
+    const simById = Object.fromEntries(simNodes.map(sn => [sn.id, sn]));
+    const visibleCoords = [];
+    DATA.nodes.forEach(node => {{
+      const el = nodeElemById[node.id];
+      if (!el || el.classList.contains('type-hidden')) return;
+      if (activeView === 'answer' && !el.classList.contains('focus')) return;
+      if (currentLayout === 'galaxy' && simById[node.id]) {{
+        const sn = simById[node.id];
+        visibleCoords.push([sn.x - 130, sn.y - 42, sn.x + 130, sn.y + 42]);
+      }} else {{
+        const pos = POSITIONS[node.id] || [0, 0];
+        visibleCoords.push([pos[0], pos[1], pos[0] + 260, pos[1] + 84]);
+      }}
+    }});
+    if (!visibleCoords.length) {{
+      scale = 1.0;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+      return;
+    }}
+    const minX = Math.min(...visibleCoords.map(b => b[0]));
+    const minY = Math.min(...visibleCoords.map(b => b[1]));
+    const maxX = Math.max(...visibleCoords.map(b => b[2]));
+    const maxY = Math.max(...visibleCoords.map(b => b[3]));
+    const boxW = Math.max(260, maxX - minX);
+    const boxH = Math.max(120, maxY - minY);
+    const viewW = Math.max(300, canvasSec.clientWidth || SVG_WIDTH);
+    const viewH = Math.max(300, canvasSec.clientHeight || SVG_HEIGHT);
+    const padding = 48;
+    scale = Math.min(1.6, Math.max(0.3, Math.min((viewW - padding * 2) / boxW, (viewH - padding * 2) / boxH)));
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    panX = viewW / 2 - centerX * scale;
+    panY = viewH / 2 - centerY * scale;
+    updateTransform();
+  }}
+
+  function clearAtlasSelection() {{
+    selectedNodeId = null;
+    selectedEdgeId = null;
+    Object.values(nodeElemById).forEach(el => el.classList.remove('active', 'dimmed'));
+    Object.values(edgeElemById).forEach(el => el.classList.remove('active', 'dimmed'));
+    const radarContainer = document.getElementById('atlas-mini-radar-container');
+    if (radarContainer) radarContainer.style.display = 'none';
+    if (confBox) confBox.style.display = 'none';
+    if (linksBox) linksBox.style.display = 'none';
+    if (detailTitle) detailTitle.textContent = TR.start_title;
+    if (detail) detail.textContent = TR.start_hint;
+    applyFiltersAndSearch();
+  }}
+
+  function exportCurrentSvg() {{
+    if (!svgElem) return;
+    const clone = svgElem.cloneNode(true);
+    clone.removeAttribute('style');
+    const styleEl = svgElem.ownerDocument.createElementNS(svgElem.namespaceURI, 'style');
+    styleEl.textContent =
+      '.node rect{{fill:#0f172a;stroke:var(--node-color,#38bdf8);stroke-width:1.8}}' +
+      '.node.needs-review rect{{stroke-dasharray:6 3}}' +
+      '.node-type{{font-size:11px;font-weight:800;fill:#94a3b8;font-family:sans-serif}}' +
+      '.node-label{{font-size:13px;font-weight:600;fill:#f8fafc;font-family:sans-serif}}' +
+      '.review-label{{font-size:11px;font-weight:800;fill:#f59e0b;font-family:sans-serif}}' +
+      '.edge{{stroke:#475569;stroke-width:1.8;fill:none;opacity:0.75}}' +
+      '.edge.focus{{stroke:#38bdf8;stroke-width:2.5;opacity:1}}' +
+      '.edge-label rect{{fill:#0f172a;stroke:#334155;stroke-width:1}}' +
+      '.edge-label text{{font-size:10px;fill:#94a3b8;font-family:sans-serif}}';
+    const bgRect = svgElem.ownerDocument.createElementNS(svgElem.namespaceURI, 'rect');
+    bgRect.setAttribute('x', '0');
+    bgRect.setAttribute('y', '0');
+    bgRect.setAttribute('width', String(SVG_WIDTH));
+    bgRect.setAttribute('height', String(SVG_HEIGHT));
+    bgRect.setAttribute('fill', '#070b14');
+    clone.insertBefore(bgRect, clone.firstChild);
+    clone.insertBefore(styleEl, clone.firstChild);
+    const serialized = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([serialized], {{ type: 'image/svg+xml;charset=utf-8' }});
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'evidence-atlas.svg';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }}
+
   if (canvasSec && svgElem) {{
     canvasSec.addEventListener('mousedown', (e) => {{
-      if (e.target.closest('.node') || e.target.closest('button') || e.target.closest('input')) return;
+      if (e.target.closest('.node') || e.target.closest('.edge') || e.target.closest('button') || e.target.closest('input')) return;
       isPanning = true;
+      panMoved = false;
       startX = e.clientX - panX;
       startY = e.clientY - panY;
       canvasSec.style.cursor = 'grabbing';
@@ -1412,20 +1627,30 @@ aside h2 {{
 
     window.addEventListener('mousemove', (e) => {{
       if (!isPanning) return;
+      panMoved = true;
       panX = e.clientX - startX;
       panY = e.clientY - startY;
       updateTransform();
     }});
 
-    window.addEventListener('mouseup', () => {{
+    window.addEventListener('mouseup', (e) => {{
+      const wasBackgroundClick = isPanning && !panMoved && !e.target.closest('.node') && !e.target.closest('.edge') && !e.target.closest('button');
       isPanning = false;
       if (canvasSec) canvasSec.style.cursor = 'grab';
+      if (wasBackgroundClick) clearAtlasSelection();
     }});
 
     canvasSec.addEventListener('wheel', (e) => {{
       e.preventDefault();
+      const rect = canvasSec.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
       const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
-      scale = Math.min(Math.max(0.3, scale * zoomFactor), 3.0);
+      const nextScale = Math.min(Math.max(0.3, scale * zoomFactor), 3.0);
+      const ratio = nextScale / scale;
+      panX = mouseX - (mouseX - panX) * ratio;
+      panY = mouseY - (mouseY - panY) * ratio;
+      scale = nextScale;
       updateTransform();
     }}, {{ passive: false }});
   }}
@@ -1441,12 +1666,9 @@ aside h2 {{
     updateTransform();
   }});
 
-  document.getElementById('atlas-btn-fit')?.addEventListener('click', () => {{
-    scale = 1.0;
-    panX = 0;
-    panY = 0;
-    updateTransform();
-  }});
+  document.getElementById('atlas-btn-fit')?.addEventListener('click', fitToView);
+  document.getElementById('atlas-btn-reset-selection')?.addEventListener('click', clearAtlasSelection);
+  document.getElementById('atlas-btn-export-svg')?.addEventListener('click', exportCurrentSvg);
 
   document.getElementById('atlas-btn-fullscreen')?.addEventListener('click', () => {{
     const target = canvasSec || document.documentElement;
@@ -1466,38 +1688,78 @@ aside h2 {{
     }});
   }}
 
-  // --- Real-time Search ---
-  if (searchInput) {{
-    searchInput.addEventListener('input', () => {{
-      const q = searchInput.value.toLowerCase().trim();
-      document.querySelectorAll('.node').forEach(nodeEl => {{
-        const nid = nodeEl.dataset.node;
-        const nObj = nodeById[nid];
-        if (!q) {{
-          nodeEl.classList.remove('search-matched', 'dimmed');
-          return;
-        }}
-        const haystack = ((nObj?.label || '') + ' ' + (nObj?.properties?.text || '') + ' ' + (nObj?.properties?.location || '')).toLowerCase();
-        const matched = haystack.includes(q);
-        nodeEl.classList.toggle('search-matched', matched);
-        nodeEl.classList.toggle('dimmed', !matched);
-      }});
+  // --- Type Filter Pills + Real-time Search ---
+  function applyFiltersAndSearch() {{
+    const q = (searchInput?.value || '').toLowerCase().trim();
+    const visibleNodeIds = new Set();
 
-      document.querySelectorAll('.edge').forEach(edgeEl => {{
-        if (!q) {{
-          edgeEl.classList.remove('dimmed');
-          return;
-        }}
-        const eObj = edgeById[edgeEl.dataset.edge];
-        if (!eObj) return;
-        const sMatch = document.querySelector(`.node[data-node="${{eObj.from}}"]`)?.classList.contains('search-matched');
-        const tMatch = document.querySelector(`.node[data-node="${{eObj.to}}"]`)?.classList.contains('search-matched');
-        edgeEl.classList.toggle('dimmed', !(sMatch && tMatch));
-      }});
+    DATA.nodes.forEach(nObj => {{
+      const nodeEl = nodeElemById[nObj.id];
+      if (!nodeEl) return;
+      const typeOk = activeTypeFilter === 'all' || nObj.type === activeTypeFilter;
+      nodeEl.classList.toggle('type-hidden', !typeOk);
+      if (typeOk) visibleNodeIds.add(nObj.id);
+      if (!q) {{
+        nodeEl.classList.remove('search-matched');
+        if (!selectedNodeId && !selectedEdgeId) nodeEl.classList.remove('dimmed');
+        return;
+      }}
+      const haystack = ((nObj.label || '') + ' ' + (nObj.properties?.text || '') + ' ' + (nObj.properties?.location || '')).toLowerCase();
+      const matched = typeOk && haystack.includes(q);
+      nodeEl.classList.toggle('search-matched', matched);
+      nodeEl.classList.toggle('dimmed', !matched);
+    }});
+
+    DATA.edges.forEach(eObj => {{
+      const edgeEl = edgeElemById[eObj.id];
+      if (!edgeEl) return;
+      const bothTypesVisible = visibleNodeIds.has(eObj.from) && visibleNodeIds.has(eObj.to);
+      edgeEl.classList.toggle('type-hidden', !bothTypesVisible);
+      if (!q) {{
+        if (!selectedNodeId && !selectedEdgeId) edgeEl.classList.remove('dimmed');
+        return;
+      }}
+      const sMatch = nodeElemById[eObj.from]?.classList.contains('search-matched');
+      const tMatch = nodeElemById[eObj.to]?.classList.contains('search-matched');
+      edgeEl.classList.toggle('dimmed', !(sMatch && tMatch));
+    }});
+
+    document.querySelectorAll('.edge-label').forEach(lbl => {{
+      const fromId = lbl.dataset.from;
+      const toId = lbl.dataset.to;
+      if (fromId && toId) {{
+        lbl.classList.toggle('type-hidden', !(visibleNodeIds.has(fromId) && visibleNodeIds.has(toId)));
+      }}
     }});
   }}
 
-  // Node dragging physics
+  const filterBar = document.getElementById('atlas-type-filters');
+  if (filterBar) {{
+    const typeCounts = Object.create(null);
+    DATA.nodes.forEach(n => {{ typeCounts[n.type] = (typeCounts[n.type] || 0) + 1; }});
+    const order = ['answer', 'claim', 'entity', 'code', 'chunk', 'document', 'case'];
+    let pillsHtml = `<button type="button" class="type-filter-pill active" data-type-filter="all">${{escapeHtml(TR.filter_all || 'All')}} (${{DATA.nodes.length}})</button>`;
+    order.forEach(t => {{
+      if (!typeCounts[t]) return;
+      const label = TYPE_NAMES[t] || t;
+      const color = TYPE_COLORS[t] || '#38bdf8';
+      pillsHtml += `<button type="button" class="type-filter-pill" data-type-filter="${{t}}"><span class="type-dot" style="background:${{color}};"></span>${{escapeHtml(label)}} (${{typeCounts[t]}})</button>`;
+    }});
+    filterBar.innerHTML = pillsHtml;
+    filterBar.addEventListener('click', (e) => {{
+      const btn = e.target.closest('[data-type-filter]');
+      if (!btn) return;
+      activeTypeFilter = btn.dataset.typeFilter || 'all';
+      filterBar.querySelectorAll('.type-filter-pill').forEach(p => p.classList.toggle('active', p === btn));
+      applyFiltersAndSearch();
+    }});
+  }}
+
+  if (searchInput) {{
+    searchInput.addEventListener('input', applyFiltersAndSearch);
+  }}
+
+  // Node dragging physics (resumes in-place without resetting positions)
   document.querySelectorAll('.node').forEach(nodeEl => {{
     nodeEl.addEventListener('mousedown', (e) => {{
       if (currentLayout !== 'galaxy') return;
@@ -1510,10 +1772,7 @@ aside h2 {{
       nodeStartX = sn.x;
       nodeStartY = sn.y;
       e.stopPropagation();
-      if (!simRunning) {{
-        simRunning = true;
-        initForceSimulation();
-      }}
+      resumeSimulation(0.35);
     }});
   }});
 
@@ -1538,6 +1797,8 @@ aside h2 {{
   window.selectAtlasNode = (nodeId) => {{
     const node = nodeById[nodeId];
     if (!node || !detailTitle || !detail) return;
+    selectedNodeId = nodeId;
+    selectedEdgeId = null;
 
     detailTitle.textContent = node.label;
     const typeLabel = TYPE_NAMES[node.type] || node.type;
@@ -1574,9 +1835,9 @@ aside h2 {{
     // Update Mini Radar
     updateAtlasMiniRadar(nodeId);
 
-    // Update Confidence Gauge
+    // Update Confidence Gauge (supports 0 and top-level node.confidence)
     if (confBox && confPct && confFill) {{
-      const rawScore = node.properties?.score || node.properties?.confidence || (node.review_status === 'needs_review' ? 0.45 : null);
+      const rawScore = node.properties?.score ?? node.properties?.confidence ?? node.confidence ?? (node.review_status === 'needs_review' ? 0.45 : null);
       if (rawScore !== undefined && rawScore !== null) {{
         const pct = Math.round(Number(rawScore) * 100);
         confPct.textContent = pct + '%';
@@ -1597,14 +1858,14 @@ aside h2 {{
       inChips.innerHTML = inboundEdges.map(e => {{
         const src = nodeById[e.from];
         const srcLabel = src?.label || e.from;
-        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{escapeHtml(e.from)}}')">${{escapeHtml(srcLabel)}}</div>`;
+        return `<div class="atlas-link-chip" data-target-node="${{escapeHtml(e.from)}}">${{escapeHtml(srcLabel)}}</div>`;
       }}).join('') || `<span style="font-size:11px; color:#64748b;">${{escapeHtml(TR.empty_rel)}}</span>`;
 
       outCount.textContent = outboundEdges.length;
       outChips.innerHTML = outboundEdges.map(e => {{
         const tgt = nodeById[e.to];
         const tgtLabel = tgt?.label || e.to;
-        return `<div class="atlas-link-chip" onclick="selectAtlasNode('${{escapeHtml(e.to)}}')">${{escapeHtml(tgtLabel)}}</div>`;
+        return `<div class="atlas-link-chip" data-target-node="${{escapeHtml(e.to)}}">${{escapeHtml(tgtLabel)}}</div>`;
       }}).join('') || `<span style="font-size:11px; color:#64748b;">${{escapeHtml(TR.empty_rel)}}</span>`;
 
       linksBox.style.display = (inboundEdges.length > 0 || outboundEdges.length > 0) ? 'block' : 'none';
@@ -1622,18 +1883,61 @@ aside h2 {{
       }}
     }});
 
-    document.querySelectorAll('.node').forEach(el => {{
-      const isSelf = el.dataset.node === nodeId;
+    Object.entries(nodeElemById).forEach(([nid, el]) => {{
+      const isSelf = nid === nodeId;
       el.classList.toggle('active', isSelf);
-      el.classList.toggle('dimmed', !connectedNodeIds.has(el.dataset.node));
+      el.classList.toggle('dimmed', !connectedNodeIds.has(nid));
     }});
 
-    document.querySelectorAll('.edge').forEach(el => {{
-      const isConnected = connectedEdges.has(el.dataset.edge);
+    Object.entries(edgeElemById).forEach(([eid, el]) => {{
+      const isConnected = connectedEdges.has(eid);
       el.classList.toggle('active', isConnected);
       el.classList.toggle('dimmed', !isConnected);
     }});
   }};
+
+  function selectAtlasEdge(edgeId) {{
+    const edge = edgeById[edgeId];
+    if (!edge || !detailTitle || !detail) return;
+    selectedNodeId = null;
+    selectedEdgeId = edgeId;
+    const relName = edge.relation.replaceAll('_', ' ');
+    detailTitle.textContent = relName;
+    const source = nodeById[edge.from]?.label || edge.from;
+    const target = nodeById[edge.to]?.label || edge.to;
+    const locations = (edge.receipts || []).map(item => item.location).filter(Boolean).join(', ');
+    const statusLabel = edge.review_status === 'needs_review' ? (TR.edge_status_review || TR.review_needed) : (TR.edge_status_verified || 'Verified');
+    detail.innerHTML = `
+      <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px;">${{escapeHtml(TR.edge_title)}}</div>
+      <div style="margin-bottom:8px;"><span class="badge">${{escapeHtml(edge.origin || 'local')}}</span><span class="badge">${{escapeHtml(statusLabel)}}</span></div>
+      <div style="font-size:12.5px; color:#f8fafc; line-height:1.5;"><strong>${{escapeHtml(source)}}</strong><br>───▶ <strong>${{escapeHtml(target)}}</strong></div>
+      ${{locations ? `<div style="font-size:11px; color:#a78bfa; margin-top:8px; word-break:break-all;">${{escapeHtml(TR.edge_loc_prefix + locations)}}</div>` : ''}}
+    `;
+    const radarContainer = document.getElementById('atlas-mini-radar-container');
+    if (radarContainer) radarContainer.style.display = 'none';
+    if (linksBox) linksBox.style.display = 'none';
+    if (confBox && confPct && confFill) {{
+      if (edge.confidence !== undefined && edge.confidence !== null) {{
+        const pct = Math.round(Number(edge.confidence) * 100);
+        confPct.textContent = pct + '%';
+        confFill.style.width = pct + '%';
+        confFill.style.backgroundColor = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
+        confBox.style.display = 'block';
+      }} else {{
+        confBox.style.display = 'none';
+      }}
+    }}
+    const endpoints = new Set([edge.from, edge.to]);
+    Object.entries(nodeElemById).forEach(([nid, el]) => {{
+      el.classList.remove('active');
+      el.classList.toggle('dimmed', !endpoints.has(nid));
+    }});
+    Object.entries(edgeElemById).forEach(([eid, el]) => {{
+      const isSelected = eid === edgeId;
+      el.classList.toggle('active', isSelected);
+      el.classList.toggle('dimmed', !isSelected);
+    }});
+  }}
 
   const setView = (view) => {{
     document.body.dataset.view = view;
@@ -1649,25 +1953,28 @@ aside h2 {{
 
   document.querySelectorAll('[data-node]').forEach(element => {{
     element.addEventListener('click', () => window.selectAtlasNode(element.dataset.node));
+    element.addEventListener('keydown', (event) => {{
+      if (event.key === 'Enter' || event.key === ' ') {{
+        event.preventDefault();
+        window.selectAtlasNode(element.dataset.node);
+      }}
+    }});
   }});
 
   document.querySelectorAll('[data-edge]').forEach(element => {{
-    element.addEventListener('click', () => {{
-      const edge = edgeById[element.dataset.edge];
-      if (!edge || !detailTitle || !detail) return;
-      const relName = edge.relation.replaceAll('_', ' ');
-      detailTitle.textContent = relName;
-      const source = nodeById[edge.from]?.label || edge.from;
-      const target = nodeById[edge.to]?.label || edge.to;
-      const locations = (edge.receipts || []).map(item => item.location).filter(Boolean).join(', ');
-      detail.innerHTML = `
-        <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px;">${{escapeHtml(TR.edge_title)}}</div>
-        <div style="font-size:12.5px; color:#f8fafc; line-height:1.5;"><strong>${{escapeHtml(source)}}</strong><br>───▶ <strong>${{escapeHtml(target)}}</strong></div>
-        ${{locations ? `<div style="font-size:11px; color:#a78bfa; margin-top:8px;">${{escapeHtml(TR.edge_loc_prefix + locations)}}</div>` : ''}}
-      `;
-      if (confBox) confBox.style.display = 'none';
-      if (linksBox) linksBox.style.display = 'none';
+    element.addEventListener('click', () => selectAtlasEdge(element.dataset.edge));
+    element.addEventListener('keydown', (event) => {{
+      if (event.key === 'Enter' || event.key === ' ') {{
+        event.preventDefault();
+        selectAtlasEdge(element.dataset.edge);
+      }}
     }});
+  }});
+
+  document.addEventListener('keydown', (event) => {{
+    if (event.key === 'Escape') {{
+      clearAtlasSelection();
+    }}
   }});
 
   if (layout) {{

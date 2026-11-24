@@ -32,15 +32,32 @@ LANGUAGES = {
     ".cls": "VBA",
 }
 DECLARATION = re.compile(r"^\s*(?:export\s+)?(?:async\s+)?(?:function|class|interface|struct|fn)\s+([A-Za-z_][\w]*)", re.MULTILINE)
+JS_TS_DECLARATION = re.compile(
+    r"^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?(?:function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)"
+    r"|^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>",
+    re.MULTILINE,
+)
+GO_DECLARATION = re.compile(
+    r"^\s*(?:type\s+([A-Za-z_]\w*)\s+(?:struct|interface)|func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)\s*\()",
+    re.MULTILINE,
+)
+RUST_DECLARATION = re.compile(
+    r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:fn|struct|enum|trait|impl)\s+([A-Za-z_]\w*)",
+    re.MULTILINE,
+)
+JAVA_DECLARATION = re.compile(
+    r"^\s*(?:public|private|protected)?\s*(?:abstract\s+|final\s+|static\s+)*(?:class|interface|enum|record)\s+([A-Za-z_]\w*)",
+    re.MULTILINE,
+)
 IMPORT = re.compile(r"^\s*(?:import\s+.*?from\s+|import\s+|use\s+|from\s+)([\w./@-]+)", re.MULTILINE)
 CS_DECLARATION = re.compile(
     r"^\s*(?:public|private|protected|internal|file)?\s*(?:static\s+|sealed\s+|abstract\s+|partial\s+|readonly\s+)*"
-    r"(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)",
+    r"(class|interface|struct|enum|record(?:\s+struct|\s+class)?)\s+([A-Za-z_]\w*)",
     re.MULTILINE,
 )
 CS_METHOD = re.compile(
-    r"^\s*(?:public|private|protected|internal)\s+(?:static\s+|virtual\s+|override\s+|async\s+|sealed\s+)*"
-    r"(?:[\w<>\[\],.?]+)\s+([A-Za-z_]\w*)\s*\(",
+    r"^\s*(?:public|private|protected|internal)\s+(?:static\s+|virtual\s+|override\s+|async\s+|sealed\s+|new\s+)*"
+    r"[A-Za-z_][\w.<>\[\], ?]*?\s+([A-Za-z_]\w*)\s*\(",
     re.MULTILINE,
 )
 CS_USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.MULTILINE)
@@ -162,7 +179,7 @@ def inspect_codebase(project_dir: str | Path) -> dict:
             current_type = ""
             for match in CS_DECLARATION.finditer(text):
                 line = text.count("\n", 0, match.start()) + 1
-                kind_kw, name = match.group(1), match.group(2)
+                kind_kw, name = match.group(1).split()[0], match.group(2)
                 current_type = name
                 symbols.append({"name": name, "qualified_name": name, "kind": kind_kw, "file": relative, "line": line, "docstring": ""})
             for match in CS_METHOD.finditer(text):
@@ -192,9 +209,21 @@ def inspect_codebase(project_dir: str | Path) -> dict:
                 line = text.count("\n", 0, match.start()) + 1
                 relationships.append({"from": relative, "to": match.group(2), "kind": "imports", "line": line})
             continue
-        for match in DECLARATION.finditer(text):
+        decl_pattern = {
+            ".js": JS_TS_DECLARATION,
+            ".jsx": JS_TS_DECLARATION,
+            ".ts": JS_TS_DECLARATION,
+            ".tsx": JS_TS_DECLARATION,
+            ".go": GO_DECLARATION,
+            ".rs": RUST_DECLARATION,
+            ".java": JAVA_DECLARATION,
+        }.get(suffix, DECLARATION)
+        for match in decl_pattern.finditer(text):
+            decl_name = next((group for group in match.groups() if group), None)
+            if not decl_name:
+                continue
             line = text.count("\n", 0, match.start()) + 1
-            symbols.append({"name": match.group(1), "qualified_name": match.group(1), "kind": "declaration", "file": relative, "line": line, "docstring": ""})
+            symbols.append({"name": decl_name, "qualified_name": decl_name, "kind": "declaration", "file": relative, "line": line, "docstring": ""})
         for match in IMPORT.finditer(text):
             line = text.count("\n", 0, match.start()) + 1
             relationships.append({"from": relative, "to": match.group(1), "kind": "imports", "line": line})
@@ -258,9 +287,9 @@ def answer_question(report: dict, question: str, audience: str = "engineer") -> 
     if not question.strip():
         raise ValueError("Question must not be empty.")
     lower = question.lower()
-    if any(term in lower for term in ("overview", "architecture", "the codebase", "this codebase", "the project", "project overview")):
+    if any(term in lower for term in ("overview", "architecture", "the codebase", "this codebase", "the project", "project overview", "tổng quan", "kiến trúc", "ứng dụng này làm gì", "dự án này")):
         return explain_codebase(report, audience)
-    if any(term in lower for term in ("depend", "import", "relationship", "connect")):
+    if any(term in lower for term in ("depend", "import", "relationship", "connect", "phụ thuộc", "liên kết", "kết nối")):
         internal_modules: set[str] = set()
         for file in report["files"]:
             module = Path(file).with_suffix("").as_posix().replace("/", ".")

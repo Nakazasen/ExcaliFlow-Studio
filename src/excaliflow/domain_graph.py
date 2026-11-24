@@ -7,6 +7,7 @@ import hashlib
 import os
 from pathlib import Path
 import re
+import tempfile
 from typing import Any
 
 from excaliflow.explorer import IGNORED_DIRECTORIES, LANGUAGES, inspect_codebase
@@ -16,6 +17,12 @@ from excaliflow.knowledge import GRAPH_SCHEMA, validate_evidence_graph
 MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
 MD_HEADING_RE = re.compile(r"^(#{1,3})\s+(.+?)\s*$", re.MULTILINE)
 INI_SECTION_RE = re.compile(r"^\s*\[([^\]]+)\]", re.MULTILINE)
+YAML_KEY_RE = re.compile(r"^([A-Za-z_][\w.-]*)\s*:", re.MULTILINE)
+TOML_SECTION_RE = re.compile(r"^\s*\[{1,2}\s*([^\]]+?)\s*\]{1,2}", re.MULTILINE)
+SQL_DECL_RE = re.compile(
+    r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?(TABLE|VIEW|FUNCTION|PROCEDURE)\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][\w.\[\]\"`]*)",
+    re.MULTILINE | re.IGNORECASE,
+)
 
 TYPE_COLORS = {
     "answer": "#ff7a45",
@@ -27,7 +34,25 @@ TYPE_COLORS = {
     "case": "#ce5c70",
 }
 
-SCAN_EXTENSIONS = {".md", ".csv", ".json", ".ini", ".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".cs", ".bas", ".cls"}
+SCAN_EXTENSIONS = {
+    ".md", ".csv", ".json", ".ini", ".yaml", ".yml", ".toml", ".sql",
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".cs", ".bas", ".cls",
+}
+
+
+def write_text_atomic(content: str, output_path: str | Path) -> Path:
+    """Atomically write UTF-8 text via a temporary sibling file and os.replace."""
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=output.parent, delete=False, suffix=".tmp") as handle:
+        temporary = Path(handle.name)
+        handle.write(content)
+    try:
+        os.replace(temporary, output)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    return output
 
 
 def _stable_id(prefix: str, raw: str) -> str:
@@ -131,13 +156,14 @@ def build_workspace_knowledge_graph(
     # Reserve room for core summary answer + primary chunk
     md_files = [p for p in files if p.suffix.lower() == ".md"]
     csv_files = [p for p in files if p.suffix.lower() == ".csv"]
-    cfg_files = [p for p in files if p.suffix.lower() in {".json", ".ini"}]
-    code_files = [p for p in files if p.suffix.lower() in LANGUAGES]
+    cfg_files = [p for p in files if p.suffix.lower() in {".json", ".ini", ".yaml", ".yml", ".toml"}]
+    sql_files = [p for p in files if p.suffix.lower() == ".sql"]
+    code_files = [p for p in files if p.suffix.lower() in LANGUAGES] + sql_files
 
     answer_id = "answer-workspace-map"
     summary_text = (
         f"Workspace '{workspace.name}': {len(md_files)} Markdown docs, {len(csv_files)} CSV datasets, "
-        f"{len(cfg_files)} JSON/INI configs, {len(code_files)} source files ({len(code_report['symbols'])} symbols)."
+        f"{len(cfg_files)} config files, {len(code_files)} source/SQL files ({len(code_report['symbols'])} symbols)."
     )
     add_node({
         "id": answer_id,
@@ -149,14 +175,32 @@ def build_workspace_knowledge_graph(
         "properties": {"location": ".", "text": summary_text},
     })
 
-    # Add document nodes (Markdown first, then CSV, then JSON/INI, then Source Files)
+    # Proportional document budget so markdown-heavy repos never starve code or config nodes
     doc_nodes_by_rel: dict[str, str] = {}
     doc_nodes_by_name: dict[str, str] = {}
     chunk_ids: list[str] = []
     md_links_queue: list[tuple[str, str, str]] = []
     symbol_mentions_candidates: list[tuple[str, str, str]] = []
+    sql_symbols: list[dict[str, Any]] = []
 
-    prioritized_docs = md_files[:20] + csv_files[:15] + cfg_files[:12] + code_files[:15]
+    doc_budget_slots = max(6, int(budget * 0.52) - len(nodes))
+    buckets = [lst for lst in (md_files, csv_files + cfg_files, code_files) if lst]
+    prioritized_docs: list[Path] = []
+    seen_doc_paths: set[Path] = set()
+    indices = [0] * len(buckets)
+    while len(prioritized_docs) < doc_budget_slots:
+        progressed = False
+        for b_idx, bucket in enumerate(buckets):
+            if indices[b_idx] < len(bucket) and len(prioritized_docs) < doc_budget_slots:
+                candidate = bucket[indices[b_idx]]
+                indices[b_idx] += 1
+                if candidate not in seen_doc_paths:
+                    seen_doc_paths.add(candidate)
+                    prioritized_docs.append(candidate)
+                    progressed = True
+        if not progressed:
+            break
+
     for path in prioritized_docs:
         if len(nodes) >= max(8, int(budget * 0.52)):
             break
@@ -185,15 +229,39 @@ def build_workspace_knowledge_graph(
             sections = [m.group(1) for _, m in zip(range(8), INI_SECTION_RE.finditer(text))]
             if sections:
                 detail_lines.append("Sections: " + ", ".join(sections))
+        elif suffix in {".yaml", ".yml"}:
+            keys = [m.group(1) for _, m in zip(range(10), YAML_KEY_RE.finditer(text))]
+            if keys:
+                detail_lines.append("Keys: " + ", ".join(keys))
+        elif suffix == ".toml":
+            sections = [m.group(1) for _, m in zip(range(8), TOML_SECTION_RE.finditer(text))]
+            if sections:
+                detail_lines.append("Sections: " + ", ".join(sections))
+        elif suffix == ".sql":
+            decls: list[str] = []
+            for m in SQL_DECL_RE.finditer(text):
+                obj_kind, obj_name = m.group(1).lower(), m.group(2).strip('"`[]')
+                line_no = text.count("\n", 0, m.start()) + 1
+                decls.append(f"{obj_kind} {obj_name}")
+                sql_symbols.append({
+                    "name": obj_name.split(".")[-1],
+                    "qualified_name": obj_name,
+                    "kind": obj_kind,
+                    "file": rel,
+                    "line": line_no,
+                })
+            if decls:
+                detail_lines.append("SQL Objects: " + ", ".join(decls[:8]))
         else:
             detail_lines.append(f"Language: {LANGUAGES.get(suffix, suffix)}")
 
         did = _stable_id("doc", rel)
+        is_doc_artifact = suffix in {".md", ".csv", ".json", ".ini", ".yaml", ".yml", ".toml"}
         if add_node({
             "id": did,
             "type": "document",
             "label": title if suffix == ".md" else path.name,
-            "origin": "source_document" if suffix in {".md", ".csv", ".json", ".ini"} else "source_scan",
+            "origin": "source_document" if is_doc_artifact else "source_scan",
             "confidence": 0.96,
             "review_status": "verified",
             "properties": {"location": rel, "kind": suffix.lstrip("."), "text": "\n".join(detail_lines)},
@@ -244,10 +312,11 @@ def build_workspace_knowledge_graph(
         chunk_ids.append(fallback_cid)
         add_edge(answer_id, fallback_cid, "supported_by", origin="retrieval", confidence=0.9, location=f"{first_rel}:1", source_node_id=fallback_cid)
 
-    # Add top code symbols across Python, C#, VBA, etc.
+    # Add top code symbols across Python, C#, VBA, SQL, etc.
     symbol_nodes_by_name: dict[str, list[str]] = defaultdict(list)
-    kind_rank = {"class": 0, "interface": 0, "module": 0, "struct": 1, "function": 2, "sub": 2, "method": 3, "declaration": 4}
-    sorted_symbols = sorted(code_report["symbols"], key=lambda s: (kind_rank.get(s.get("kind", ""), 5), s["file"], s["line"]))
+    kind_rank = {"class": 0, "interface": 0, "module": 0, "table": 0, "view": 1, "struct": 1, "function": 2, "procedure": 2, "sub": 2, "method": 3, "declaration": 4}
+    all_symbols = list(code_report["symbols"]) + sql_symbols
+    sorted_symbols = sorted(all_symbols, key=lambda s: (kind_rank.get(s.get("kind", ""), 5), s["file"], s["line"]))
     seen_symbol_keys: set[tuple[str, str]] = set()
     for sym in sorted_symbols:
         if len(nodes) >= int(budget * 0.88):
@@ -271,6 +340,47 @@ def build_workspace_knowledge_graph(
             parent_doc = doc_nodes_by_rel.get(sym["file"]) or doc_nodes_by_name.get(Path(sym["file"]).name.lower())
             if parent_doc:
                 add_edge(code_id, parent_doc, "defined_in", origin="source_scan", confidence=1.0, location=loc, source_node_id=parent_doc)
+
+    # Connect internal code-to-code dependencies across scanned files
+    module_key_to_doc: dict[str, str] = {}
+    for rel, did in doc_nodes_by_rel.items():
+        if Path(rel).suffix.lower() not in LANGUAGES:
+            continue
+        mod = Path(rel).with_suffix("").as_posix().replace("/", ".")
+        module_key_to_doc.setdefault(mod.lower(), did)
+        module_key_to_doc.setdefault(Path(rel).stem.lower(), did)
+        if mod.startswith("src."):
+            module_key_to_doc.setdefault(mod.removeprefix("src.").lower(), did)
+    for sym in code_report["symbols"]:
+        if sym.get("kind") in {"class", "interface", "module", "struct"}:
+            parent_doc = doc_nodes_by_rel.get(sym["file"])
+            if parent_doc:
+                module_key_to_doc.setdefault(sym["name"].lower(), parent_doc)
+                module_key_to_doc.setdefault(sym["qualified_name"].lower(), parent_doc)
+
+    for rel_item in code_report["relationships"]:
+        src_doc = doc_nodes_by_rel.get(rel_item["from"])
+        if not src_doc:
+            continue
+        raw_target = str(rel_item["to"]).lstrip(".").strip()
+        if not raw_target:
+            continue
+        candidates = [
+            raw_target.lower(),
+            raw_target.split(".")[0].lower(),
+            Path(raw_target).stem.lower(),
+        ]
+        tgt_doc = next((module_key_to_doc[c] for c in candidates if c in module_key_to_doc), None)
+        if tgt_doc and tgt_doc != src_doc:
+            add_edge(
+                src_doc,
+                tgt_doc,
+                "depends_on",
+                origin="source_scan",
+                confidence=0.94,
+                location=f"{rel_item['from']}:{rel_item['line']}",
+                source_node_id=src_doc,
+            )
 
     # Add cross-file markdown link claims
     for src_rel, link_label, target_raw in md_links_queue:
@@ -330,14 +440,31 @@ def build_workspace_knowledge_graph(
     return graph
 
 
+def _rect_border_point(rect: dict[str, Any], target_x: float, target_y: float) -> tuple[float, float]:
+    """Compute intersection point on a rectangle border toward (target_x, target_y)."""
+    cx = float(rect["x"]) + float(rect["width"]) / 2.0
+    cy = float(rect["y"]) + float(rect["height"]) / 2.0
+    dx = target_x - cx
+    dy = target_y - cy
+    if dx == 0 and dy == 0:
+        return cx, cy
+    half_w = float(rect["width"]) / 2.0
+    half_h = float(rect["height"]) / 2.0
+    scale_x = abs(dx) / half_w if half_w else 0.0
+    scale_y = abs(dy) / half_h if half_h else 0.0
+    denom = max(scale_x, scale_y, 1e-6)
+    return round(cx + dx / denom, 2), round(cy + dy / denom, 2)
+
+
 def export_excalidraw_scene(graph: dict[str, Any], lang: str = "vi") -> dict[str, Any]:
-    """Convert a validated evidence-graph/v1 into an Excalidraw v2 scene JSON."""
-    from excaliflow.evidence_atlas import _layout
+    """Convert a validated evidence-graph/v1 into an Excalidraw v2 scene JSON with bound arrows & labels."""
+    from excaliflow.evidence_atlas import _layout, _relation_label
 
     validate_evidence_graph(graph)
     positions, _, _ = _layout(graph)
     elements: list[dict[str, Any]] = []
     node_rects: dict[str, dict[str, Any]] = {}
+    now = 1
 
     for index, node in enumerate(graph["nodes"]):
         nid = str(node["id"])
@@ -364,11 +491,17 @@ def export_excalidraw_scene(graph: dict[str, Any], lang: str = "vi") -> dict[str
             "strokeStyle": "dashed" if node.get("review_status") == "needs_review" else "solid",
             "roughness": 1,
             "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
             "roundness": {"type": 3},
             "seed": (index + 1) * 131,
             "version": 1,
+            "versionNonce": (index + 1) * 911,
             "isDeleted": False,
             "boundElements": [{"type": "text", "id": text_id}],
+            "updated": now,
+            "link": None,
+            "locked": False,
         }
         txt = {
             "id": text_id,
@@ -380,7 +513,18 @@ def export_excalidraw_scene(graph: dict[str, Any], lang: str = "vi") -> dict[str
             "angle": 0,
             "strokeColor": "#e2e8f0",
             "backgroundColor": "transparent",
+            "fillStyle": "solid",
+            "strokeWidth": 1,
+            "roughness": 0,
+            "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": None,
+            "boundElements": [],
             "text": label,
+            "originalText": label,
+            "autoResize": True,
+            "lineHeight": 1.25,
             "fontSize": 14,
             "fontFamily": 1,
             "textAlign": "left",
@@ -388,7 +532,11 @@ def export_excalidraw_scene(graph: dict[str, Any], lang: str = "vi") -> dict[str
             "containerId": rect_id,
             "seed": (index + 1) * 257,
             "version": 1,
+            "versionNonce": (index + 1) * 977,
             "isDeleted": False,
+            "updated": now,
+            "link": None,
+            "locked": False,
         }
         elements.extend((rect, txt))
         node_rects[nid] = rect
@@ -398,31 +546,89 @@ def export_excalidraw_scene(graph: dict[str, Any], lang: str = "vi") -> dict[str
         tgt = node_rects.get(str(edge["to"]))
         if not src or not tgt:
             continue
-        sx = src["x"] + src["width"] / 2.0
-        sy = src["y"] + src["height"] / 2.0
-        tx = tgt["x"] + tgt["width"] / 2.0
-        ty = tgt["y"] + tgt["height"] / 2.0
+        tgt_cx = tgt["x"] + tgt["width"] / 2.0
+        tgt_cy = tgt["y"] + tgt["height"] / 2.0
+        src_cx = src["x"] + src["width"] / 2.0
+        src_cy = src["y"] + src["height"] / 2.0
+        sx, sy = _rect_border_point(src, tgt_cx, tgt_cy)
+        tx, ty = _rect_border_point(tgt, src_cx, src_cy)
+        dx = round(tx - sx, 2)
+        dy = round(ty - sy, 2)
+        arrow_id = f"arrow-{edge['id']}"
+        label_id = f"label-{edge['id']}"
+        rel_text = _relation_label(edge.get("relation", ""), lang)
         arrow = {
-            "id": f"arrow-{edge['id']}",
+            "id": arrow_id,
             "type": "arrow",
             "x": float(sx),
             "y": float(sy),
-            "width": float(abs(tx - sx)),
-            "height": float(abs(ty - sy)),
-            "points": [[0, 0], [round(tx - sx, 2), round(ty - sy, 2)]],
+            "width": float(abs(dx)),
+            "height": float(abs(dy)),
+            "points": [[0, 0], [dx, dy]],
             "angle": 0,
             "strokeColor": "#64748b",
             "backgroundColor": "transparent",
+            "fillStyle": "solid",
             "strokeWidth": 1.5,
             "strokeStyle": "dashed" if edge.get("review_status") == "needs_review" else "solid",
             "roughness": 1,
             "opacity": 85,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": {"type": 2},
+            "boundElements": [{"type": "text", "id": label_id}],
+            "startBinding": {"elementId": src["id"], "focus": 0, "gap": 4},
+            "endBinding": {"elementId": tgt["id"], "focus": 0, "gap": 4},
+            "lastCommittedPoint": None,
+            "startArrowhead": None,
             "endArrowhead": "arrow",
             "seed": (e_idx + 1) * 389,
             "version": 1,
+            "versionNonce": (e_idx + 1) * 1013,
             "isDeleted": False,
+            "updated": now,
+            "link": None,
+            "locked": False,
         }
-        elements.append(arrow)
+        src["boundElements"].append({"type": "arrow", "id": arrow_id})
+        tgt["boundElements"].append({"type": "arrow", "id": arrow_id})
+        label_w = min(140, max(56, len(rel_text) * 7 + 12))
+        arrow_label = {
+            "id": label_id,
+            "type": "text",
+            "x": round(sx + dx / 2.0 - label_w / 2.0, 2),
+            "y": round(sy + dy / 2.0 - 10.0, 2),
+            "width": float(label_w),
+            "height": 20.0,
+            "angle": 0,
+            "strokeColor": "#94a3b8",
+            "backgroundColor": "transparent",
+            "fillStyle": "solid",
+            "strokeWidth": 1,
+            "roughness": 0,
+            "opacity": 95,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": None,
+            "boundElements": [],
+            "text": rel_text,
+            "originalText": rel_text,
+            "autoResize": True,
+            "lineHeight": 1.2,
+            "fontSize": 11,
+            "fontFamily": 1,
+            "textAlign": "center",
+            "verticalAlign": "middle",
+            "containerId": arrow_id,
+            "seed": (e_idx + 1) * 433,
+            "version": 1,
+            "versionNonce": (e_idx + 1) * 1091,
+            "isDeleted": False,
+            "updated": now,
+            "link": None,
+            "locked": False,
+        }
+        elements.extend((arrow, arrow_label))
 
     return {
         "type": "excalidraw",

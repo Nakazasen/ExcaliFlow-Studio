@@ -12,9 +12,10 @@ _SRC_ROOT = str(Path(__file__).resolve().parents[1])
 if _SRC_ROOT not in sys.path:
     sys.path.insert(0, _SRC_ROOT)
 
+from excaliflow import __version__
 from excaliflow.atlas import write_atlas
 from excaliflow.bridge_server import DEFAULT_PORT, DEFAULT_UPSTREAM, bridge_status, initialize_bridge, load_bridge_config, serve_bridge
-from excaliflow.domain_graph import build_workspace_knowledge_graph, export_excalidraw_scene
+from excaliflow.domain_graph import build_workspace_knowledge_graph, export_excalidraw_scene, write_text_atomic
 from excaliflow.explorer import inspect_codebase, serialise_answer
 from excaliflow.evidence_atlas import build_evidence_atlas_html
 from excaliflow.installer import HOSTS, USER_TARGETS, WORKSPACE_TARGETS, doctor, doctor_issues, install_skill, repository_root, resolve_target
@@ -32,6 +33,9 @@ def write_console(content: str) -> None:
 
 def main() -> None:
     """Dispatch to the verified legacy generator without duplicating its behavior."""
+    if len(sys.argv) > 1 and sys.argv[1] in {"--version", "-V", "version"}:
+        print(f"excaliflow-studio {__version__}")
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "update":
         parser = argparse.ArgumentParser(prog="excaliflow update", description="Check GitHub Releases for a newer ExcaliFlow skill. This never downloads or installs anything.")
         parser.add_argument("command", choices=("check",))
@@ -65,6 +69,7 @@ def main() -> None:
         parser.add_argument("--dir", type=Path, default=Path.cwd(), help="Workspace directory to scan into an evidence graph.")
         parser.add_argument("--lang", choices=("vi", "ja", "en"), default="vi", help="Evidence Atlas UI language.")
         parser.add_argument("--max-nodes", type=int, default=120, help="Maximum nodes in a scanned workspace knowledge graph.")
+        parser.add_argument("--include", action="append", default=None, help="Optional glob filter(s) for workspace scan.")
         parser.add_argument("--atlas-out", type=Path, help="Optional offline Evidence Atlas HTML path when scanning.")
         parser.add_argument("--excalidraw", type=Path, help="Optional Excalidraw v2 scene output path when scanning.")
         parser.add_argument("--out", type=Path, required=True, help="Output graph JSON or offline Atlas HTML.")
@@ -79,24 +84,20 @@ def main() -> None:
                 print(f"Wrote Evidence Graph: {write_evidence_graph(trace, args.out)}")
                 return
             if args.command == "scan":
-                graph = build_workspace_knowledge_graph(args.dir, max_nodes=args.max_nodes)
-                args.out.parent.mkdir(parents=True, exist_ok=True)
-                args.out.write_text(json.dumps(graph, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                graph = build_workspace_knowledge_graph(args.dir, include_globs=args.include, max_nodes=args.max_nodes)
+                write_text_atomic(json.dumps(graph, ensure_ascii=False, indent=2) + "\n", args.out)
                 print(f"Wrote Evidence Graph: {args.out}")
                 if args.atlas_out:
-                    args.atlas_out.parent.mkdir(parents=True, exist_ok=True)
-                    args.atlas_out.write_text(build_evidence_atlas_html(graph, lang=args.lang), encoding="utf-8")
+                    write_text_atomic(build_evidence_atlas_html(graph, lang=args.lang), args.atlas_out)
                     print(f"Wrote offline Evidence Atlas: {args.atlas_out}")
                 if args.excalidraw:
-                    args.excalidraw.parent.mkdir(parents=True, exist_ok=True)
-                    args.excalidraw.write_text(json.dumps(export_excalidraw_scene(graph, lang=args.lang), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    write_text_atomic(json.dumps(export_excalidraw_scene(graph, lang=args.lang), ensure_ascii=False, indent=2) + "\n", args.excalidraw)
                     print(f"Wrote Excalidraw scene: {args.excalidraw}")
                 return
             if args.graph is None:
                 parser.error("knowledge atlas requires --graph.")
             graph = load_evidence_graph(args.graph)
-            args.out.parent.mkdir(parents=True, exist_ok=True)
-            args.out.write_text(build_evidence_atlas_html(graph, lang=args.lang), encoding="utf-8")
+            write_text_atomic(build_evidence_atlas_html(graph, lang=args.lang), args.out)
             print(f"Wrote offline Evidence Atlas: {args.out}")
             return
         except (EvidenceValidationError, OSError, ValueError) as error:

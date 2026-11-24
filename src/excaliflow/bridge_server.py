@@ -15,6 +15,7 @@ DEFAULT_PORT = 8788
 DEFAULT_UPSTREAM = "http://127.0.0.1:8081/v1"
 ATLAS_MANIFEST = "atlas-bridge.json"
 AIOS_BRIDGE_URL = "http://127.0.0.1:8585/health"
+MAX_REQUEST_BYTES = 2 * 1024 * 1024
 
 
 def _loopback_url(value: str) -> str:
@@ -161,6 +162,24 @@ def create_bridge_server(upstream_url: str = DEFAULT_UPSTREAM, *, host: str = DE
             self.end_headers()
 
         def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/v1/models":
+                try:
+                    with urllib.request.urlopen(f"{upstream}/models", timeout=10) as response:
+                        raw = response.read()
+                        status = response.status
+                except urllib.error.HTTPError as error:
+                    raw = error.read() or json.dumps({"error": {"message": error.reason}}).encode("utf-8")
+                    status = error.code
+                except OSError as error:
+                    _response(self, {"error": {"message": f"Gemini Web2API is not reachable: {error}"}}, 503)
+                    return
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+                return
             if self.path != "/health":
                 _response(self, {"error": "not found"}, 404)
                 return
@@ -173,7 +192,18 @@ def create_bridge_server(upstream_url: str = DEFAULT_UPSTREAM, *, host: str = DE
             if self.path != "/v1/chat/completions":
                 _response(self, {"error": "not found"}, 404)
                 return
-            length = int(self.headers.get("Content-Length", "0"))
+            raw_length = self.headers.get("Content-Length", "0")
+            try:
+                length = int(raw_length)
+            except ValueError:
+                _response(self, {"error": {"message": "Invalid Content-Length header."}}, 400)
+                return
+            if length < 0:
+                _response(self, {"error": {"message": "Invalid negative Content-Length."}}, 400)
+                return
+            if length > MAX_REQUEST_BYTES:
+                _response(self, {"error": {"message": f"Request payload exceeds {MAX_REQUEST_BYTES} bytes."}}, 413)
+                return
             request_body = self.rfile.read(length)
             request = urllib.request.Request(
                 f"{upstream}/chat/completions",

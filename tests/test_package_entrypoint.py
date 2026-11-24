@@ -99,3 +99,36 @@ class PackageEntrypointTests(unittest.TestCase):
             resolve_target("custom")
         with self.assertRaisesRegex(ValueError, "requires --workspace"):
             resolve_target("agy")
+
+    def test_cli_version_flag_and_subcommand_and_uv_lock_sync(self):
+        expected_version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        lock_data = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
+        pkg = next(p for p in lock_data["package"] if p["name"] == "excaliflow-studio")
+        self.assertEqual(pkg["version"], expected_version)
+        for flag in ("--version", "version"):
+            result = subprocess.run(
+                [sys.executable, "-m", "excaliflow.cli", flag],
+                cwd=ROOT,
+                env={**__import__("os").environ, "PYTHONPATH": str(ROOT / "src")},
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), f"excaliflow-studio {expected_version}")
+
+    def test_doctor_issues_checks_package_syntax_and_version_match(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            target = resolve_target("agy", workspace=root)
+            install_skill(target, source=ROOT)
+            self.assertEqual(doctor_issues(target), [])
+
+            (target / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+            issues = doctor_issues(target)
+            self.assertTrue(any("version mismatch" in item for item in issues))
+
+            (target / "VERSION").write_text((ROOT / "VERSION").read_text(encoding="utf-8"), encoding="utf-8")
+            (target / "src" / "excaliflow" / "domain_graph.py").write_text("def broken(:\n", encoding="utf-8")
+            issues = doctor_issues(target)
+            self.assertTrue(any("SyntaxError" in item or "invalid syntax" in item for item in issues))

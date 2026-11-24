@@ -359,3 +359,79 @@ class ExplorerTests(unittest.TestCase):
             (root / "deep.py").write_text("value = " + "[" * 1500 + "0" + "]" * 1500, encoding="utf-8")
             report = inspect_codebase(root)
             self.assertTrue(report["parse_warnings"])
+
+    def test_extracts_ts_go_rust_java_and_csharp_generic_symbols(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "types.ts").write_text("export type UserId = string;\nexport enum Role { Admin }\n", encoding="utf-8")
+            (root / "server.go").write_text("type Srv struct{}\nfunc (s *Srv) Handle() {}\n", encoding="utf-8")
+            (root / "lib.rs").write_text("pub struct Engine {}\npub async fn run_engine() {}\n", encoding="utf-8")
+            (root / "App.java").write_text("public class AppMain {}\n", encoding="utf-8")
+            (root / "Repo.cs").write_text(
+                "public class Repo {\n  public async Task<List<string>> FetchItems() { return null; }\n}\n",
+                encoding="utf-8",
+            )
+            report = inspect_codebase(root)
+            names = {sym["name"] for sym in report["symbols"]}
+            self.assertTrue({"UserId", "Role", "Srv", "Handle", "Engine", "run_engine", "AppMain", "Repo", "FetchItems"}.issubset(names))
+
+    def test_vietnamese_overview_and_dependency_questions(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            report = inspect_codebase(root)
+            overview = answer_question(report, "Tổng quan kiến trúc ứng dụng này làm gì?", "learner")
+            self.assertIn("codebase guide", overview)
+            deps = answer_question(report, "Các liên kết phụ thuộc nào đang có?", "engineer")
+            self.assertIn("app.py:1", deps)
+
+    def test_codebase_atlas_search_and_edge_highlighting(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_project(root)
+            atlas = build_atlas_html(inspect_codebase(root))
+            self.assertIn('id="module-search"', atlas)
+            self.assertIn("data-from=", atlas)
+            self.assertIn("data-to=", atlas)
+            self.assertIn(".edge.edge-out", atlas)
+            self.assertIn(".edge.edge-in", atlas)
+            self.assertNotIn("m&#361;i m&#361;i", atlas)
+            self.assertNotIn("h&#7887;ii", atlas)
+            self.assertNotIn("https://", atlas)
+
+    def test_bridge_models_passthrough_and_payload_validation(self):
+        upstream = create_bridge_server_for_test()
+        upstream_thread = Thread(target=upstream.serve_forever, daemon=True)
+        upstream_thread.start()
+        proxy = create_bridge_server(f"http://127.0.0.1:{upstream.server_port}/v1", port=0)
+        proxy_thread = Thread(target=proxy.serve_forever, daemon=True)
+        proxy_thread.start()
+        try:
+            with urlopen(f"http://127.0.0.1:{proxy.server_port}/v1/models", timeout=2) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn("gemini-3.6-flash", response.read().decode("utf-8"))
+
+            bad_len = Request(
+                f"http://127.0.0.1:{proxy.server_port}/v1/chat/completions",
+                data=b"{}",
+                headers={"Content-Type": "application/json", "Content-Length": "abc"},
+                method="POST",
+            )
+            with self.assertRaises(HTTPError) as bad_ctx:
+                urlopen(bad_len, timeout=2)
+            self.assertEqual(bad_ctx.exception.code, 400)
+
+            too_large = Request(
+                f"http://127.0.0.1:{proxy.server_port}/v1/chat/completions",
+                data=b"{}",
+                headers={"Content-Type": "application/json", "Content-Length": str(5 * 1024 * 1024)},
+                method="POST",
+            )
+            with self.assertRaises(HTTPError) as large_ctx:
+                urlopen(too_large, timeout=2)
+            self.assertEqual(large_ctx.exception.code, 413)
+        finally:
+            proxy.shutdown()
+            proxy.server_close()
+            upstream.shutdown()
+            upstream.server_close()

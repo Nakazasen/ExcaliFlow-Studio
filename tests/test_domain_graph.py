@@ -130,3 +130,79 @@ class DomainGraphAndVbaCSharpTests(unittest.TestCase):
             scene = json.loads(out_excalidraw.read_text(encoding="utf-8"))
             self.assertEqual(scene["type"], "excalidraw")
             self.assertIn("excaliflow:open-location", out_atlas.read_text(encoding="utf-8"))
+
+    def test_scans_yaml_toml_sql_and_proportional_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            for i in range(25):
+                (root / "docs" / f"doc_{i:02d}.md").write_text(f"# Doc {i}\nBody {i}\n", encoding="utf-8")
+            (root / "config.yaml").write_text("service: excaliflow\nport: 8788\n", encoding="utf-8")
+            (root / "settings.toml").write_text("[runtime]\nmode = 'offline'\n", encoding="utf-8")
+            (root / "schema.sql").write_text("CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY);\n", encoding="utf-8")
+            (root / "app.py").write_text("def run_app():\n    return 1\n", encoding="utf-8")
+
+            graph = build_workspace_knowledge_graph(root, max_nodes=35)
+            validate_evidence_graph(graph)
+            locations = {node.get("properties", {}).get("location") for node in graph["nodes"]}
+            self.assertIn("app.py", locations)
+            self.assertTrue(any(loc in {"config.yaml", "settings.toml", "schema.sql"} for loc in locations if loc))
+            self.assertTrue(any(node["type"] == "code" and node["label"] == "users" for node in graph["nodes"]))
+
+    def test_internal_code_depends_on_and_excalidraw_v2_bindings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "helper.py").write_text("def compute():\n    return 42\n", encoding="utf-8")
+            (root / "main.py").write_text("from helper import compute\n\ndef entry():\n    return compute()\n", encoding="utf-8")
+
+            graph = build_workspace_knowledge_graph(root, max_nodes=40)
+            validate_evidence_graph(graph)
+            dep_edges = [e for e in graph["edges"] if e["relation"] == "depends_on"]
+            self.assertTrue(dep_edges)
+            self.assertEqual(dep_edges[0]["receipts"][0]["location"], "main.py:1")
+
+            scene = export_excalidraw_scene(graph, lang="en")
+            arrows = [el for el in scene["elements"] if el["type"] == "arrow"]
+            rects = {el["id"]: el for el in scene["elements"] if el["type"] == "rectangle"}
+            self.assertTrue(arrows)
+            first_arrow = arrows[0]
+            self.assertIn("startBinding", first_arrow)
+            self.assertIn("endBinding", first_arrow)
+            src_rect = rects[first_arrow["startBinding"]["elementId"]]
+            self.assertTrue(any(b["id"] == first_arrow["id"] for b in src_rect["boundElements"]))
+            arrow_labels = [el for el in scene["elements"] if el["type"] == "text" and el.get("containerId") == first_arrow["id"]]
+            self.assertEqual(len(arrow_labels), 1)
+
+    def test_cli_knowledge_scan_include_glob_filter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ws"
+            root.mkdir()
+            (root / "keep.py").write_text("def kept():\n    return 1\n", encoding="utf-8")
+            (root / "ignore.ini").write_text("[Section]\nk=1\n", encoding="utf-8")
+            out_graph = Path(tmp) / "filtered.json"
+            env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "excaliflow.cli",
+                    "knowledge",
+                    "scan",
+                    "--dir",
+                    str(root),
+                    "--include",
+                    "*.py",
+                    "--out",
+                    str(out_graph),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            loaded = load_evidence_graph(out_graph)
+            locs = {n.get("properties", {}).get("location") for n in loaded["nodes"]}
+            self.assertIn("keep.py", locs)
+            self.assertNotIn("ignore.ini", locs)

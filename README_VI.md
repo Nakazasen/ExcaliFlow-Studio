@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.4.0-blue.svg" alt="Phiên bản"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/phiên_bản-v0.5.0-blue.svg" alt="Phiên bản"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/giấy_phép-MIT-purple.svg" alt="Giấy phép"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-64%2F64%20đạt-success.svg" alt="Kiểm thử"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/kiểm_thử-94%2F94%20đạt-success.svg" alt="Kiểm thử"></a>
   <a href="#tính-năng-nổi-bật"><img src="https://img.shields.io/badge/offline-100%25%20không%20phụ%20thuộc%20mạng-orange.svg" alt="Hoạt động offline"></a>
 </p>
 
@@ -31,11 +31,11 @@
 - **✨ Hiệu Ứng Luồng Chuyển Động (Animated Signal Flow)**: Bật/tắt dòng xung chuyển động dọc theo các cạnh kết nối để mô phỏng dòng dữ liệu thời gian thực.
 - **🔍 So Sánh Kiến Trúc (Architecture Diff Engine)**: So sánh độ lệch kiến trúc giữa 2 snapshot hoặc git commit (Added, Removed, Modified) trước khi merge PR (`--diff`).
 - **🎴 Thẻ Ảnh Bìa 1200×630 (README Share Card)**: Tự động sinh thẻ ảnh vector chuẩn 1200×630 đính kèm đầu `README.md` và chia sẻ mạng xã hội (`--share-card`).
-- **🗺️ Codebase Atlas (Khám Phá & Học Code)**: Trả lời ứng dụng làm gì, tạo lộ trình đọc code 1→2→3 và sơ đồ quan hệ import trực quan bằng SVG native.
-- **🎨 Đa Dạng Định Dạng Trực Quan**: Trình xem HTML offline kèm tính năng Pan/Zoom mượt mà, tệp `.excalidraw` tương thích đầy đủ để chỉnh sửa tay, và sơ đồ vector SVG độ phân giải cao dùng cho Slide thuyết trình 16:9, Sách trắng và Tài liệu kỹ thuật.
+- **🗺️ Codebase Atlas (Khám Phá & Học Code)**: Trả lời ứng dụng làm gì, tạo lộ trình đọc code 1→2→3, lọc nhanh module trực tiếp, tô sáng chiều mũi tên (`in`/`out`) và sơ đồ quan hệ import bằng SVG native.
+- **🎨 Đa Dạng Định Dạng Trực Quan**: Trình xem HTML offline kèm Pan/Zoom mượt mà, tệp `.excalidraw` v2 có gắn kết mũi tên (`startBinding`/`endBinding`) kèm nhãn quan hệ, và sơ đồ vector SVG độ phân giải cao dùng cho Slide 16:9, Sách trắng và Tài liệu kỹ thuật.
 - **🧠 Bộ Xử Lý Văn Bản Thông Minh Đa Dòng (Typography Engine)**: Tự động ngắt dòng theo từ ngữ (`<tspan>`), tự điều chỉnh khoảng cách trục Y, nhúng tooltip `<title>` bảo toàn 100% nội dung gốc khi rê chuột, tự động đảo hướng neo tránh tràn mép canvas.
-- **🔍 Hỏi Đáp Mã Nguồn Kèm Dẫn Chứng**: Trả lời chính xác về class, hàm, quan hệ phụ thuộc với số dòng và file cụ thể.
-- **🔗 Evidence Graph Cho RAG**: Chuyển đổi dấu vết truy xuất (`rag-trace.json`) thành bản đồ xác minh nguồn trích dẫn, chống bịa đặt thông tin.
+- **🔍 Hỏi Đáp Mã Nguồn Kèm Dẫn Chứng**: Trả lời chính xác (Anh/Việt) về class, hàm, quan hệ phụ thuộc kèm `file:line` từ AST và bộ quét đa ngôn ngữ (Python, JS/TS, Go, Rust, Java, C#, VBA).
+- **🔗 Evidence Graph Flowsint 2.5 & Quét Tri Thức Workspace**: Chuyển đổi `rag-trace.json` hoặc quét workspace (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.toml`, `.sql`, mã nguồn) thành bản đồ Thiên hà động lực có lọc theo loại node, radar lân cận và xuất SVG offline (`vi`/`ja`/`en`).
 - **🤖 Tích Hợp Skill Cho Mọi AI Host**: Cài đặt 1 lệnh cho Claude Code, Cursor, Google Antigravity, GitHub Copilot, OpenAI Codex, Gemini CLI, OpenCode, Kiro.
 
 ---
@@ -88,7 +88,7 @@ ExcaliFlow chấp nhận Graphify `>=0.9.48,<0.10`: vẫn nhận các bản vá 
 Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Chỉ cần gõ `/excaliflow` trong khung chat AI.
-2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v3.7)**:
+2. AI Agent sẽ **tự động hiển thị Bảng Menu Điều Khiển 1-Chạm (Dashboard v4.0)**:
    - `1` 🏢 **Sơ Đồ Kiến Trúc & Excalidraw (Reach Tracing + Luồng Chuyển Động)**
    - `2` 🔍 **So Sánh Độ Lệch Kiến Trúc (`--diff`)**
    - `3` 🎴 **Thẻ Ảnh Bìa 1200×630 (`--share-card`)**
@@ -114,7 +114,7 @@ Nếu bạn sử dụng các IDE AI / Coding Agent (**Antigravity, Codex, Cursor
 | **4. Codebase Atlas (Học Code)** | Giao diện web tương tác giải thích ứng dụng, lộ trình đọc code & vai trò module | `excaliflow open --dir .` |
 | **5. Sơ Đồ Xuất Bản Editorial** | Xuất SVG/HTML: Wardley Map, Sankey Flow, User Journey, Slide 16:9, Báo cáo KPI/Risk | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
 | **6. Tra Cứu Source Có Dẫn Chứng** | Tra cứu hàm/class/file/import kèm `file:line`; câu trả lời semantic cần Atlas Bridge khỏe | `excaliflow ask --dir . --audience engineer --question "..."` |
-| **7. Evidence Graph Cho RAG** | Chuyển đổi log RAG thành bản đồ trực quan xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
+| **7. Evidence Graph & Quét Tri Thức** | Chuyển đổi log RAG hoặc quét workspace (`.md`, `.csv`, `.yaml`, `.toml`, `.sql`, C#, VBA, Python/TS) thành Atlas Flowsint 2.5 + `.excalidraw` | `excaliflow knowledge scan --dir . --include "*.py" --out graph.json --atlas-out atlas.html --excalidraw scene.excalidraw` |
 | **8. Điều Khiển & Chẩn Đoán Atlas Bridge** | Cấu hình/chạy Atlas Bridge (`:8788`) và chẩn đoán riêng Atlas, AIOS IDE bridge (`:8585`), Gemini Web2API (`:8081`); không tự khởi động dịch vụ ngoài | `excaliflow bridge init/start/doctor --dir .` |
 | **9. Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10. Cài Skill Cho AI Host** | Liệt kê target, cài đặt và chẩn đoán skill portable cho các AI host | `excaliflow targets/install/doctor` |
@@ -194,16 +194,19 @@ excaliflow explain --dir "D:\MyProject" --audience learner --out "D:\MyProject\H
 
 ---
 
-### 5. Evidence Graph Cho RAG (Xác Minh Trích Dẫn)
+### 5. Evidence Graph Cho RAG & Quét Tri Thức Workspace (v0.5.0)
 
-Kiểm tra tính chính xác của câu trả lời từ hệ thống RAG:
+Kiểm tra tính chính xác của câu trả lời RAG hoặc quét workspace đa định dạng (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.toml`, `.sql`, Python/TS/Go/Rust/Java/C#/VBA) thành Evidence Atlas Flowsint 2.5 (`vi`/`ja`/`en`) và scene Excalidraw v2:
 
 ```powershell
 # 1. Chuyển đổi log truy xuất RAG thành đồ thị bằng chứng chuẩn
 excaliflow knowledge import --trace ".\examples\rag-trace.json" --out ".\evidence-graph.json"
 
-# 2. Tạo giao diện web Evidence Atlas HTML độc lập
-excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atlas.html"
+# 2. Tạo giao diện web Flowsint 2.5 Evidence Atlas HTML độc lập
+excaliflow knowledge atlas --graph ".\evidence-graph.json" --lang vi --out ".\evidence-atlas.html"
+
+# 3. Quét workspace thành Knowledge Graph, Atlas đa ngữ & scene Excalidraw v2 có binding
+excaliflow knowledge scan --dir "D:\MyProject" --include "*.py" --include "*.md" --lang vi --out ".\domain-graph.json" --atlas-out ".\domain-atlas.html" --excalidraw ".\domain.excalidraw"
 ```
 
 ---
@@ -266,10 +269,12 @@ ExcaliFlow-Studio/
 │   ├── cli.py              # Điểm khởi chạy CLI
 │   ├── atlas.py            # Trình tạo Codebase Atlas tương tác
 │   ├── bridge_server.py    # Máy chủ AI Bridge cục bộ
-│   ├── domain_graph.py     # Bộ quét Knowledge Graph đa ngôn ngữ (.md/.csv/C#/VBA) & xuất Excalidraw v2
-│   ├── explorer.py         # Bộ quét AST, C#/VBA & phân tích hỏi đáp có bằng chứng
-│   ├── knowledge.py        # Bộ xử lý đồ thị bằng chứng RAG
-│   └── installer.py        # Bộ cài đặt skill cho các AI Host
+│   ├── domain_graph.py     # Bộ quét Knowledge Graph (.md/.csv/.yaml/.toml/.sql/C#/VBA) & xuất Excalidraw v2
+│   ├── evidence_atlas.py   # Động cơ Evidence Atlas Flowsint 2.5 offline (thiên hà, lọc loại node, xuất SVG)
+│   ├── explorer.py         # Bộ quét AST/đa ngôn ngữ & phân tích hỏi đáp có bằng chứng (EN/VI)
+│   ├── knowledge.py        # Bộ xác thực & nhập đồ thị bằng chứng RAG
+│   ├── update.py           # Kiểm tra manifest phát hành theo yêu cầu
+│   └── installer.py        # Bộ cài đặt & chẩn đoán skill cho các AI Host
 ├── scripts/
 │   └── generate_diagram.py # Bộ sinh sơ đồ kiến trúc & SVG Editorial
 ├── assets/vendor/          # Thư viện JavaScript offline (Mermaid, Panzoom)
@@ -278,7 +283,7 @@ ExcaliFlow-Studio/
 ├── tests/                  # Bộ kiểm thử tự động
 ├── SKILL.md                # Giao thức skill điều khiển cho Agent
 ├── pyproject.toml          # Cấu hình gói dự án
-└── VERSION                 # Tệp định danh phiên bản (0.4.0)
+└── VERSION                 # Tệp định danh phiên bản (0.5.0)
 ```
 
 ---

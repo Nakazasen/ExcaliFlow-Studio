@@ -3,13 +3,13 @@ name: excaliflow
 description: "Trung tâm điều khiển trực quan hóa kiến trúc ExcaliFlow Studio: Phân tích codebase/Graphify thành sơ đồ Excalidraw, Codebase Atlas, sơ đồ Editorial (Wardley, Sankey, Journey, Architecture), và Evidence Graph cho RAG."
 ---
 
-# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v3.7)
+# Excali-Flow Skill: Visual Architecture & Diagramming Protocol (v4.0 — ExcaliFlow Studio v0.5.0)
 
 > **MỤC TIÊU CỐT LÕI**: Khi người dùng gõ `/excaliflow` (hoặc gọi skill này mà chưa chỉ định cụ thể tham số phức tạp), Agent **BẮT BUỘC** hiển thị ngay **BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard)** để người dùng chọn nhanh tính năng mong muốn (bằng số hoặc mô tả) thay vì phải tự nhớ lệnh.
 
 ---
 
-## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v3.7)
+## 📋 BẢNG TÍNH NĂNG ĐIỀU KHIỂN (ExcaliFlow Feature Dashboard v4.0)
 
 Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hiển thị ngay bảng tính năng sau:
 
@@ -18,14 +18,14 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
 | **1** | 🏢 **Sơ Đồ Kiến Trúc & Excalidraw** | Quét Graphify/AST $\to$ HTML Panzoom (Reach Tracing + Luồng chuyển động) + `.excalidraw` | `excaliflow --dir . --with-excalidraw --open` |
 | **2** | 🔍 **So Sánh Kiến Trúc (Diff Mode)** | So sánh độ lệch kiến trúc giữa 2 snapshot hoặc git commit (Added, Removed, Modified) | `excaliflow --diff <file_or_git_ref> --open` |
 | **3** | 🎴 **Thẻ Ảnh Bìa 1200×630 (Share Card)**| Xuất ảnh bìa kiến trúc chuẩn 1200×630 dùng cho `README.md` và chia sẻ mạng xã hội | `excaliflow --share-card "README_CARD.svg" --open` |
-| **4** | 🗺️ **Codebase Atlas (Học Codebase)** | Giao diện tương tác đọc hiểu codebase, giải thích ứng dụng, đọc sơ đồ SVG native | `excaliflow open --dir .` |
+| **4** | 🗺️ **Codebase Atlas (Học Codebase)** | Giao diện tương tác đọc hiểu codebase, lọc module trực tiếp, tô sáng chiều import (`in`/`out`), đọc sơ đồ SVG native | `excaliflow open --dir .` |
 | **5** | 📊 **Editorial & Business Reports** | Xuất SVG/HTML với 11 grammar: architecture, Wardley, Sankey, Journey, KPI, Funnel, Timeline, Process, Quadrant, Matrix, Risk | `excaliflow --editorial-out <out> --visual-type <type>` |
 | **6** | 🔍 **Tra Cứu Codebase Có Dẫn Chứng** | Tra cứu source/AST theo tên hàm, class, file hoặc import và trả về `file:line`; không giả làm semantic AI khi chưa có bridge | `excaliflow ask --dir . --audience engineer --question "..."` |
-| **7** | 🔗 **Evidence Graph Cho RAG & Điều Tra** | Chuyển đổi `rag-trace.json` $\to$ Bản đồ tương tác xác minh nguồn trích dẫn | `excaliflow knowledge import` & `atlas` |
+| **7** | 🔗 **Evidence Graph & Workspace Scan** | Chuyển đổi `rag-trace.json` hoặc quét workspace (`.md`, `.yaml`, `.toml`, `.sql`, C#/VBA/Python/TS) $\to$ Atlas Flowsint 2.5 (lọc loại node, xuất SVG) + `.excalidraw` | `excaliflow knowledge scan --dir . --include "*.py" --out graph.json` |
 | **8** | 🩺 **Atlas Bridge Control & Diagnostics** | Khởi tạo/chạy Atlas Bridge (`:8788`) và chẩn đoán riêng Atlas, AIOS IDE bridge (`:8585`), Gemini Web2API (`:8081`); không tự khởi động dịch vụ bên ngoài | `excaliflow bridge init/start/doctor --dir .` |
 | **9** | 📖 **Atlas, Explain & Theo Dõi** | Xuất Atlas/guide, theo dõi source và render lại, kiểm tra tài nguyên offline | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10** | 🧩 **Cài Skill Cho AI Host** | Liệt kê target, cài và chẩn đoán skill cho Codex, Claude, Copilot, Gemini, Antigravity và host khác | `excaliflow targets/install/doctor` |
-| **11** | 🔄 **Kiểm Tra Bản Cập Nhật** | Kiểm tra phiên bản mới từ GitHub Release của ExcaliFlow-Studio | `excaliflow update check` |
+| **11** | 🔄 **Phiên Bản & Cập Nhật** | Kiểm tra phiên bản đang cài (`--version`) hoặc bản mới từ GitHub Release | `excaliflow --version` & `excaliflow update check` |
 
 ---
 
@@ -87,13 +87,13 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   excaliflow ask --dir "<project_path>" --audience learner --question "<câu hỏi>"
   ```
 
-### Nhóm 7: Evidence Graph Cho RAG & Quét Tri Thức Workspace (v0.4.0)
-- **Mục đích**: Trực quan hóa đường đi bằng chứng từ câu trả lời RAG, hoặc quét workspace đa ngôn ngữ (`.md`, `.csv`, `.json`, `.ini`, C# `.cs`, VBA `.bas`/`.cls`, Python/TS/Go/Rust) thành Knowledge Graph Flowsint 2.0 song ngữ (`vi`/`ja`/`en`) & xuất file `.excalidraw`.
+### Nhóm 7: Evidence Graph Cho RAG & Quét Tri Thức Workspace (v0.5.0)
+- **Mục đích**: Trực quan hóa đường đi bằng chứng từ câu trả lời RAG bằng Flowsint 2.5 (có bộ lọc loại node, phóng to theo con trỏ, bỏ chọn nhanh và xuất SVG offline), hoặc quét workspace đa định dạng (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.yml`, `.toml`, `.sql`, C# `.cs`, VBA `.bas`/`.cls`, Python/TS/Go/Rust/Java) thành Knowledge Graph song ngữ (`vi`/`ja`/`en`) & file `.excalidraw` v2 có gắn kết mũi tên.
 - **Lệnh thực thi**:
   ```powershell
   excaliflow knowledge import --trace "<project>\rag-trace.json" --out "<project>\evidence-graph.json"
   excaliflow knowledge atlas --graph "<project>\evidence-graph.json" --lang vi --out "<project>\evidence-atlas.html"
-  excaliflow knowledge scan --dir "<project>" --lang ja --out "<project>\domain-graph.json" --atlas-out "<project>\domain-atlas.html" --excalidraw "<project>\domain.excalidraw"
+  excaliflow knowledge scan --dir "<project>" --include "*.py" --include "*.md" --lang ja --out "<project>\domain-graph.json" --atlas-out "<project>\domain-atlas.html" --excalidraw "<project>\domain.excalidraw"
   ```
 
 ### Nhóm 8: Atlas Bridge Control & Diagnostics
@@ -125,9 +125,10 @@ Khi người dùng kích hoạt `/excaliflow`, hãy chào người dùng và hi�
   excaliflow doctor --host antigravity
   ```
 
-### Nhóm 11: Kiểm Tra Cập Nhật
-- **Mục đích**: Kiểm tra phiên bản mới nhất từ kho GitHub ExcaliFlow-Studio.
+### Nhóm 11: Kiểm Tra Phiên Bản & Cập Nhật
+- **Mục đích**: Xem phiên bản hiện tại hoặc kiểm tra phiên bản mới nhất từ kho GitHub ExcaliFlow-Studio.
 - **Lệnh thực thi**:
   ```powershell
+  excaliflow --version
   excaliflow update check
   ```

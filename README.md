@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.1.5-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Nakazasen/ExcaliFlow-Studio/releases"><img src="https://img.shields.io/badge/version-v0.5.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-64%2F64%20passing-success.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-94%2F94%20passing-success.svg" alt="Tests"></a>
   <a href="#key-highlights"><img src="https://img.shields.io/badge/offline-100%25%20zero%20cloud%20deps-orange.svg" alt="Offline Ready"></a>
 </p>
 
@@ -31,11 +31,11 @@
 - **✨ Animated Signal Flow**: Toggle animated directional signal pulses along edges to visualize live data flows.
 - **🔍 Architecture Change Comparison (Diff Engine)**: Compare two codebase snapshots or git commits to inspect added, removed, and modified architecture components before merging PRs (`--diff`).
 - **🎴 1200×630 Social & README Share Card**: Generate standard 1200×630 vector presentation cards ready for project README headers and social embeds (`--share-card`).
-- **🗺️ Interactive Codebase Atlas**: Explains what applications do, generates 1→2→3 reading paths, and visualizes native SVG dependency graphs.
-- **🎨 Multi-Format Visual Artifacts**: Offline HTML viewers with pan/zoom, native `.excalidraw` editable files, and high-res vector SVGs.
+- **🗺️ Interactive Codebase Atlas**: Explains what applications do, generates 1→2→3 reading paths, live module filtering, edge direction highlighting (`in`/`out`), and native SVG dependency graphs.
+- **🎨 Multi-Format Visual Artifacts**: Offline HTML viewers with pan/zoom, native `.excalidraw` editable v2 scenes with bound arrows & relation labels, and high-res vector SVGs.
 - **🧠 Smart Multi-Line Typography Engine**: Automatic word-boundary wrapping, dynamic vertical spacing, native SVG `<title>` tooltips, and right-edge clipping auto-anchoring.
-- **🔍 Evidence-First Q&A**: Answers architectural questions with verified `file:line` citations directly from source code AST.
-- **🔗 Evidence Graph for RAG**: Visualizes RAG retrieval traces (`rag-trace.json`) to audit and verify model claims against ground truth passages.
+- **🔍 Evidence-First Q&A**: Answers architectural questions (English & Vietnamese) with verified `file:line` citations directly from AST and multi-language scans (Python, JS/TS, Go, Rust, Java, C#, VBA).
+- **🔗 Flowsint 2.5 Evidence Graph & Workspace Scanner**: Visualizes RAG retrieval traces (`rag-trace.json`) and multi-format workspace scans (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.toml`, `.sql`, code) with force-directed galaxy physics, type filter pills, mini ego-radar, and offline SVG export (`vi`/`ja`/`en`).
 - **🤖 Universal AI Host Integration**: One-click skill installer for Codex, Claude Code, GitHub Copilot, Gemini CLI, Antigravity, OpenCode, and Cursor.
 
 ---
@@ -88,7 +88,7 @@ ExcaliFlow accepts Graphify `>=0.9.48,<0.10`: patch updates remain available, wh
 If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, GitHub Copilot, Gemini CLI**):
 
 1. Type `/excaliflow` in your AI chat window.
-2. The agent automatically presents the **1-Click Feature Dashboard Menu (v3.7)**:
+2. The agent automatically presents the **1-Click Feature Dashboard Menu (v4.0)**:
    - `1` 🏢 **Architecture & Excalidraw (Reach Tracing + Flow Motion)**
    - `2` 🔍 **Architecture Diff Comparison (`--diff`)**
    - `3` 🎴 **1200×630 README Share Card (`--share-card`)**
@@ -114,7 +114,7 @@ If you use AI IDEs / Coding Agents (**Antigravity, Codex, Cursor, Claude Code, G
 | **4. Codebase Atlas** | Interactive web guide with plain-language summary, reading path & module roles | `excaliflow open --dir .` |
 | **5. Editorial & Presentation SVGs** | Presentation-grade SVGs (Wardley, Sankey, Journey, Architecture, KPI, Funnel, Risk) | `excaliflow --editorial-out out.svg --visual-type wardley --visual-data brief.json --canvas slide` |
 | **6. Source-Backed Lookup** | Looks up classes/functions/files/imports with `file:line` citations; semantic answers require a healthy Atlas Bridge | `excaliflow ask --dir . --audience engineer --question "..."` |
-| **7. Evidence Graph for RAG** | Converts RAG retrieval logs into an interactive verification map | `excaliflow knowledge import` & `atlas` |
+| **7. Evidence Graph & Domain Scan** | Converts RAG logs or scans workspaces (`.md`, `.csv`, `.yaml`, `.toml`, `.sql`, C#, VBA, Python/TS) into Flowsint 2.5 Atlas + `.excalidraw` | `excaliflow knowledge scan --dir . --include "*.py" --out graph.json --atlas-out atlas.html --excalidraw scene.excalidraw` |
 | **8. Atlas Bridge Control & Diagnostics** | Configures/runs Atlas Bridge (`:8788`) and diagnoses Atlas, optional AIOS IDE bridge (`:8585`), and Gemini Web2API (`:8081`) separately; external services are never started implicitly | `excaliflow bridge init/start/doctor --dir .` |
 | **9. Atlas, Explain & Monitoring** | Generates Atlas/guides, watches source changes, and verifies offline assets | `excaliflow atlas`, `explain`, `--watch`, `--offline-check` |
 | **10. AI Host Installation** | Lists targets, installs, and diagnoses portable skills for supported AI hosts | `excaliflow targets/install/doctor` |
@@ -194,16 +194,19 @@ excaliflow explain --dir "D:\MyProject" --audience learner --out "D:\MyProject\C
 
 ---
 
-### 5. Evidence Graph for RAG
+### 5. Evidence Graph for RAG & Workspace Knowledge Scan (v0.5.0)
 
-Audit RAG answers and verify factual claims against retrieved chunks:
+Audit RAG answers or scan mixed documentation/source workspaces (`.md`, `.csv`, `.json`, `.ini`, `.yaml`, `.toml`, `.sql`, Python/TS/Go/Rust/Java/C#/VBA) into a Flowsint 2.5 Evidence Atlas (`vi`/`ja`/`en`) and Excalidraw v2 scene:
 
 ```powershell
 # 1. Convert RAG retrieval output into canonical evidence graph
 excaliflow knowledge import --trace ".\examples\rag-trace.json" --out ".\evidence-graph.json"
 
-# 2. Render self-contained Evidence Atlas HTML
-excaliflow knowledge atlas --graph ".\evidence-graph.json" --out ".\evidence-atlas.html"
+# 2. Render self-contained Flowsint 2.5 Evidence Atlas HTML
+excaliflow knowledge atlas --graph ".\evidence-graph.json" --lang en --out ".\evidence-atlas.html"
+
+# 3. Scan workspace into Knowledge Graph, bilingual Atlas, and bound Excalidraw v2 scene
+excaliflow knowledge scan --dir "D:\MyProject" --include "*.py" --include "*.md" --lang vi --out ".\domain-graph.json" --atlas-out ".\domain-atlas.html" --excalidraw ".\domain.excalidraw"
 ```
 
 ---
@@ -266,10 +269,12 @@ ExcaliFlow-Studio/
 │   ├── cli.py              # CLI entry point
 │   ├── atlas.py            # Interactive Codebase Atlas renderer
 │   ├── bridge_server.py    # Local loopback AI bridge
-│   ├── domain_graph.py     # Mixed-workspace Knowledge Graph & Excalidraw v2 exporter (v0.4.0)
-│   ├── explorer.py         # Source scan AST & C#/VBA/multi-language evidence Q&A engine
-│   ├── knowledge.py        # RAG evidence graph processor
-│   └── installer.py        # Universal AI agent skill installer
+│   ├── domain_graph.py     # Mixed-workspace Knowledge Graph & Excalidraw v2 bound-arrow exporter
+│   ├── evidence_atlas.py   # Flowsint 2.5 offline Evidence Atlas (galaxy, type filters, SVG export)
+│   ├── explorer.py         # Multi-language AST/regex scanner & evidence Q&A engine (EN/VI)
+│   ├── knowledge.py        # RAG evidence graph validator & importer
+│   ├── update.py           # Explicit release manifest checker
+│   └── installer.py        # Universal AI agent skill installer & doctor
 ├── scripts/
 │   └── generate_diagram.py # Universal architecture & editorial diagram generator
 ├── assets/vendor/          # Pinned offline JavaScript runtimes (Mermaid, Panzoom)
@@ -278,7 +283,7 @@ ExcaliFlow-Studio/
 ├── tests/                  # Deterministic test suite
 ├── SKILL.md                # AI Agent skill protocol definition
 ├── pyproject.toml          # Package configuration
-└── VERSION                 # Semantic version file (0.4.0)
+└── VERSION                 # Semantic version file (0.5.0)
 ```
 
 ---

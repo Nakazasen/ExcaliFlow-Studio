@@ -110,6 +110,7 @@ def doctor_issues(target: Path) -> list[str]:
         "VERSION",
         "SKILL.md",
         "scripts/generate_diagram.py",
+        "src/excaliflow/__init__.py",
         "src/excaliflow/cli.py",
         "assets/vendor/mermaid.min.js",
         "assets/vendor/panzoom.min.js",
@@ -121,11 +122,17 @@ def doctor_issues(target: Path) -> list[str]:
         version = (target / "VERSION").read_text(encoding="utf-8").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             issues.append(f"invalid VERSION: {version!r}")
+        init_text = (target / "src" / "excaliflow" / "__init__.py").read_text(encoding="utf-8")
+        ver_match = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', init_text, re.MULTILINE)
+        if not ver_match or ver_match.group(1) != version:
+            issues.append(f"version mismatch between VERSION ({version!r}) and __init__.py ({ver_match.group(1) if ver_match else None!r})")
         skill_text = (target / "SKILL.md").read_text(encoding="utf-8")
         if not skill_text.startswith("---\n") or "name: excaliflow" not in skill_text[:200]:
             issues.append("invalid SKILL.md frontmatter")
-        for relative in ("scripts/generate_diagram.py", "src/excaliflow/cli.py"):
-            ast.parse((target / relative).read_text(encoding="utf-8"), filename=relative)
+        py_files = [target / "scripts" / "generate_diagram.py", *sorted((target / "src" / "excaliflow").glob("*.py"))]
+        for py_path in py_files:
+            rel_py = py_path.relative_to(target).as_posix()
+            ast.parse(py_path.read_text(encoding="utf-8"), filename=rel_py)
         for relative, marker in (("assets/vendor/mermaid.min.js", "mermaid"), ("assets/vendor/panzoom.min.js", "Panzoom")):
             content = (target / relative).read_text(encoding="utf-8")
             if len(content) < 1000 or marker not in content:
